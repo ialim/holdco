@@ -13,6 +13,7 @@ import { CreditNoteService } from "./credit-note.service";
 import { TaxImpactService } from "./tax-impact.service";
 import { ConsolidatedPLService } from "./consolidated-pl.service";
 import { LedgerPostingService } from "./ledger-posting.service";
+import { AccountingService } from "./accounting.service";
 
 @Module({
   imports: [PrismaModule],
@@ -29,6 +30,7 @@ import { LedgerPostingService } from "./ledger-posting.service";
     CreditNoteService,
     TaxImpactService,
     ConsolidatedPLService,
+    AccountingService,
   ],
   exports: [
     CostPoolService,
@@ -42,6 +44,7 @@ import { LedgerPostingService } from "./ledger-posting.service";
     CreditNoteService,
     TaxImpactService,
     ConsolidatedPLService,
+    AccountingService,
   ],
 })
 export class FinanceModule {}

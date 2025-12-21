@@ -60,14 +60,18 @@ Tables
 - cart_item: id, cart_id, product_id, variant_id, quantity, unit_price
 - order: id, order_no, customer_id, reseller_id, status, total_amount, currency
 - order_item: id, order_id, product_id, variant_id, quantity, unit_price, total_price
-- invoice: id, order_id, status, total_amount
+- invoice: id, order_id, invoice_type, status, seller_company_id, buyer_company_id, period, issue_date, due_date, subtotal, vat_amount, total_amount, is_credit_note, related_invoice_id
+- invoice_line: id, invoice_id, agreement_id, description, net_amount, vat_rate, vat_amount, wht_rate, wht_amount, gross_amount
+- payment: id, invoice_id, payer_company_id, payee_company_id, payment_date, amount_paid, wht_withheld_amount, reference, notes
 - payment_intent: id, order_id, amount, currency, status, provider, reference
 - refund: id, payment_intent_id, amount, reason, status
 - return: id, order_id, status, reason
 
 Relationships
 - order 1..* order_item
-- order 0..1 invoice
+- order 0..* invoice
+- invoice 1..* invoice_line
+- invoice 0..* payment
 - order 1..* payment_intent 0..* refund
 
 ## Credit and collections
@@ -123,11 +127,27 @@ Tables
 - fiscal_period: id, name, start_date, end_date, status
 - journal_entry: id, fiscal_period_id, reference, status, posted_at
 - journal_line: id, journal_entry_id, account_id, cost_center_id, debit, credit
+- ledger_account: id, company_id, code, name, type
+- ledger_entry: id, company_id, period, entry_date, account_id, debit, credit, memo, source_type, source_ref
+- cost_pool: id, company_id, period, total_cost
+- cost_pool_line: id, cost_pool_id, category, amount
+- allocation_rule: id, cost_pool_id, method
+- allocation_weight: id, allocation_rule_id, recipient_company_id, weight
+- cost_allocation: id, cost_pool_id, recipient_company_id, allocated_cost
+- intercompany_agreement: id, provider_company_id, recipient_company_id, type, pricing_model, markup_rate, fixed_fee_amount, vat_applies, vat_rate, wht_applies, wht_rate, wht_tax_type, effective_from, effective_to
+- wht_credit_note: id, issuer_company_id, beneficiary_company_id, period, tax_type, amount, remittance_date, fir_receipt_ref
+- vat_return: id, company_id, period, output_vat, input_vat, net_vat_payable, status, filed_at, payment_ref
+- period_lock: id, company_id, period, locked, locked_at, locked_by, reason
 
 Relationships
 - chart_of_account 1..* journal_line
 - journal_entry 1..* journal_line
 - cost_center 0..* journal_line
+- ledger_account 1..* ledger_entry
+- cost_pool 1..* cost_pool_line
+- cost_pool 1..1 allocation_rule 1..* allocation_weight
+- cost_pool 1..* cost_allocation
+- intercompany_agreement 1..* invoice_line
 
 ## Compliance and risk
 Tables
@@ -193,12 +213,21 @@ erDiagram
   location ||--o{ stock_level : stores
   price_list ||--o{ price_rule : defines
   order ||--o{ order_item : contains
+  order ||--o{ invoice : billed
+  invoice ||--o{ invoice_line : lines
+  invoice ||--o{ payment : settles
   order ||--o{ payment_intent : paid_by
   reseller ||--|| credit_account : owns
   credit_account ||--o{ payment_schedule : schedules
   service_request ||--o{ service_task : contains
   department ||--o{ employee : assigns
   journal_entry ||--o{ journal_line : posts
+  ledger_account ||--o{ ledger_entry : posts
+  cost_pool ||--|| allocation_rule : uses
+  allocation_rule ||--o{ allocation_weight : weights
+  cost_pool ||--o{ cost_pool_line : contains
+  cost_pool ||--o{ cost_allocation : allocates
+  intercompany_agreement ||--o{ invoice_line : prices
   purchase_order ||--o{ purchase_order_item : includes
   advisory_engagement ||--o{ advisory_deliverable : produces
   customer ||--|| loyalty_account : has
@@ -211,3 +240,4 @@ erDiagram
 - Composite: stock_level(product_id, variant_id, location_id)
 - Foreign keys on all *_id columns with cascade rules defined per domain
 - Partition large fact tables (order_item, points_ledger, audit_log) by created_at as needed
+- Finance indexes: ledger_entry(company_id, period), wht_credit_note(issuer_company_id, period), intercompany_agreement(provider_company_id)

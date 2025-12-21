@@ -1845,6 +1845,408 @@ paths:
           $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
+  /v1/finance/month-close:
+    post:
+      tags: [Finance]
+      operationId: runMonthClose
+      summary: Run month close workflow
+      x-rbac:
+        permissions: [finance.month_close.run]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MonthCloseRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MonthCloseResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /v1/finance/cost-pools:
+    post:
+      tags: [Finance]
+      operationId: createCostPool
+      summary: Create or update a cost pool
+      x-rbac:
+        permissions: [finance.cost_pools.manage]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateCostPoolRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CostPoolResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /v1/finance/cost-pools/{id}/allocate:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    post:
+      tags: [Finance]
+      operationId: allocateCostPool
+      summary: Allocate cost pool
+      x-rbac:
+        permissions: [finance.cost_pools.manage]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AllocateCostPoolResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /v1/finance/intercompany/{period}/generate:
+    parameters:
+      - name: period
+        in: path
+        required: true
+        schema:
+          type: string
+    post:
+      tags: [Finance]
+      operationId: generateIntercompanyInvoices
+      summary: Generate intercompany invoices for a period
+      x-rbac:
+        permissions: [finance.intercompany.generate]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GenerateIntercompanyInvoicesRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IntercompanyInvoicesResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /v1/finance/invoices/{id}/issue:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    post:
+      tags: [Finance]
+      operationId: issueInvoice
+      summary: Issue an intercompany invoice
+      x-rbac:
+        permissions: [finance.invoices.issue]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FinanceInvoice'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /v1/finance/ledger/post-period:
+    post:
+      tags: [Finance]
+      operationId: postLedgerForPeriod
+      summary: Post all invoices for a period to the ledger
+      x-rbac:
+        permissions: [finance.ledger.post]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PostLedgerPeriodRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PostLedgerPeriodResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /v1/finance/payments/intercompany:
+    post:
+      tags: [Finance]
+      operationId: recordIntercompanyPayment
+      summary: Record intercompany payment
+      x-rbac:
+        permissions: [finance.payments.record]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RecordIntercompanyPaymentRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecordIntercompanyPaymentResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /v1/finance/wht-schedule/{issuerCompanyId}/{period}:
+    parameters:
+      - name: issuerCompanyId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: period
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      tags: [Finance]
+      operationId: getWhtSchedule
+      summary: Get WHT remittance schedule
+      x-rbac:
+        permissions: [finance.wht.schedule.read]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WhtScheduleResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /v1/finance/wht-remit:
+    post:
+      tags: [Finance]
+      operationId: remitWhtCredits
+      summary: Mark WHT credits as remitted
+      x-rbac:
+        permissions: [finance.wht.remit]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WhtRemitRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WhtRemitResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /v1/finance/vat/{companyId}/{period}:
+    parameters:
+      - name: companyId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: period
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      tags: [Finance]
+      operationId: generateVatReturn
+      summary: Generate VAT return for a period
+      x-rbac:
+        permissions: [finance.vat.generate]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VatReturn'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /v1/finance/vat/file:
+    post:
+      tags: [Finance]
+      operationId: fileVatReturn
+      summary: File VAT return for a period
+      x-rbac:
+        permissions: [finance.vat.file]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FileVatReturnRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VatReturn'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /v1/finance/period-lock/lock:
+    post:
+      tags: [Finance]
+      operationId: lockPeriod
+      summary: Lock a period
+      x-rbac:
+        permissions: [finance.period_lock.manage]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PeriodLockRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PeriodLock'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /v1/finance/period-lock/unlock:
+    post:
+      tags: [Finance]
+      operationId: unlockPeriod
+      summary: Unlock a period
+      x-rbac:
+        permissions: [finance.period_lock.manage]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PeriodLockRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PeriodLock'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /v1/finance/credit-notes:
+    post:
+      tags: [Finance]
+      operationId: createCreditNote
+      summary: Create a credit note
+      x-rbac:
+        permissions: [finance.credit_notes.manage]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateCreditNoteRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FinanceInvoice'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /v1/finance/tax-impact/{companyId}/{period}:
+    parameters:
+      - name: companyId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: period
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      tags: [Finance]
+      operationId: getTaxImpact
+      summary: Get tax impact summary
+      x-rbac:
+        permissions: [finance.tax_impact.read]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaxImpactResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /v1/finance/reports/consolidated-pl/{period}:
+    parameters:
+      - name: period
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      tags: [Finance]
+      operationId: getConsolidatedPL
+      summary: Consolidated profit and loss report
+      x-rbac:
+        permissions: [finance.consolidated_pl.read]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConsolidatedPLResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
   /v1/roles:
     parameters:
       - $ref: '#/components/parameters/GroupId'
@@ -4280,6 +4682,403 @@ components:
             $ref: '#/components/schemas/JournalEntry'
         meta:
           $ref: '#/components/schemas/PageMeta'
+    CostPoolLineInput:
+      type: object
+      required: [category, amount]
+      properties:
+        category:
+          type: string
+        amount:
+          type: number
+          format: float
+    CostPoolWeightInput:
+      type: object
+      required: [recipientCompanyId, weight]
+      properties:
+        recipientCompanyId:
+          type: string
+          format: uuid
+        weight:
+          type: number
+          format: float
+    CreateCostPoolRequest:
+      type: object
+      required: [holdcoCompanyId, period, lines]
+      properties:
+        holdcoCompanyId:
+          type: string
+          format: uuid
+        period:
+          type: string
+        allocationMethod:
+          $ref: '#/components/schemas/AllocationMethod'
+        lines:
+          type: array
+          items:
+            $ref: '#/components/schemas/CostPoolLineInput'
+        weights:
+          type: array
+          items:
+            $ref: '#/components/schemas/CostPoolWeightInput'
+    CostPoolResponse:
+      type: object
+      properties:
+        costPoolId:
+          type: string
+          format: uuid
+        totalCost:
+          type: string
+    AllocateCostPoolResponse:
+      type: object
+      properties:
+        costPoolId:
+          type: string
+          format: uuid
+        allocationsCount:
+          type: integer
+    MonthCloseRequest:
+      type: object
+      required: [holdcoCompanyId, period, issueDate, lines, weights]
+      properties:
+        holdcoCompanyId:
+          type: string
+          format: uuid
+        period:
+          type: string
+        issueDate:
+          type: string
+          format: date-time
+        dueDays:
+          type: integer
+        lines:
+          type: array
+          items:
+            $ref: '#/components/schemas/CostPoolLineInput'
+        weights:
+          type: array
+          items:
+            $ref: '#/components/schemas/CostPoolWeightInput'
+        lockedBy:
+          type: string
+    IntercompanyInvoiceRef:
+      type: object
+      properties:
+        recipientCompanyId:
+          type: string
+          format: uuid
+        invoiceId:
+          type: string
+          format: uuid
+    IntercompanyInvoicesResponse:
+      type: object
+      properties:
+        period:
+          type: string
+        invoices:
+          type: array
+          items:
+            $ref: '#/components/schemas/IntercompanyInvoiceRef'
+    MonthCloseResponse:
+      type: object
+      properties:
+        costPool:
+          $ref: '#/components/schemas/CostPoolResponse'
+        invoices:
+          $ref: '#/components/schemas/IntercompanyInvoicesResponse'
+        locked:
+          type: boolean
+    GenerateIntercompanyInvoicesRequest:
+      type: object
+      required: [holdcoCompanyId, issueDate]
+      properties:
+        holdcoCompanyId:
+          type: string
+          format: uuid
+        issueDate:
+          type: string
+          format: date-time
+        dueDays:
+          type: integer
+    FinanceInvoice:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        invoiceType:
+          type: string
+        status:
+          type: string
+        sellerCompanyId:
+          type: string
+          format: uuid
+        buyerCompanyId:
+          type: string
+          format: uuid
+        period:
+          type: string
+        issueDate:
+          type: string
+          format: date-time
+        dueDate:
+          type: string
+          format: date-time
+        subtotal:
+          type: string
+        vatAmount:
+          type: string
+        totalAmount:
+          type: string
+        isCreditNote:
+          type: boolean
+        relatedInvoiceId:
+          type: string
+          format: uuid
+    PostLedgerPeriodRequest:
+      type: object
+      required: [period]
+      properties:
+        period:
+          type: string
+    PostLedgerPeriodResponse:
+      type: object
+      properties:
+        period:
+          type: string
+        postedCount:
+          type: integer
+    RecordIntercompanyPaymentRequest:
+      type: object
+      required: [invoiceId, paymentDate, amountPaid]
+      properties:
+        invoiceId:
+          type: string
+          format: uuid
+        paymentDate:
+          type: string
+          format: date-time
+        amountPaid:
+          type: number
+          format: float
+        whtWithheldAmount:
+          type: number
+          format: float
+        reference:
+          type: string
+        notes:
+          type: string
+    PaymentStatusInfo:
+      type: object
+      properties:
+        paid:
+          type: string
+        total:
+          type: string
+        status:
+          type: string
+    RecordIntercompanyPaymentResponse:
+      type: object
+      properties:
+        paymentId:
+          type: string
+          format: uuid
+        expectedWht:
+          type: string
+        creditNotesCreated:
+          type: integer
+        invoice:
+          $ref: '#/components/schemas/PaymentStatusInfo'
+    WhtScheduleItem:
+      type: object
+      properties:
+        taxType:
+          $ref: '#/components/schemas/TaxType'
+        amount:
+          type: string
+        count:
+          type: integer
+    WhtScheduleResponse:
+      type: object
+      properties:
+        issuerCompanyId:
+          type: string
+          format: uuid
+        period:
+          type: string
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/WhtScheduleItem'
+        total:
+          type: string
+    WhtRemitRequest:
+      type: object
+      required: [issuerCompanyId, period, taxType, remittanceDate, firReceiptRef]
+      properties:
+        issuerCompanyId:
+          type: string
+          format: uuid
+        period:
+          type: string
+        taxType:
+          $ref: '#/components/schemas/TaxType'
+        remittanceDate:
+          type: string
+          format: date-time
+        firReceiptRef:
+          type: string
+    WhtRemitResponse:
+      type: object
+      properties:
+        updatedCount:
+          type: integer
+    VatReturn:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        companyId:
+          type: string
+          format: uuid
+        period:
+          type: string
+        outputVat:
+          type: string
+        inputVat:
+          type: string
+        netVatPayable:
+          type: string
+        status:
+          type: string
+        filedAt:
+          type: string
+          format: date-time
+        paymentRef:
+          type: string
+    FileVatReturnRequest:
+      type: object
+      required: [companyId, period]
+      properties:
+        companyId:
+          type: string
+          format: uuid
+        period:
+          type: string
+        paymentRef:
+          type: string
+    PeriodLockRequest:
+      type: object
+      required: [companyId, period]
+      properties:
+        companyId:
+          type: string
+          format: uuid
+        period:
+          type: string
+        lockedBy:
+          type: string
+        reason:
+          type: string
+    PeriodLock:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        companyId:
+          type: string
+          format: uuid
+        period:
+          type: string
+        locked:
+          type: boolean
+        lockedAt:
+          type: string
+          format: date-time
+        lockedBy:
+          type: string
+        reason:
+          type: string
+    CreditNoteLineInput:
+      type: object
+      required: [originalLineId, creditNetAmount]
+      properties:
+        originalLineId:
+          type: string
+          format: uuid
+        creditNetAmount:
+          type: number
+          format: float
+    CreateCreditNoteRequest:
+      type: object
+      required: [originalInvoiceId, issueDate, reason]
+      properties:
+        originalInvoiceId:
+          type: string
+          format: uuid
+        issueDate:
+          type: string
+          format: date-time
+        reason:
+          type: string
+        fullReversal:
+          type: boolean
+        lines:
+          type: array
+          items:
+            $ref: '#/components/schemas/CreditNoteLineInput'
+    TaxImpactVatSummary:
+      type: object
+      properties:
+        outputVat:
+          type: string
+        inputVat:
+          type: string
+        netVatPayable:
+          type: string
+    TaxImpactWhtSummary:
+      type: object
+      properties:
+        withheldByCompany:
+          type: string
+        creditsEarnedTotal:
+          type: string
+        creditsByType:
+          type: object
+          additionalProperties:
+            type: string
+        unremittedCreditNotesCount:
+          type: integer
+    TaxImpactResponse:
+      type: object
+      properties:
+        companyId:
+          type: string
+          format: uuid
+        period:
+          type: string
+        vat:
+          $ref: '#/components/schemas/TaxImpactVatSummary'
+        wht:
+          $ref: '#/components/schemas/TaxImpactWhtSummary'
+    ConsolidatedPLResponse:
+      type: object
+      properties:
+        period:
+          type: string
+        revenue:
+          type: string
+        cogs:
+          type: string
+        grossProfit:
+          type: string
+        operatingExpenses:
+          type: string
+        netProfit:
+          type: string
+        note:
+          type: string
     CompliancePolicy:
       type: object
       properties:
@@ -4782,6 +5581,12 @@ components:
     JournalEntryStatus:
       type: string
       enum: [draft, posted, reversed]
+    AllocationMethod:
+      type: string
+      enum: [BY_FIXED_SPLIT]
+    TaxType:
+      type: string
+      enum: [SERVICES, GOODS, RENT, INTEREST, ROYALTIES]
     CompliancePolicyStatus:
       type: string
       enum: [active, archived]

@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post, UseGuards } from "@nestjs/common";
+import { Body, Controller, Get, Headers, Param, Post, Query, UseGuards, UsePipes, ValidationPipe } from "@nestjs/common";
 import { CostPoolService } from "./cost-pool.service";
 import { IntercompanyInvoicingService } from "./intercompany-invoicing.service";
 import { PaymentsService } from "./payments.service";
@@ -10,12 +10,19 @@ import { CreditNoteService } from "./credit-note.service";
 import { TaxImpactService } from "./tax-impact.service";
 import { ConsolidatedPLService } from "./consolidated-pl.service";
 import { LedgerPostingService } from "./ledger-posting.service";
+import { AccountingService } from "./accounting.service";
 
 import { Permissions } from "../auth/permissions.decorator";
 import { PermissionsGuard } from "../auth/permissions.guard";
 import { TaxType } from "./finance.enums";
+import { ListQueryDto } from "../common/dto/list-query.dto";
+import { CreateChartOfAccountDto } from "./dto/create-chart-of-account.dto";
+import { CreateCostCenterDto } from "./dto/create-cost-center.dto";
+import { CreateFiscalPeriodDto } from "./dto/create-fiscal-period.dto";
+import { CreateJournalEntryDto } from "./dto/create-journal-entry.dto";
 
 @UseGuards(PermissionsGuard)
+@UsePipes(new ValidationPipe({ transform: true, whitelist: true, forbidNonWhitelisted: true }))
 @Controller("v1/finance")
 export class FinanceController {
   constructor(
@@ -30,7 +37,72 @@ export class FinanceController {
     private readonly taxImpactService: TaxImpactService,
     private readonly consolidatedPLService: ConsolidatedPLService,
     private readonly ledgerPostingService: LedgerPostingService,
+    private readonly accountingService: AccountingService,
   ) {}
+
+  @Permissions("finance.chart_of_accounts.manage")
+  @Get("accounts")
+  listAccounts(@Headers("x-group-id") groupId: string, @Query() query: ListQueryDto) {
+    return this.accountingService.listAccounts(groupId, query);
+  }
+
+  @Permissions("finance.chart_of_accounts.manage")
+  @Post("accounts")
+  createAccount(@Headers("x-group-id") groupId: string, @Body() body: CreateChartOfAccountDto) {
+    return this.accountingService.createAccount(groupId, body);
+  }
+
+  @Permissions("finance.cost_centers.manage")
+  @Get("cost-centers")
+  listCostCenters(
+    @Headers("x-group-id") groupId: string,
+    @Headers("x-subsidiary-id") subsidiaryId: string,
+    @Query() query: ListQueryDto,
+  ) {
+    return this.accountingService.listCostCenters(groupId, subsidiaryId, query);
+  }
+
+  @Permissions("finance.cost_centers.manage")
+  @Post("cost-centers")
+  createCostCenter(
+    @Headers("x-group-id") groupId: string,
+    @Headers("x-subsidiary-id") subsidiaryId: string,
+    @Body() body: CreateCostCenterDto,
+  ) {
+    return this.accountingService.createCostCenter(groupId, subsidiaryId, body);
+  }
+
+  @Permissions("finance.fiscal_periods.manage")
+  @Get("fiscal-periods")
+  listFiscalPeriods(@Headers("x-group-id") groupId: string, @Query() query: ListQueryDto) {
+    return this.accountingService.listFiscalPeriods(groupId, query);
+  }
+
+  @Permissions("finance.fiscal_periods.manage")
+  @Post("fiscal-periods")
+  createFiscalPeriod(@Headers("x-group-id") groupId: string, @Body() body: CreateFiscalPeriodDto) {
+    return this.accountingService.createFiscalPeriod(groupId, body);
+  }
+
+  @Permissions("finance.journal_entries.manage")
+  @Get("journal-entries")
+  listJournalEntries(
+    @Headers("x-group-id") groupId: string,
+    @Headers("x-subsidiary-id") subsidiaryId: string,
+    @Query() query: ListQueryDto,
+  ) {
+    return this.accountingService.listJournalEntries(groupId, subsidiaryId, query);
+  }
+
+  @Permissions("finance.journal_entries.manage")
+  @Post("journal-entries")
+  createJournalEntry(
+    @Headers("x-group-id") groupId: string,
+    @Headers("x-subsidiary-id") subsidiaryId: string,
+    @Body() body: CreateJournalEntryDto,
+  ) {
+    return this.accountingService.createJournalEntry(groupId, subsidiaryId, body);
+  }
 
   @Permissions("finance.month_close.run")
   @Post("month-close")

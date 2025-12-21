@@ -311,9 +311,19 @@ create table if not exists order_items (
 
 create table if not exists invoices (
   id uuid primary key default gen_random_uuid(),
-  order_id uuid not null references orders(id),
+  order_id uuid references orders(id),
+  invoice_type text not null default 'EXTERNAL',
   status text not null default 'pending',
+  seller_company_id uuid not null references subsidiaries(id),
+  buyer_company_id uuid not null references subsidiaries(id),
+  period text not null,
+  issue_date timestamptz not null,
+  due_date timestamptz not null,
+  subtotal numeric(12, 2) not null,
+  vat_amount numeric(12, 2) not null,
   total_amount numeric(12, 2) not null,
+  is_credit_note boolean not null default false,
+  related_invoice_id uuid references invoices(id),
   created_at timestamptz not null default now()
 );
 
@@ -644,6 +654,157 @@ create table if not exists journal_lines (
   credit numeric(12, 2) not null default 0
 );
 
+create table if not exists ledger_accounts (
+  id uuid primary key default gen_random_uuid(),
+  company_id uuid not null references subsidiaries(id),
+  code text not null,
+  name text,
+  type text not null,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  unique (company_id, code)
+);
+
+create table if not exists ledger_entries (
+  id uuid primary key default gen_random_uuid(),
+  company_id uuid not null references subsidiaries(id),
+  period text not null,
+  entry_date timestamptz not null,
+  account_id uuid not null references ledger_accounts(id),
+  debit numeric(12, 2) not null,
+  credit numeric(12, 2) not null,
+  memo text,
+  source_type text not null,
+  source_ref text not null,
+  created_at timestamptz not null default now()
+);
+
+create table if not exists cost_pools (
+  id uuid primary key default gen_random_uuid(),
+  company_id uuid not null references subsidiaries(id),
+  period text not null,
+  total_cost numeric(12, 2) not null,
+  created_at timestamptz not null default now(),
+  unique (company_id, period)
+);
+
+create table if not exists cost_pool_lines (
+  id uuid primary key default gen_random_uuid(),
+  cost_pool_id uuid not null references cost_pools(id) on delete cascade,
+  category text not null,
+  amount numeric(12, 2) not null,
+  created_at timestamptz not null default now()
+);
+
+create table if not exists allocation_rules (
+  id uuid primary key default gen_random_uuid(),
+  cost_pool_id uuid not null references cost_pools(id) on delete cascade,
+  method text not null,
+  created_at timestamptz not null default now(),
+  unique (cost_pool_id)
+);
+
+create table if not exists allocation_weights (
+  id uuid primary key default gen_random_uuid(),
+  allocation_rule_id uuid not null references allocation_rules(id) on delete cascade,
+  recipient_company_id uuid not null references subsidiaries(id),
+  weight numeric(8, 6) not null,
+  created_at timestamptz not null default now(),
+  unique (allocation_rule_id, recipient_company_id)
+);
+
+create table if not exists cost_allocations (
+  id uuid primary key default gen_random_uuid(),
+  cost_pool_id uuid not null references cost_pools(id) on delete cascade,
+  recipient_company_id uuid not null references subsidiaries(id),
+  allocated_cost numeric(12, 2) not null,
+  created_at timestamptz not null default now(),
+  unique (cost_pool_id, recipient_company_id)
+);
+
+create table if not exists intercompany_agreements (
+  id uuid primary key default gen_random_uuid(),
+  provider_company_id uuid not null references subsidiaries(id),
+  recipient_company_id uuid not null references subsidiaries(id),
+  type text not null,
+  pricing_model text not null,
+  markup_rate numeric(8, 4),
+  fixed_fee_amount numeric(12, 2),
+  vat_applies boolean not null default false,
+  vat_rate numeric(8, 4) not null,
+  wht_applies boolean not null default false,
+  wht_rate numeric(8, 4) not null,
+  wht_tax_type text,
+  effective_from timestamptz not null,
+  effective_to timestamptz,
+  created_at timestamptz not null default now()
+);
+
+create table if not exists invoice_lines (
+  id uuid primary key default gen_random_uuid(),
+  invoice_id uuid not null references invoices(id) on delete cascade,
+  agreement_id uuid references intercompany_agreements(id),
+  description text not null,
+  net_amount numeric(12, 2) not null,
+  vat_rate numeric(8, 4) not null,
+  vat_amount numeric(12, 2) not null,
+  wht_rate numeric(8, 4) not null,
+  wht_amount numeric(12, 2) not null,
+  gross_amount numeric(12, 2) not null,
+  created_at timestamptz not null default now()
+);
+
+create table if not exists payments (
+  id uuid primary key default gen_random_uuid(),
+  invoice_id uuid not null references invoices(id),
+  payer_company_id uuid not null references subsidiaries(id),
+  payee_company_id uuid not null references subsidiaries(id),
+  payment_date timestamptz not null,
+  amount_paid numeric(12, 2) not null,
+  wht_withheld_amount numeric(12, 2) not null,
+  reference text,
+  notes text,
+  created_at timestamptz not null default now()
+);
+
+create table if not exists wht_credit_notes (
+  id uuid primary key default gen_random_uuid(),
+  period text not null,
+  issuer_company_id uuid not null references subsidiaries(id),
+  beneficiary_company_id uuid not null references subsidiaries(id),
+  tax_type text not null,
+  amount numeric(12, 2) not null,
+  remittance_date timestamptz,
+  fir_receipt_ref text,
+  created_at timestamptz not null default now()
+);
+
+create table if not exists vat_returns (
+  id uuid primary key default gen_random_uuid(),
+  company_id uuid not null references subsidiaries(id),
+  period text not null,
+  output_vat numeric(12, 2) not null,
+  input_vat numeric(12, 2) not null,
+  net_vat_payable numeric(12, 2) not null,
+  status text not null default 'DRAFT',
+  filed_at timestamptz,
+  payment_ref text,
+  created_at timestamptz not null default now(),
+  unique (company_id, period)
+);
+
+create table if not exists period_locks (
+  id uuid primary key default gen_random_uuid(),
+  company_id uuid not null references subsidiaries(id),
+  period text not null,
+  locked boolean not null default false,
+  locked_at timestamptz,
+  locked_by text,
+  reason text,
+  created_at timestamptz not null default now(),
+  unique (company_id, period)
+);
+
 -- Compliance and risk
 create table if not exists compliance_policies (
   id uuid primary key default gen_random_uuid(),
@@ -793,6 +954,11 @@ create index if not exists idx_external_clients_group_id on external_clients(gro
 create index if not exists idx_service_requests_assigned_to on service_requests(assigned_to);
 create index if not exists idx_employees_department_id on employees(department_id);
 create index if not exists idx_journal_entries_period_id on journal_entries(fiscal_period_id);
+create index if not exists idx_ledger_entries_company_period on ledger_entries(company_id, period);
+create index if not exists idx_intercompany_agreements_provider on intercompany_agreements(provider_company_id);
+create index if not exists idx_invoice_lines_invoice_id on invoice_lines(invoice_id);
+create index if not exists idx_payments_invoice_id on payments(invoice_id);
+create index if not exists idx_wht_credit_notes_issuer_period on wht_credit_notes(issuer_company_id, period);
 create index if not exists idx_risk_register_status on risk_register_items(status);
 create index if not exists idx_purchase_orders_vendor_id on purchase_orders(vendor_id);
 create index if not exists idx_advisory_engagements_client_id on advisory_engagements(external_client_id);

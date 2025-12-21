@@ -1,0 +1,18 @@
+import { IsIn, IsNotEmpty, IsOptional, IsString, IsUUID } from "class-validator";
+
+export class CreateChartOfAccountDto {
+  @IsString()
+  @IsNotEmpty()
+  code!: string;
+
+  @IsString()
+  @IsNotEmpty()
+  name!: string;
+
+  @IsIn(["asset", "liability", "equity", "income", "expense"])
+  type!: string;
+
+  @IsOptional()
+  @IsUUID()
+  parent_id?: string;
+}

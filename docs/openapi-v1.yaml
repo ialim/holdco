@@ -1,0 +1,4817 @@
+openapi: 3.0.3
+info:
+  title: HoldCo Unified API
+  version: 1.0.0
+  description: Unified API for HoldCo subsidiaries (wholesale, retail, reseller credit, digital commerce, logistics).
+servers:
+  - url: https://api.example.com
+    description: Production
+  - url: https://staging.api.example.com
+    description: Staging
+security:
+  - bearerAuth: []
+tags:
+  - name: Auth
+  - name: Tenancy
+  - name: Catalog
+  - name: Inventory
+  - name: Pricing
+  - name: Orders
+  - name: Payments
+  - name: Credit
+  - name: Loyalty
+  - name: Logistics
+  - name: Reports
+  - name: SharedServices
+  - name: HR
+  - name: Finance
+  - name: Compliance
+  - name: Procurement
+  - name: Advisory
+paths:
+  /v1/auth/login:
+    post:
+      tags: [Auth]
+      operationId: login
+      summary: Authenticate user and return access token
+      x-rbac:
+        public: true
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /v1/tenants:
+    get:
+      tags: [Tenancy]
+      operationId: listTenants
+      summary: List subsidiaries available to the user
+      x-rbac:
+        permissions: [tenancy.read]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Subsidiary'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /v1/users:
+    parameters:
+      - $ref: '#/components/parameters/GroupId'
+      - $ref: '#/components/parameters/SubsidiaryId'
+    get:
+      tags: [Tenancy]
+      operationId: listUsers
+      summary: List users
+      x-rbac:
+        permissions: [tenancy.users.read]
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Offset'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /v1/brands:
+    parameters:
+      - $ref: '#/components/parameters/GroupId'
+      - $ref: '#/components/parameters/SubsidiaryId'
+    get:
+      tags: [Catalog]
+      operationId: listBrands
+      summary: List brands
+      x-rbac:
+        permissions: [catalog.brand.read]
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Offset'
+        - $ref: '#/components/parameters/Query'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BrandListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    post:
+      tags: [Catalog]
+      operationId: createBrand
+      summary: Create brand
+      x-rbac:
+        permissions: [catalog.brand.write]
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateBrandRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Brand'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /v1/suppliers:
+    parameters:
+      - $ref: '#/components/parameters/GroupId'
+      - $ref: '#/components/parameters/SubsidiaryId'
+    get:
+      tags: [Catalog]
+      operationId: listSuppliers
+      summary: List suppliers
+      x-rbac:
+        permissions: [catalog.supplier.read]
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Offset'
+        - $ref: '#/components/parameters/Query'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SupplierListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    post:
+      tags: [Catalog]
+      operationId: createSupplier
+      summary: Create supplier
+      x-rbac:
+        permissions: [catalog.supplier.write]
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateSupplierRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Supplier'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /v1/products:
+    parameters:
+      - $ref: '#/components/parameters/GroupId'
+      - $ref: '#/components/parameters/SubsidiaryId'
+      - $ref: '#/components/parameters/Channel'
+    get:
+      tags: [Catalog]
+      operationId: listProducts
+      summary: List products
+      x-rbac:
+        permissions: [catalog.product.read]
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Offset'
+        - $ref: '#/components/parameters/Query'
+        - $ref: '#/components/parameters/Barcode'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    post:
+      tags: [Catalog]
+      operationId: createProduct
+      summary: Create product
+      x-rbac:
+        permissions: [catalog.product.write]
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateProductRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /v1/products/{product_id}:
+    parameters:
+      - $ref: '#/components/parameters/GroupId'
+      - $ref: '#/components/parameters/SubsidiaryId'
+      - $ref: '#/components/parameters/ProductId'
+    get:
+      tags: [Catalog]
+      operationId: getProduct
+      summary: Get product
+      x-rbac:
+        permissions: [catalog.product.read]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /v1/variants:
+    parameters:
+      - $ref: '#/components/parameters/GroupId'
+      - $ref: '#/components/parameters/SubsidiaryId'
+    get:
+      tags: [Catalog]
+      operationId: listVariants
+      summary: List variants
+      x-rbac:
+        permissions: [catalog.variant.read]
+      parameters:
+        - $ref: '#/components/parameters/ProductIdQuery'
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Offset'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VariantListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    post:
+      tags: [Catalog]
+      operationId: createVariant
+      summary: Create variant
+      x-rbac:
+        permissions: [catalog.variant.write]
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateVariantRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Variant'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /v1/stock-levels:
+    parameters:
+      - $ref: '#/components/parameters/GroupId'
+      - $ref: '#/components/parameters/SubsidiaryId'
+      - $ref: '#/components/parameters/LocationId'
+    get:
+      tags: [Inventory]
+      operationId: listStockLevels
+      summary: List stock levels
+      x-rbac:
+        permissions: [inventory.stock.read]
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Offset'
+        - $ref: '#/components/parameters/ProductIdQuery'
+        - $ref: '#/components/parameters/VariantIdQuery'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StockLevelListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /v1/stock-adjustments:
+    parameters:
+      - $ref: '#/components/parameters/GroupId'
+      - $ref: '#/components/parameters/SubsidiaryId'
+      - $ref: '#/components/parameters/LocationId'
+    post:
+      tags: [Inventory]
+      operationId: createStockAdjustment
+      summary: Create stock adjustment
+      x-rbac:
+        permissions: [inventory.stock.adjust]
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StockAdjustmentRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StockAdjustment'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /v1/transfers:
+    parameters:
+      - $ref: '#/components/parameters/GroupId'
+      - $ref: '#/components/parameters/SubsidiaryId'
+    post:
+      tags: [Inventory]
+      operationId: createStockTransfer
+      summary: Create stock transfer
+      x-rbac:
+        permissions: [inventory.stock.transfer]
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StockTransferRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StockTransfer'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /v1/reservations:
+    parameters:
+      - $ref: '#/components/parameters/GroupId'
+      - $ref: '#/components/parameters/SubsidiaryId'
+      - $ref: '#/components/parameters/LocationId'
+    post:
+      tags: [Inventory]
+      operationId: createStockReservation
+      summary: Reserve stock for an order
+      x-rbac:
+        permissions: [inventory.stock.reserve]
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StockReservationRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StockReservation'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /v1/price-lists:
+    parameters:
+      - $ref: '#/components/parameters/GroupId'
+      - $ref: '#/components/parameters/SubsidiaryId'
+      - $ref: '#/components/parameters/Channel'
+    get:
+      tags: [Pricing]
+      operationId: listPriceLists
+      summary: List price lists
+      x-rbac:
+        permissions: [pricing.price_list.read]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PriceListListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    post:
+      tags: [Pricing]
+      operationId: createPriceList
+      summary: Create price list
+      x-rbac:
+        permissions: [pricing.price_list.write]
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreatePriceListRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PriceList'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /v1/price-lists/{price_list_id}:
+    parameters:
+      - $ref: '#/components/parameters/GroupId'
+      - $ref: '#/components/parameters/SubsidiaryId'
+      - $ref: '#/components/parameters/PriceListId'
+    get:
+      tags: [Pricing]
+      operationId: getPriceList
+      summary: Get price list
+      x-rbac:
+        permissions: [pricing.price_list.read]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PriceList'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /v1/price-rules:
+    parameters:
+      - $ref: '#/components/parameters/GroupId'
+      - $ref: '#/components/parameters/SubsidiaryId'
+    get:
+      tags: [Pricing]
+      operationId: listPriceRules
+      summary: List price rules
+      x-rbac:
+        permissions: [pricing.price_rule.read]
+      parameters:
+        - $ref: '#/components/parameters/PriceListIdQuery'
+        - $ref: '#/components/parameters/ProductIdQuery'
+        - $ref: '#/components/parameters/VariantIdQuery'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PriceRuleListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    post:
+      tags: [Pricing]
+      operationId: createPriceRule
+      summary: Create price rule
+      x-rbac:
+        permissions: [pricing.price_rule.write]
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreatePriceRuleRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PriceRule'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /v1/promotions:
+    parameters:
+      - $ref: '#/components/parameters/GroupId'
+      - $ref: '#/components/parameters/SubsidiaryId'
+      - $ref: '#/components/parameters/Channel'
+    get:
+      tags: [Pricing]
+      operationId: listPromotions
+      summary: List promotions
+      x-rbac:
+        permissions: [pricing.promotion.read]
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Offset'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PromotionListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    post:
+      tags: [Pricing]
+      operationId: createPromotion
+      summary: Create promotion
+      x-rbac:
+        permissions: [pricing.promotion.write]
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreatePromotionRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Promotion'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /v1/orders:
+    parameters:
+      - $ref: '#/components/parameters/GroupId'
+      - $ref: '#/components/parameters/SubsidiaryId'
+      - $ref: '#/components/parameters/Channel'
+      - $ref: '#/components/parameters/LocationId'
+    post:
+      tags: [Orders]
+      operationId: createOrder
+      summary: Create order
+      x-rbac:
+        permissions: [orders.write]
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateOrderRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    get:
+      tags: [Orders]
+      operationId: listOrders
+      summary: List orders
+      x-rbac:
+        permissions: [orders.read]
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Offset'
+        - $ref: '#/components/parameters/Status'
+        - $ref: '#/components/parameters/StartDate'
+        - $ref: '#/components/parameters/EndDate'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /v1/orders/{order_id}:
+    parameters:
+      - $ref: '#/components/parameters/GroupId'
+      - $ref: '#/components/parameters/SubsidiaryId'
+      - $ref: '#/components/parameters/OrderId'
+    get:
+      tags: [Orders]
+      operationId: getOrder
+      summary: Get order
+      x-rbac:
+        permissions: [orders.read]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /v1/orders/{order_id}/cancel:
+    parameters:
+      - $ref: '#/components/parameters/GroupId'
+      - $ref: '#/components/parameters/SubsidiaryId'
+      - $ref: '#/components/parameters/OrderId'
+    post:
+      tags: [Orders]
+      operationId: cancelOrder
+      summary: Cancel order
+      x-rbac:
+        permissions: [orders.cancel]
+      responses:
+        '200':
+          description: OK
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /v1/orders/{order_id}/fulfill:
+    parameters:
+      - $ref: '#/components/parameters/GroupId'
+      - $ref: '#/components/parameters/SubsidiaryId'
+      - $ref: '#/components/parameters/OrderId'
+    post:
+      tags: [Orders]
+      operationId: fulfillOrder
+      summary: Fulfill order
+      x-rbac:
+        permissions: [orders.fulfill]
+      responses:
+        '200':
+          description: OK
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /v1/payments/intents:
+    parameters:
+      - $ref: '#/components/parameters/GroupId'
+      - $ref: '#/components/parameters/SubsidiaryId'
+      - $ref: '#/components/parameters/Channel'
+    post:
+      tags: [Payments]
+      operationId: createPaymentIntent
+      summary: Create payment intent
+      x-rbac:
+        permissions: [payments.intent.create]
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreatePaymentIntentRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentIntent'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /v1/payments/{payment_id}/capture:
+    parameters:
+      - $ref: '#/components/parameters/GroupId'
+      - $ref: '#/components/parameters/SubsidiaryId'
+      - $ref: '#/components/parameters/PaymentId'
+    post:
+      tags: [Payments]
+      operationId: capturePayment
+      summary: Capture payment intent
+      x-rbac:
+        permissions: [payments.capture]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentIntent'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /v1/refunds:
+    parameters:
+      - $ref: '#/components/parameters/GroupId'
+      - $ref: '#/components/parameters/SubsidiaryId'
+    post:
+      tags: [Payments]
+      operationId: createRefund
+      summary: Create refund
+      x-rbac:
+        permissions: [payments.refund]
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefundRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Refund'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /v1/resellers:
+    parameters:
+      - $ref: '#/components/parameters/GroupId'
+      - $ref: '#/components/parameters/SubsidiaryId'
+    get:
+      tags: [Credit]
+      operationId: listResellers
+      summary: List resellers
+      x-rbac:
+        permissions: [credit.reseller.read]
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Offset'
+        - $ref: '#/components/parameters/Query'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResellerListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    post:
+      tags: [Credit]
+      operationId: createReseller
+      summary: Create reseller
+      x-rbac:
+        permissions: [credit.reseller.write]
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateResellerRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Reseller'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /v1/credit-accounts:
+    parameters:
+      - $ref: '#/components/parameters/GroupId'
+      - $ref: '#/components/parameters/SubsidiaryId'
+    get:
+      tags: [Credit]
+      operationId: listCreditAccounts
+      summary: List credit accounts
+      x-rbac:
+        permissions: [credit.account.read]
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Offset'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreditAccountListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    post:
+      tags: [Credit]
+      operationId: createCreditAccount
+      summary: Create credit account
+      x-rbac:
+        permissions: [credit.account.write]
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateCreditAccountRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreditAccount'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /v1/credit-limits:
+    parameters:
+      - $ref: '#/components/parameters/GroupId'
+      - $ref: '#/components/parameters/SubsidiaryId'
+    post:
+      tags: [Credit]
+      operationId: setCreditLimit
+      summary: Set credit limit
+      x-rbac:
+        permissions: [credit.limit.write]
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreditLimitRequest'
+      responses:
+        '201':
+          description: Created
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /v1/repayments:
+    parameters:
+      - $ref: '#/components/parameters/GroupId'
+      - $ref: '#/components/parameters/SubsidiaryId'
+    post:
+      tags: [Credit]
+      operationId: recordRepayment
+      summary: Record repayment
+      x-rbac:
+        permissions: [credit.repayment.write]
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RepaymentRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Repayment'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /v1/customers:
+    parameters:
+      - $ref: '#/components/parameters/GroupId'
+      - $ref: '#/components/parameters/SubsidiaryId'
+    get:
+      tags: [Loyalty]
+      operationId: listCustomers
+      summary: List customers
+      x-rbac:
+        permissions: [loyalty.customer.read]
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Offset'
+        - $ref: '#/components/parameters/Query'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CustomerListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    post:
+      tags: [Loyalty]
+      operationId: createCustomer
+      summary: Create customer
+      x-rbac:
+        permissions: [loyalty.customer.write]
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateCustomerRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Customer'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /v1/loyalty-accounts:
+    parameters:
+      - $ref: '#/components/parameters/GroupId'
+      - $ref: '#/components/parameters/SubsidiaryId'
+    get:
+      tags: [Loyalty]
+      operationId: listLoyaltyAccounts
+      summary: List loyalty accounts
+      x-rbac:
+        permissions: [loyalty.account.read]
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Offset'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoyaltyAccountListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    post:
+      tags: [Loyalty]
+      operationId: createLoyaltyAccount
+      summary: Create loyalty account
+      x-rbac:
+        permissions: [loyalty.account.write]
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateLoyaltyAccountRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoyaltyAccount'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /v1/points/issue:
+    parameters:
+      - $ref: '#/components/parameters/GroupId'
+      - $ref: '#/components/parameters/SubsidiaryId'
+    post:
+      tags: [Loyalty]
+      operationId: issuePoints
+      summary: Issue loyalty points
+      x-rbac:
+        permissions: [loyalty.points.issue]
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PointsIssueRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoyaltyAccount'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /v1/shipments:
+    parameters:
+      - $ref: '#/components/parameters/GroupId'
+      - $ref: '#/components/parameters/SubsidiaryId'
+    get:
+      tags: [Logistics]
+      operationId: listShipments
+      summary: List shipments
+      x-rbac:
+        permissions: [logistics.shipment.read]
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Offset'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ShipmentListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    post:
+      tags: [Logistics]
+      operationId: createShipment
+      summary: Create shipment
+      x-rbac:
+        permissions: [logistics.shipment.write]
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateShipmentRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Shipment'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /v1/shipments/{shipment_id}:
+    parameters:
+      - $ref: '#/components/parameters/GroupId'
+      - $ref: '#/components/parameters/SubsidiaryId'
+      - $ref: '#/components/parameters/ShipmentId'
+    get:
+      tags: [Logistics]
+      operationId: getShipment
+      summary: Get shipment
+      x-rbac:
+        permissions: [logistics.shipment.read]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Shipment'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /v1/reports/sales:
+    parameters:
+      - $ref: '#/components/parameters/GroupId'
+      - $ref: '#/components/parameters/SubsidiaryId'
+    get:
+      tags: [Reports]
+      operationId: salesReport
+      summary: Sales report
+      x-rbac:
+        permissions: [reports.sales]
+      parameters:
+        - $ref: '#/components/parameters/StartDate'
+        - $ref: '#/components/parameters/EndDate'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SalesReportResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /v1/reports/inventory:
+    parameters:
+      - $ref: '#/components/parameters/GroupId'
+      - $ref: '#/components/parameters/SubsidiaryId'
+    get:
+      tags: [Reports]
+      operationId: inventoryReport
+      summary: Inventory report
+      x-rbac:
+        permissions: [reports.inventory]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InventoryReportResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /v1/reports/credit:
+    parameters:
+      - $ref: '#/components/parameters/GroupId'
+      - $ref: '#/components/parameters/SubsidiaryId'
+    get:
+      tags: [Reports]
+      operationId: creditReport
+      summary: Credit report
+      x-rbac:
+        permissions: [reports.credit]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreditReportResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /v1/third-parties:
+    parameters:
+      - $ref: '#/components/parameters/GroupId'
+    get:
+      tags: [SharedServices]
+      operationId: listThirdParties
+      summary: List third-party clients and vendors
+      x-rbac:
+        permissions: [shared_services.third_party.read]
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Offset'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ThirdPartyListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    post:
+      tags: [SharedServices]
+      operationId: createThirdParty
+      summary: Create third-party client or vendor
+      x-rbac:
+        permissions: [shared_services.third_party.write]
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateThirdPartyRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ThirdParty'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /v1/shared-services/requests:
+    parameters:
+      - $ref: '#/components/parameters/GroupId'
+      - $ref: '#/components/parameters/SubsidiaryId'
+    get:
+      tags: [SharedServices]
+      operationId: listServiceRequests
+      summary: List shared service requests
+      x-rbac:
+        permissions: [shared_services.request.read]
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Offset'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServiceRequestListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    post:
+      tags: [SharedServices]
+      operationId: createServiceRequest
+      summary: Create shared service request
+      x-rbac:
+        permissions: [shared_services.request.create]
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateServiceRequestRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServiceRequest'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /v1/shared-services/requests/{service_request_id}:
+    parameters:
+      - $ref: '#/components/parameters/GroupId'
+      - $ref: '#/components/parameters/SubsidiaryId'
+      - $ref: '#/components/parameters/ServiceRequestId'
+    get:
+      tags: [SharedServices]
+      operationId: getServiceRequest
+      summary: Get shared service request
+      x-rbac:
+        permissions: [shared_services.request.read]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServiceRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /v1/shared-services/requests/{service_request_id}/approve:
+    parameters:
+      - $ref: '#/components/parameters/GroupId'
+      - $ref: '#/components/parameters/SubsidiaryId'
+      - $ref: '#/components/parameters/ServiceRequestId'
+    post:
+      tags: [SharedServices]
+      operationId: approveServiceRequest
+      summary: Approve shared service request
+      x-rbac:
+        permissions: [shared_services.request.approve]
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ServiceRequestActionRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServiceRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /v1/shared-services/requests/{service_request_id}/reject:
+    parameters:
+      - $ref: '#/components/parameters/GroupId'
+      - $ref: '#/components/parameters/SubsidiaryId'
+      - $ref: '#/components/parameters/ServiceRequestId'
+    post:
+      tags: [SharedServices]
+      operationId: rejectServiceRequest
+      summary: Reject shared service request
+      x-rbac:
+        permissions: [shared_services.request.reject]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ServiceRequestActionRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServiceRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /v1/shared-services/requests/{service_request_id}/assign:
+    parameters:
+      - $ref: '#/components/parameters/GroupId'
+      - $ref: '#/components/parameters/SubsidiaryId'
+      - $ref: '#/components/parameters/ServiceRequestId'
+    post:
+      tags: [SharedServices]
+      operationId: assignServiceRequest
+      summary: Assign shared service request
+      x-rbac:
+        permissions: [shared_services.request.assign]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ServiceRequestAssignRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServiceRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /v1/shared-services/requests/{service_request_id}/start:
+    parameters:
+      - $ref: '#/components/parameters/GroupId'
+      - $ref: '#/components/parameters/SubsidiaryId'
+      - $ref: '#/components/parameters/ServiceRequestId'
+    post:
+      tags: [SharedServices]
+      operationId: startServiceRequest
+      summary: Start shared service request
+      x-rbac:
+        permissions: [shared_services.request.start]
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ServiceRequestActionRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServiceRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /v1/shared-services/requests/{service_request_id}/complete:
+    parameters:
+      - $ref: '#/components/parameters/GroupId'
+      - $ref: '#/components/parameters/SubsidiaryId'
+      - $ref: '#/components/parameters/ServiceRequestId'
+    post:
+      tags: [SharedServices]
+      operationId: completeServiceRequest
+      summary: Complete shared service request
+      x-rbac:
+        permissions: [shared_services.request.complete]
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ServiceRequestActionRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServiceRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /v1/shared-services/requests/{service_request_id}/cancel:
+    parameters:
+      - $ref: '#/components/parameters/GroupId'
+      - $ref: '#/components/parameters/SubsidiaryId'
+      - $ref: '#/components/parameters/ServiceRequestId'
+    post:
+      tags: [SharedServices]
+      operationId: cancelServiceRequest
+      summary: Cancel shared service request
+      x-rbac:
+        permissions: [shared_services.request.cancel]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ServiceRequestActionRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServiceRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /v1/hr/departments:
+    parameters:
+      - $ref: '#/components/parameters/GroupId'
+      - $ref: '#/components/parameters/SubsidiaryId'
+    get:
+      tags: [HR]
+      operationId: listDepartments
+      summary: List departments
+      x-rbac:
+        permissions: [hr.department.manage]
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Offset'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DepartmentListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    post:
+      tags: [HR]
+      operationId: createDepartment
+      summary: Create department
+      x-rbac:
+        permissions: [hr.department.manage]
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateDepartmentRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Department'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /v1/hr/positions:
+    parameters:
+      - $ref: '#/components/parameters/GroupId'
+      - $ref: '#/components/parameters/SubsidiaryId'
+    get:
+      tags: [HR]
+      operationId: listPositions
+      summary: List positions
+      x-rbac:
+        permissions: [hr.position.manage]
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Offset'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PositionListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    post:
+      tags: [HR]
+      operationId: createPosition
+      summary: Create position
+      x-rbac:
+        permissions: [hr.position.manage]
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreatePositionRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Position'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /v1/hr/employees:
+    parameters:
+      - $ref: '#/components/parameters/GroupId'
+      - $ref: '#/components/parameters/SubsidiaryId'
+    get:
+      tags: [HR]
+      operationId: listEmployees
+      summary: List employees
+      x-rbac:
+        permissions: [hr.employee.manage]
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Offset'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmployeeListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    post:
+      tags: [HR]
+      operationId: createEmployee
+      summary: Create employee
+      x-rbac:
+        permissions: [hr.employee.manage]
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateEmployeeRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Employee'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /v1/hr/leave-requests:
+    parameters:
+      - $ref: '#/components/parameters/GroupId'
+      - $ref: '#/components/parameters/SubsidiaryId'
+    get:
+      tags: [HR]
+      operationId: listLeaveRequests
+      summary: List leave requests
+      x-rbac:
+        permissions: [hr.leave.manage]
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Offset'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LeaveRequestListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    post:
+      tags: [HR]
+      operationId: createLeaveRequest
+      summary: Create leave request
+      x-rbac:
+        permissions: [hr.leave.manage]
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateLeaveRequestRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LeaveRequest'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /v1/finance/accounts:
+    parameters:
+      - $ref: '#/components/parameters/GroupId'
+    get:
+      tags: [Finance]
+      operationId: listAccounts
+      summary: List chart of accounts
+      x-rbac:
+        permissions: [finance.chart_of_accounts.manage]
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Offset'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChartOfAccountListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    post:
+      tags: [Finance]
+      operationId: createAccount
+      summary: Create chart of account
+      x-rbac:
+        permissions: [finance.chart_of_accounts.manage]
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateChartOfAccountRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChartOfAccount'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /v1/finance/cost-centers:
+    parameters:
+      - $ref: '#/components/parameters/GroupId'
+      - $ref: '#/components/parameters/SubsidiaryId'
+    get:
+      tags: [Finance]
+      operationId: listCostCenters
+      summary: List cost centers
+      x-rbac:
+        permissions: [finance.cost_centers.manage]
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Offset'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CostCenterListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    post:
+      tags: [Finance]
+      operationId: createCostCenter
+      summary: Create cost center
+      x-rbac:
+        permissions: [finance.cost_centers.manage]
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateCostCenterRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CostCenter'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /v1/finance/fiscal-periods:
+    parameters:
+      - $ref: '#/components/parameters/GroupId'
+    get:
+      tags: [Finance]
+      operationId: listFiscalPeriods
+      summary: List fiscal periods
+      x-rbac:
+        permissions: [finance.fiscal_periods.manage]
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Offset'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FiscalPeriodListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    post:
+      tags: [Finance]
+      operationId: createFiscalPeriod
+      summary: Create fiscal period
+      x-rbac:
+        permissions: [finance.fiscal_periods.manage]
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateFiscalPeriodRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FiscalPeriod'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /v1/finance/journal-entries:
+    parameters:
+      - $ref: '#/components/parameters/GroupId'
+      - $ref: '#/components/parameters/SubsidiaryId'
+    get:
+      tags: [Finance]
+      operationId: listJournalEntries
+      summary: List journal entries
+      x-rbac:
+        permissions: [finance.journal_entries.manage]
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Offset'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JournalEntryListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    post:
+      tags: [Finance]
+      operationId: createJournalEntry
+      summary: Create journal entry
+      x-rbac:
+        permissions: [finance.journal_entries.manage]
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateJournalEntryRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JournalEntry'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /v1/roles:
+    parameters:
+      - $ref: '#/components/parameters/GroupId'
+    get:
+      tags: [RBAC]
+      operationId: listRoles
+      summary: List roles
+      x-rbac:
+        permissions: [rbac.roles.manage]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RoleListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    post:
+      tags: [RBAC]
+      operationId: createRole
+      summary: Create role
+      x-rbac:
+        permissions: [rbac.roles.manage]
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateRoleRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Role'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /v1/roles/{role_id}/permissions:
+    parameters:
+      - $ref: '#/components/parameters/GroupId'
+      - $ref: '#/components/parameters/RoleId'
+    post:
+      tags: [RBAC]
+      operationId: setRolePermissions
+      summary: Replace role permissions
+      x-rbac:
+        permissions: [rbac.roles.manage]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateRolePermissionsRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Role'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /v1/users/{user_id}/roles:
+    parameters:
+      - $ref: '#/components/parameters/GroupId'
+      - $ref: '#/components/parameters/UserId'
+    post:
+      tags: [RBAC]
+      operationId: assignUserRole
+      summary: Assign role to user
+      x-rbac:
+        permissions: [rbac.roles.manage]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AssignUserRoleRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserRole'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /v1/permissions:
+    get:
+      tags: [RBAC]
+      operationId: listPermissions
+      summary: List permissions
+      x-rbac:
+        permissions: [rbac.permissions.read]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PermissionListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /v1/compliance/policies:
+    parameters:
+      - $ref: '#/components/parameters/GroupId'
+    get:
+      tags: [Compliance]
+      operationId: listCompliancePolicies
+      summary: List compliance policies
+      x-rbac:
+        permissions: [compliance.policy.manage]
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Offset'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CompliancePolicyListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    post:
+      tags: [Compliance]
+      operationId: createCompliancePolicy
+      summary: Create compliance policy
+      x-rbac:
+        permissions: [compliance.policy.manage]
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateCompliancePolicyRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CompliancePolicy'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /v1/compliance/tasks:
+    parameters:
+      - $ref: '#/components/parameters/GroupId'
+      - $ref: '#/components/parameters/SubsidiaryId'
+    get:
+      tags: [Compliance]
+      operationId: listComplianceTasks
+      summary: List compliance tasks
+      x-rbac:
+        permissions: [compliance.task.manage]
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Offset'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ComplianceTaskListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    post:
+      tags: [Compliance]
+      operationId: createComplianceTask
+      summary: Create compliance task
+      x-rbac:
+        permissions: [compliance.task.manage]
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateComplianceTaskRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ComplianceTask'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /v1/compliance/risks:
+    parameters:
+      - $ref: '#/components/parameters/GroupId'
+      - $ref: '#/components/parameters/SubsidiaryId'
+    get:
+      tags: [Compliance]
+      operationId: listRiskRegister
+      summary: List risk register items
+      x-rbac:
+        permissions: [compliance.risk.manage]
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Offset'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RiskRegisterItemListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    post:
+      tags: [Compliance]
+      operationId: createRiskRegisterItem
+      summary: Create risk register item
+      x-rbac:
+        permissions: [compliance.risk.manage]
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateRiskRegisterItemRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RiskRegisterItem'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /v1/compliance/audits:
+    parameters:
+      - $ref: '#/components/parameters/GroupId'
+      - $ref: '#/components/parameters/SubsidiaryId'
+    get:
+      tags: [Compliance]
+      operationId: listComplianceAudits
+      summary: List compliance audits
+      x-rbac:
+        permissions: [compliance.audit.manage]
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Offset'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ComplianceAuditListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    post:
+      tags: [Compliance]
+      operationId: createComplianceAudit
+      summary: Create compliance audit
+      x-rbac:
+        permissions: [compliance.audit.manage]
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateComplianceAuditRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ComplianceAudit'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /v1/procurement/purchase-requests:
+    parameters:
+      - $ref: '#/components/parameters/GroupId'
+      - $ref: '#/components/parameters/SubsidiaryId'
+    get:
+      tags: [Procurement]
+      operationId: listPurchaseRequests
+      summary: List purchase requests
+      x-rbac:
+        permissions: [procurement.request.manage]
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Offset'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PurchaseRequestListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    post:
+      tags: [Procurement]
+      operationId: createPurchaseRequest
+      summary: Create purchase request
+      x-rbac:
+        permissions: [procurement.request.manage]
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreatePurchaseRequestRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PurchaseRequest'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /v1/procurement/purchase-orders:
+    parameters:
+      - $ref: '#/components/parameters/GroupId'
+      - $ref: '#/components/parameters/SubsidiaryId'
+    get:
+      tags: [Procurement]
+      operationId: listPurchaseOrders
+      summary: List purchase orders
+      x-rbac:
+        permissions: [procurement.order.manage]
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Offset'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PurchaseOrderListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    post:
+      tags: [Procurement]
+      operationId: createPurchaseOrder
+      summary: Create purchase order
+      x-rbac:
+        permissions: [procurement.order.manage]
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreatePurchaseOrderRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PurchaseOrder'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /v1/advisory/engagements:
+    parameters:
+      - $ref: '#/components/parameters/GroupId'
+      - $ref: '#/components/parameters/SubsidiaryId'
+    get:
+      tags: [Advisory]
+      operationId: listAdvisoryEngagements
+      summary: List advisory engagements
+      x-rbac:
+        permissions: [advisory.engagement.manage]
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Offset'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdvisoryEngagementListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    post:
+      tags: [Advisory]
+      operationId: createAdvisoryEngagement
+      summary: Create advisory engagement
+      x-rbac:
+        permissions: [advisory.engagement.manage]
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateAdvisoryEngagementRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdvisoryEngagement'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /v1/advisory/deliverables:
+    parameters:
+      - $ref: '#/components/parameters/GroupId'
+      - $ref: '#/components/parameters/SubsidiaryId'
+    get:
+      tags: [Advisory]
+      operationId: listAdvisoryDeliverables
+      summary: List advisory deliverables
+      x-rbac:
+        permissions: [advisory.deliverable.manage]
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Offset'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdvisoryDeliverableListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    post:
+      tags: [Advisory]
+      operationId: createAdvisoryDeliverable
+      summary: Create advisory deliverable
+      x-rbac:
+        permissions: [advisory.deliverable.manage]
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateAdvisoryDeliverableRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdvisoryDeliverable'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  responses:
+    BadRequest:
+      description: Bad request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Unauthorized:
+      description: Unauthorized
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Forbidden:
+      description: Forbidden
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    NotFound:
+      description: Not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Conflict:
+      description: Conflict
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    UnprocessableEntity:
+      description: Unprocessable entity
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    TooManyRequests:
+      description: Too many requests
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    InternalServerError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+  parameters:
+    GroupId:
+      name: X-Group-Id
+      in: header
+      required: true
+      schema:
+        type: string
+        format: uuid
+      description: Tenant group identifier
+    SubsidiaryId:
+      name: X-Subsidiary-Id
+      in: header
+      required: true
+      schema:
+        type: string
+        format: uuid
+      description: Subsidiary identifier
+    LocationId:
+      name: X-Location-Id
+      in: header
+      required: false
+      schema:
+        type: string
+        format: uuid
+      description: Store or warehouse identifier
+    Channel:
+      name: X-Channel
+      in: header
+      required: false
+      schema:
+        type: string
+        enum: [wholesale, retail, reseller, ecommerce, logistics]
+      description: Sales channel
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: false
+      schema:
+        type: string
+      description: Idempotency key for safe retries of write operations
+    Limit:
+      name: limit
+      in: query
+      required: false
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 500
+    Offset:
+      name: offset
+      in: query
+      required: false
+      schema:
+        type: integer
+        minimum: 0
+    Query:
+      name: q
+      in: query
+      required: false
+      schema:
+        type: string
+    Barcode:
+      name: barcode
+      in: query
+      required: false
+      schema:
+        type: string
+    Status:
+      name: status
+      in: query
+      required: false
+      schema:
+        type: string
+    StartDate:
+      name: start_date
+      in: query
+      required: false
+      schema:
+        type: string
+        format: date
+    EndDate:
+      name: end_date
+      in: query
+      required: false
+      schema:
+        type: string
+        format: date
+    ProductId:
+      name: product_id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    OrderId:
+      name: order_id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    PaymentId:
+      name: payment_id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    ShipmentId:
+      name: shipment_id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    PriceListId:
+      name: price_list_id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    ServiceRequestId:
+      name: service_request_id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    RoleId:
+      name: role_id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    UserId:
+      name: user_id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    ProductIdQuery:
+      name: product_id
+      in: query
+      required: false
+      schema:
+        type: string
+        format: uuid
+    VariantIdQuery:
+      name: variant_id
+      in: query
+      required: false
+      schema:
+        type: string
+        format: uuid
+    PriceListIdQuery:
+      name: price_list_id
+      in: query
+      required: false
+      schema:
+        type: string
+        format: uuid
+  schemas:
+    PageMeta:
+      type: object
+      properties:
+        limit:
+          type: integer
+        offset:
+          type: integer
+        total:
+          type: integer
+      example:
+        limit: 50
+        offset: 0
+        total: 120
+    Error:
+      type: object
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        details:
+          type: object
+      example:
+        code: validation_error
+        message: Validation failed
+        details:
+          email: Invalid format
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          $ref: '#/components/schemas/Error'
+        request_id:
+          type: string
+      example:
+        error:
+          code: not_found
+          message: Resource not found
+          details: {}
+        request_id: req_01HZX3QK4A
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+          example: manager@holdco.com
+        password:
+          type: string
+          minLength: 8
+          example: P@ssw0rd123
+    LoginResponse:
+      type: object
+      properties:
+        access_token:
+          type: string
+          example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9
+        expires_in:
+          type: integer
+          example: 3600
+        user:
+          $ref: '#/components/schemas/User'
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: 0d4f2d8a-6f74-4f34-8a5c-550f8f7c6b6e
+        email:
+          type: string
+          format: email
+          example: manager@holdco.com
+        name:
+          type: string
+          example: Operations Manager
+        roles:
+          type: array
+          items:
+            type: string
+          example: [admin, retail_manager]
+        permissions:
+          type: array
+          items:
+            type: string
+          example: [shared_services.request.read, shared_services.request.create]
+    UserListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/User'
+        meta:
+          $ref: '#/components/schemas/PageMeta'
+    Subsidiary:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: 9f4c9e9a-0cdb-4c72-a2ad-9c9a2f6a4a4b
+        name:
+          type: string
+          example: HoldCo Retail Nigeria
+        status:
+          $ref: '#/components/schemas/SubsidiaryStatus'
+    Brand:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: 1b4b4698-48b7-49a2-a2dd-5b0c18a5cb74
+        name:
+          type: string
+          minLength: 2
+          example: Maison Lumiere
+        created_at:
+          type: string
+          format: date-time
+          example: '2024-05-02T09:12:45Z'
+    CreateBrandRequest:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+          minLength: 2
+          example: Maison Lumiere
+    BrandListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Brand'
+        meta:
+          $ref: '#/components/schemas/PageMeta'
+    Supplier:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: 5c0b38d9-8a54-4a10-bb1f-5c6c3b0dfdc9
+        name:
+          type: string
+          minLength: 2
+          example: Arcane Imports
+        contact_name:
+          type: string
+          example: Tunde Oba
+        contact_phone:
+          type: string
+          example: '+2348012345678'
+        created_at:
+          type: string
+          format: date-time
+          example: '2024-05-02T09:12:45Z'
+    CreateSupplierRequest:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+          minLength: 2
+          example: Arcane Imports
+        contact_name:
+          type: string
+          example: Tunde Oba
+        contact_phone:
+          type: string
+          example: '+2348012345678'
+    SupplierListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Supplier'
+        meta:
+          $ref: '#/components/schemas/PageMeta'
+    Product:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: 0e8c7a68-38f5-4cc1-8c42-9eb6b370a7df
+        sku:
+          type: string
+          minLength: 3
+          example: PERF-001
+        name:
+          type: string
+          minLength: 2
+          example: Lumine Eau de Parfum
+        brand_id:
+          type: string
+          format: uuid
+          example: 1b4b4698-48b7-49a2-a2dd-5b0c18a5cb74
+        status:
+          $ref: '#/components/schemas/ProductStatus'
+        created_at:
+          type: string
+          format: date-time
+          example: '2024-05-02T09:12:45Z'
+    CreateProductRequest:
+      type: object
+      required: [sku, name]
+      properties:
+        sku:
+          type: string
+          minLength: 3
+          example: PERF-001
+        name:
+          type: string
+          minLength: 2
+          example: Lumine Eau de Parfum
+        brand_id:
+          type: string
+          format: uuid
+          example: 1b4b4698-48b7-49a2-a2dd-5b0c18a5cb74
+    ProductListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Product'
+        meta:
+          $ref: '#/components/schemas/PageMeta'
+    Variant:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: 1e24d2a8-65d4-4de3-b35d-54b2bbdb43d4
+        product_id:
+          type: string
+          format: uuid
+          example: 0e8c7a68-38f5-4cc1-8c42-9eb6b370a7df
+        size:
+          type: string
+          example: 100
+        unit:
+          type: string
+          example: ml
+        barcode:
+          type: string
+          example: '6291106061234'
+    CreateVariantRequest:
+      type: object
+      required: [product_id]
+      properties:
+        product_id:
+          type: string
+          format: uuid
+          example: 0e8c7a68-38f5-4cc1-8c42-9eb6b370a7df
+        size:
+          type: string
+          example: 100
+        unit:
+          type: string
+          example: ml
+        barcode:
+          type: string
+          example: '6291106061234'
+    VariantListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Variant'
+        meta:
+          $ref: '#/components/schemas/PageMeta'
+    StockLevel:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: 8d1b7b5f-c1e4-43d8-9c95-54b5b7c1b9c4
+        product_id:
+          type: string
+          format: uuid
+          example: 0e8c7a68-38f5-4cc1-8c42-9eb6b370a7df
+        variant_id:
+          type: string
+          format: uuid
+          example: 1e24d2a8-65d4-4de3-b35d-54b2bbdb43d4
+        location_id:
+          type: string
+          format: uuid
+          example: 5f0d2d8b-6b2f-4ce7-8b0d-6f47f8c7c2cd
+        on_hand:
+          type: integer
+          example: 120
+        reserved:
+          type: integer
+          example: 10
+        available:
+          type: integer
+          example: 110
+    StockLevelListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/StockLevel'
+        meta:
+          $ref: '#/components/schemas/PageMeta'
+    StockAdjustment:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: 2a4b6f9b-2a2a-4b55-8a0b-0a4f6f2ce3dd
+        product_id:
+          type: string
+          format: uuid
+          example: 0e8c7a68-38f5-4cc1-8c42-9eb6b370a7df
+        variant_id:
+          type: string
+          format: uuid
+          example: 1e24d2a8-65d4-4de3-b35d-54b2bbdb43d4
+        location_id:
+          type: string
+          format: uuid
+          example: 5f0d2d8b-6b2f-4ce7-8b0d-6f47f8c7c2cd
+        quantity:
+          type: integer
+          example: -2
+        reason:
+          type: string
+          example: Damaged stock
+        created_at:
+          type: string
+          format: date-time
+          example: '2024-05-10T14:00:00Z'
+    StockAdjustmentRequest:
+      type: object
+      required: [product_id, location_id, quantity, reason]
+      properties:
+        product_id:
+          type: string
+          format: uuid
+          example: 0e8c7a68-38f5-4cc1-8c42-9eb6b370a7df
+        variant_id:
+          type: string
+          format: uuid
+          example: 1e24d2a8-65d4-4de3-b35d-54b2bbdb43d4
+        location_id:
+          type: string
+          format: uuid
+          example: 5f0d2d8b-6b2f-4ce7-8b0d-6f47f8c7c2cd
+        quantity:
+          type: integer
+          description: Positive or negative adjustment.
+          example: -2
+        reason:
+          type: string
+          example: Damaged stock
+    StockTransfer:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: 6b5f7f2d-2b5c-4a21-9e3f-846f81f0c6ff
+        product_id:
+          type: string
+          format: uuid
+          example: 0e8c7a68-38f5-4cc1-8c42-9eb6b370a7df
+        variant_id:
+          type: string
+          format: uuid
+          example: 1e24d2a8-65d4-4de3-b35d-54b2bbdb43d4
+        from_location_id:
+          type: string
+          format: uuid
+          example: 3a98d2b9-7ed1-4f6d-99c9-88cfe3c207b5
+        to_location_id:
+          type: string
+          format: uuid
+          example: 5f0d2d8b-6b2f-4ce7-8b0d-6f47f8c7c2cd
+        quantity:
+          type: integer
+          minimum: 1
+          example: 20
+        status:
+          $ref: '#/components/schemas/StockTransferStatus'
+        created_at:
+          type: string
+          format: date-time
+          example: '2024-05-10T14:00:00Z'
+    StockTransferRequest:
+      type: object
+      required: [product_id, from_location_id, to_location_id, quantity]
+      properties:
+        product_id:
+          type: string
+          format: uuid
+          example: 0e8c7a68-38f5-4cc1-8c42-9eb6b370a7df
+        variant_id:
+          type: string
+          format: uuid
+          example: 1e24d2a8-65d4-4de3-b35d-54b2bbdb43d4
+        from_location_id:
+          type: string
+          format: uuid
+          example: 3a98d2b9-7ed1-4f6d-99c9-88cfe3c207b5
+        to_location_id:
+          type: string
+          format: uuid
+          example: 5f0d2d8b-6b2f-4ce7-8b0d-6f47f8c7c2cd
+        quantity:
+          type: integer
+          minimum: 1
+          example: 20
+    StockReservation:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: c64c6f6a-88ad-44c4-8712-cc09b6b0f4a2
+        order_id:
+          type: string
+          format: uuid
+          example: 92e0c74b-0e9a-4eb3-9719-3f1af70f2d22
+        product_id:
+          type: string
+          format: uuid
+          example: 0e8c7a68-38f5-4cc1-8c42-9eb6b370a7df
+        variant_id:
+          type: string
+          format: uuid
+          example: 1e24d2a8-65d4-4de3-b35d-54b2bbdb43d4
+        location_id:
+          type: string
+          format: uuid
+          example: 5f0d2d8b-6b2f-4ce7-8b0d-6f47f8c7c2cd
+        quantity:
+          type: integer
+          minimum: 1
+          example: 2
+        status:
+          $ref: '#/components/schemas/StockReservationStatus'
+    StockReservationRequest:
+      type: object
+      required: [order_id, product_id, quantity]
+      properties:
+        order_id:
+          type: string
+          format: uuid
+          example: 92e0c74b-0e9a-4eb3-9719-3f1af70f2d22
+        product_id:
+          type: string
+          format: uuid
+          example: 0e8c7a68-38f5-4cc1-8c42-9eb6b370a7df
+        variant_id:
+          type: string
+          format: uuid
+          example: 1e24d2a8-65d4-4de3-b35d-54b2bbdb43d4
+        quantity:
+          type: integer
+          minimum: 1
+          example: 2
+    PriceList:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: 12c8f0e4-6b9f-4c6d-bd1c-0fef3e6ef0ae
+        name:
+          type: string
+          minLength: 2
+          example: Retail NGN
+        currency:
+          type: string
+          minLength: 3
+          maxLength: 3
+          pattern: '^[A-Z]{3}$'
+          example: NGN
+        channel:
+          type: string
+          example: retail
+        valid_from:
+          type: string
+          format: date
+          example: '2024-01-01'
+        valid_to:
+          type: string
+          format: date
+          example: '2024-12-31'
+    CreatePriceListRequest:
+      type: object
+      required: [name, currency]
+      properties:
+        name:
+          type: string
+          minLength: 2
+          example: Retail NGN
+        currency:
+          type: string
+          minLength: 3
+          maxLength: 3
+          pattern: '^[A-Z]{3}$'
+          example: NGN
+        channel:
+          type: string
+          example: retail
+        valid_from:
+          type: string
+          format: date
+          example: '2024-01-01'
+        valid_to:
+          type: string
+          format: date
+          example: '2024-12-31'
+    PriceListListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/PriceList'
+    PriceRule:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: 42aeb0c9-8f55-4a0b-9f71-3d30a0c37718
+        price_list_id:
+          type: string
+          format: uuid
+          example: 12c8f0e4-6b9f-4c6d-bd1c-0fef3e6ef0ae
+        product_id:
+          type: string
+          format: uuid
+          example: 0e8c7a68-38f5-4cc1-8c42-9eb6b370a7df
+        variant_id:
+          type: string
+          format: uuid
+          example: 1e24d2a8-65d4-4de3-b35d-54b2bbdb43d4
+        min_qty:
+          type: integer
+          minimum: 1
+          example: 1
+        price:
+          type: number
+          format: float
+          minimum: 0
+          example: 25000
+    CreatePriceRuleRequest:
+      type: object
+      required: [price_list_id, product_id, min_qty, price]
+      properties:
+        price_list_id:
+          type: string
+          format: uuid
+          example: 12c8f0e4-6b9f-4c6d-bd1c-0fef3e6ef0ae
+        product_id:
+          type: string
+          format: uuid
+          example: 0e8c7a68-38f5-4cc1-8c42-9eb6b370a7df
+        variant_id:
+          type: string
+          format: uuid
+          example: 1e24d2a8-65d4-4de3-b35d-54b2bbdb43d4
+        min_qty:
+          type: integer
+          minimum: 1
+          example: 1
+        price:
+          type: number
+          format: float
+          minimum: 0
+          example: 25000
+    PriceRuleListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/PriceRule'
+    Promotion:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: 68c3b81b-7fa5-4b2e-99a3-7dfb8d5d1d4f
+        code:
+          type: string
+          example: WELCOME10
+        type:
+          type: string
+          example: percentage
+        value:
+          type: number
+          format: float
+          minimum: 0
+          example: 10
+        start_at:
+          type: string
+          format: date-time
+          example: '2024-06-01T00:00:00Z'
+        end_at:
+          type: string
+          format: date-time
+          example: '2024-06-30T23:59:59Z'
+    CreatePromotionRequest:
+      type: object
+      required: [code, type, value, start_at, end_at]
+      properties:
+        code:
+          type: string
+          example: WELCOME10
+        type:
+          type: string
+          example: percentage
+        value:
+          type: number
+          format: float
+          minimum: 0
+          example: 10
+        start_at:
+          type: string
+          format: date-time
+          example: '2024-06-01T00:00:00Z'
+        end_at:
+          type: string
+          format: date-time
+          example: '2024-06-30T23:59:59Z'
+    PromotionListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Promotion'
+        meta:
+          $ref: '#/components/schemas/PageMeta'
+    OrderItem:
+      type: object
+      properties:
+        product_id:
+          type: string
+          format: uuid
+          example: 0e8c7a68-38f5-4cc1-8c42-9eb6b370a7df
+        variant_id:
+          type: string
+          format: uuid
+          example: 1e24d2a8-65d4-4de3-b35d-54b2bbdb43d4
+        quantity:
+          type: integer
+          minimum: 1
+          example: 1
+        unit_price:
+          type: number
+          format: float
+          minimum: 0
+          example: 25000
+        total_price:
+          type: number
+          format: float
+          minimum: 0
+          example: 25000
+    CreateOrderItem:
+      type: object
+      required: [product_id, quantity]
+      properties:
+        product_id:
+          type: string
+          format: uuid
+          example: 0e8c7a68-38f5-4cc1-8c42-9eb6b370a7df
+        variant_id:
+          type: string
+          format: uuid
+          example: 1e24d2a8-65d4-4de3-b35d-54b2bbdb43d4
+        quantity:
+          type: integer
+          minimum: 1
+          example: 1
+        unit_price:
+          type: number
+          format: float
+          minimum: 0
+          example: 25000
+    Order:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: 92e0c74b-0e9a-4eb3-9719-3f1af70f2d22
+        order_no:
+          type: string
+          example: ORD-000120
+        status:
+          $ref: '#/components/schemas/OrderStatus'
+        customer_id:
+          type: string
+          format: uuid
+          example: 2c6a08b1-7bd5-4a02-8a9d-5f8d7ef3b7a2
+        reseller_id:
+          type: string
+          format: uuid
+          example: 5c1db0fe-3d0c-4c86-a5cc-6ad1fe39c1f4
+        total_amount:
+          type: number
+          format: float
+          minimum: 0
+          example: 25000
+        currency:
+          type: string
+          minLength: 3
+          maxLength: 3
+          pattern: '^[A-Z]{3}$'
+          example: NGN
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrderItem'
+    CreateOrderRequest:
+      type: object
+      required: [items]
+      properties:
+        customer_id:
+          type: string
+          format: uuid
+          example: 2c6a08b1-7bd5-4a02-8a9d-5f8d7ef3b7a2
+        reseller_id:
+          type: string
+          format: uuid
+          example: 5c1db0fe-3d0c-4c86-a5cc-6ad1fe39c1f4
+        currency:
+          type: string
+          minLength: 3
+          maxLength: 3
+          pattern: '^[A-Z]{3}$'
+          example: NGN
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/CreateOrderItem'
+        notes:
+          type: string
+          example: Walk-in customer
+    OrderListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Order'
+        meta:
+          $ref: '#/components/schemas/PageMeta'
+    CreatePaymentIntentRequest:
+      type: object
+      required: [order_id, amount, currency]
+      properties:
+        order_id:
+          type: string
+          format: uuid
+          example: 92e0c74b-0e9a-4eb3-9719-3f1af70f2d22
+        amount:
+          type: number
+          format: float
+          minimum: 0
+          example: 25000
+        currency:
+          type: string
+          minLength: 3
+          maxLength: 3
+          pattern: '^[A-Z]{3}$'
+          example: NGN
+        provider:
+          type: string
+          example: paystack
+        capture_method:
+          type: string
+          example: automatic
+    PaymentIntent:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: 6d69ac89-5e9f-4d40-8c4c-9e73f1c6dc3f
+        order_id:
+          type: string
+          format: uuid
+          example: 92e0c74b-0e9a-4eb3-9719-3f1af70f2d22
+        amount:
+          type: number
+          format: float
+          minimum: 0
+          example: 25000
+        currency:
+          type: string
+          minLength: 3
+          maxLength: 3
+          pattern: '^[A-Z]{3}$'
+          example: NGN
+        status:
+          $ref: '#/components/schemas/PaymentIntentStatus'
+        provider:
+          type: string
+          example: paystack
+        reference:
+          type: string
+          example: PSK-892133
+    RefundRequest:
+      type: object
+      required: [payment_id, amount]
+      properties:
+        payment_id:
+          type: string
+          format: uuid
+          example: 6d69ac89-5e9f-4d40-8c4c-9e73f1c6dc3f
+        amount:
+          type: number
+          format: float
+          minimum: 0
+          example: 25000
+        reason:
+          type: string
+          example: Customer return
+    Refund:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: 7bf3f3e0-08a4-4b5d-80b6-9a6db7b3f4f9
+        payment_id:
+          type: string
+          format: uuid
+          example: 6d69ac89-5e9f-4d40-8c4c-9e73f1c6dc3f
+        amount:
+          type: number
+          format: float
+          minimum: 0
+          example: 25000
+        status:
+          $ref: '#/components/schemas/RefundStatus'
+    Reseller:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: 5c1db0fe-3d0c-4c86-a5cc-6ad1fe39c1f4
+        name:
+          type: string
+          minLength: 2
+          example: Zed Distributors
+        status:
+          $ref: '#/components/schemas/ResellerStatus'
+    CreateResellerRequest:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+          minLength: 2
+          example: Zed Distributors
+        status:
+          $ref: '#/components/schemas/ResellerStatus'
+    ResellerListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Reseller'
+        meta:
+          $ref: '#/components/schemas/PageMeta'
+    CreditAccount:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: 0a1f5f1d-0f77-4a0f-9c5d-7c7d3b94f8b5
+        reseller_id:
+          type: string
+          format: uuid
+          example: 5c1db0fe-3d0c-4c86-a5cc-6ad1fe39c1f4
+        limit_amount:
+          type: number
+          format: float
+          minimum: 0
+          example: 1000000
+        used_amount:
+          type: number
+          format: float
+          minimum: 0
+          example: 250000
+        status:
+          $ref: '#/components/schemas/CreditAccountStatus'
+    CreateCreditAccountRequest:
+      type: object
+      required: [reseller_id, limit_amount]
+      properties:
+        reseller_id:
+          type: string
+          format: uuid
+          example: 5c1db0fe-3d0c-4c86-a5cc-6ad1fe39c1f4
+        limit_amount:
+          type: number
+          format: float
+          minimum: 0
+          example: 1000000
+    CreditAccountListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/CreditAccount'
+        meta:
+          $ref: '#/components/schemas/PageMeta'
+    CreditLimitRequest:
+      type: object
+      required: [reseller_id, limit_amount]
+      properties:
+        reseller_id:
+          type: string
+          format: uuid
+          example: 5c1db0fe-3d0c-4c86-a5cc-6ad1fe39c1f4
+        limit_amount:
+          type: number
+          format: float
+          minimum: 0
+          example: 1000000
+    RepaymentRequest:
+      type: object
+      required: [credit_account_id, amount]
+      properties:
+        credit_account_id:
+          type: string
+          format: uuid
+          example: 0a1f5f1d-0f77-4a0f-9c5d-7c7d3b94f8b5
+        amount:
+          type: number
+          format: float
+          minimum: 0
+          example: 150000
+        paid_at:
+          type: string
+          format: date-time
+          example: '2024-05-12T10:00:00Z'
+    Repayment:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: 9e8e8a8f-8d3e-4b1a-bb67-f12b2fb0b1e7
+        credit_account_id:
+          type: string
+          format: uuid
+          example: 0a1f5f1d-0f77-4a0f-9c5d-7c7d3b94f8b5
+        amount:
+          type: number
+          format: float
+          minimum: 0
+          example: 150000
+        paid_at:
+          type: string
+          format: date-time
+          example: '2024-05-12T10:00:00Z'
+    Customer:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: 2c6a08b1-7bd5-4a02-8a9d-5f8d7ef3b7a2
+        name:
+          type: string
+          minLength: 2
+          example: Ada Nwosu
+        email:
+          type: string
+          format: email
+          example: ada.nwosu@example.com
+        phone:
+          type: string
+          example: '+2348098765432'
+    CreateCustomerRequest:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+          minLength: 2
+          example: Ada Nwosu
+        email:
+          type: string
+          format: email
+          example: ada.nwosu@example.com
+        phone:
+          type: string
+          example: '+2348098765432'
+    CustomerListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Customer'
+        meta:
+          $ref: '#/components/schemas/PageMeta'
+    LoyaltyAccount:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: 5a6a6e5d-5c3b-4b3f-8b1d-1a2b3c4d5e6f
+        customer_id:
+          type: string
+          format: uuid
+          example: 2c6a08b1-7bd5-4a02-8a9d-5f8d7ef3b7a2
+        points_balance:
+          type: integer
+          minimum: 0
+          example: 120
+    CreateLoyaltyAccountRequest:
+      type: object
+      required: [customer_id]
+      properties:
+        customer_id:
+          type: string
+          format: uuid
+          example: 2c6a08b1-7bd5-4a02-8a9d-5f8d7ef3b7a2
+    LoyaltyAccountListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/LoyaltyAccount'
+        meta:
+          $ref: '#/components/schemas/PageMeta'
+    PointsIssueRequest:
+      type: object
+      required: [customer_id, points]
+      properties:
+        customer_id:
+          type: string
+          format: uuid
+          example: 2c6a08b1-7bd5-4a02-8a9d-5f8d7ef3b7a2
+        points:
+          type: integer
+          minimum: 1
+          example: 20
+        reason:
+          type: string
+          example: Purchase reward
+    Shipment:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: f3a3b5c2-6ef8-44a1-9b2d-7f36b0f1f1d2
+        order_id:
+          type: string
+          format: uuid
+          example: 92e0c74b-0e9a-4eb3-9719-3f1af70f2d22
+        carrier:
+          type: string
+          example: DHL
+        status:
+          $ref: '#/components/schemas/ShipmentStatus'
+        tracking_no:
+          type: string
+          example: DHL-3093123
+    CreateShipmentRequest:
+      type: object
+      required: [order_id, carrier]
+      properties:
+        order_id:
+          type: string
+          format: uuid
+          example: 92e0c74b-0e9a-4eb3-9719-3f1af70f2d22
+        carrier:
+          type: string
+          example: DHL
+        tracking_no:
+          type: string
+          example: DHL-3093123
+    ShipmentListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Shipment'
+        meta:
+          $ref: '#/components/schemas/PageMeta'
+    SalesReportRow:
+      type: object
+      properties:
+        date:
+          type: string
+          format: date
+          example: '2024-05-10'
+        revenue:
+          type: number
+          format: float
+          minimum: 0
+          example: 2500000
+        orders_count:
+          type: integer
+          minimum: 0
+          example: 120
+    SalesReportResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/SalesReportRow'
+    InventoryReportRow:
+      type: object
+      properties:
+        sku:
+          type: string
+          example: PERF-001
+        location_id:
+          type: string
+          format: uuid
+          example: 5f0d2d8b-6b2f-4ce7-8b0d-6f47f8c7c2cd
+        on_hand:
+          type: integer
+          minimum: 0
+          example: 120
+    InventoryReportResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/InventoryReportRow'
+    CreditReportRow:
+      type: object
+      properties:
+        reseller_id:
+          type: string
+          format: uuid
+          example: 5c1db0fe-3d0c-4c86-a5cc-6ad1fe39c1f4
+        balance:
+          type: number
+          format: float
+          minimum: 0
+          example: 750000
+    CreditReportResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/CreditReportRow'
+    ThirdParty:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        type:
+          $ref: '#/components/schemas/ThirdPartyType'
+        email:
+          type: string
+          format: email
+        phone:
+          type: string
+        status:
+          $ref: '#/components/schemas/ThirdPartyStatus'
+    CreateThirdPartyRequest:
+      type: object
+      required: [name, type]
+      properties:
+        name:
+          type: string
+        type:
+          $ref: '#/components/schemas/ThirdPartyType'
+        email:
+          type: string
+          format: email
+        phone:
+          type: string
+    ThirdPartyListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/ThirdParty'
+        meta:
+          $ref: '#/components/schemas/PageMeta'
+    ServiceRequest:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        subsidiary_id:
+          type: string
+          format: uuid
+        external_client_id:
+          type: string
+          format: uuid
+        category:
+          $ref: '#/components/schemas/ServiceRequestCategory'
+        title:
+          type: string
+        description:
+          type: string
+        status:
+          $ref: '#/components/schemas/ServiceRequestStatus'
+        priority:
+          $ref: '#/components/schemas/ServiceRequestPriority'
+        assigned_to:
+          type: string
+          format: uuid
+        approved_by:
+          type: string
+          format: uuid
+        approved_at:
+          type: string
+          format: date-time
+        rejected_by:
+          type: string
+          format: uuid
+        rejected_at:
+          type: string
+          format: date-time
+        reason:
+          type: string
+        due_at:
+          type: string
+          format: date-time
+    CreateServiceRequestRequest:
+      type: object
+      required: [category, title]
+      properties:
+        subsidiary_id:
+          type: string
+          format: uuid
+        external_client_id:
+          type: string
+          format: uuid
+        category:
+          $ref: '#/components/schemas/ServiceRequestCategory'
+        title:
+          type: string
+        description:
+          type: string
+        priority:
+          $ref: '#/components/schemas/ServiceRequestPriority'
+        assigned_to:
+          type: string
+          format: uuid
+        due_at:
+          type: string
+          format: date-time
+    ServiceRequestListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/ServiceRequest'
+        meta:
+          $ref: '#/components/schemas/PageMeta'
+    ServiceRequestActionRequest:
+      type: object
+      properties:
+        reason:
+          type: string
+        comment:
+          type: string
+    ServiceRequestAssignRequest:
+      type: object
+      required: [assigned_to]
+      properties:
+        assigned_to:
+          type: string
+          format: uuid
+        due_at:
+          type: string
+          format: date-time
+        priority:
+          $ref: '#/components/schemas/ServiceRequestPriority'
+    Role:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        scope:
+          type: string
+        permissions:
+          type: array
+          items:
+            type: string
+    CreateRoleRequest:
+      type: object
+      required: [name, scope, permissions]
+      properties:
+        name:
+          type: string
+        scope:
+          type: string
+        permissions:
+          type: array
+          items:
+            type: string
+    UpdateRolePermissionsRequest:
+      type: object
+      required: [permissions]
+      properties:
+        permissions:
+          type: array
+          items:
+            type: string
+    AssignUserRoleRequest:
+      type: object
+      required: [role_id]
+      properties:
+        role_id:
+          type: string
+          format: uuid
+        subsidiary_id:
+          type: string
+          format: uuid
+        location_id:
+          type: string
+          format: uuid
+    UserRole:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        user_id:
+          type: string
+          format: uuid
+        role_id:
+          type: string
+          format: uuid
+        subsidiary_id:
+          type: string
+          format: uuid
+        location_id:
+          type: string
+          format: uuid
+        created_at:
+          type: string
+          format: date-time
+    RoleListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Role'
+    Permission:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        code:
+          type: string
+        description:
+          type: string
+    PermissionListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Permission'
+    Department:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        code:
+          type: string
+        name:
+          type: string
+        status:
+          $ref: '#/components/schemas/DepartmentStatus'
+    CreateDepartmentRequest:
+      type: object
+      required: [name]
+      properties:
+        code:
+          type: string
+        name:
+          type: string
+    DepartmentListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Department'
+        meta:
+          $ref: '#/components/schemas/PageMeta'
+    Position:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        level:
+          type: string
+        status:
+          $ref: '#/components/schemas/PositionStatus'
+    CreatePositionRequest:
+      type: object
+      required: [title]
+      properties:
+        title:
+          type: string
+        level:
+          type: string
+    PositionListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Position'
+        meta:
+          $ref: '#/components/schemas/PageMeta'
+    Employee:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        employee_no:
+          type: string
+        user_id:
+          type: string
+          format: uuid
+        department_id:
+          type: string
+          format: uuid
+        position_id:
+          type: string
+          format: uuid
+        status:
+          $ref: '#/components/schemas/EmployeeStatus'
+        hired_at:
+          type: string
+          format: date
+        terminated_at:
+          type: string
+          format: date
+    CreateEmployeeRequest:
+      type: object
+      required: [employee_no]
+      properties:
+        employee_no:
+          type: string
+        user_id:
+          type: string
+          format: uuid
+        department_id:
+          type: string
+          format: uuid
+        position_id:
+          type: string
+          format: uuid
+        hired_at:
+          type: string
+          format: date
+    EmployeeListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Employee'
+        meta:
+          $ref: '#/components/schemas/PageMeta'
+    LeaveRequest:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        employee_id:
+          type: string
+          format: uuid
+        type:
+          type: string
+        start_date:
+          type: string
+          format: date
+        end_date:
+          type: string
+          format: date
+        status:
+          $ref: '#/components/schemas/LeaveRequestStatus'
+        reason:
+          type: string
+    CreateLeaveRequestRequest:
+      type: object
+      required: [employee_id, type, start_date, end_date]
+      properties:
+        employee_id:
+          type: string
+          format: uuid
+        type:
+          type: string
+        start_date:
+          type: string
+          format: date
+        end_date:
+          type: string
+          format: date
+        reason:
+          type: string
+    LeaveRequestListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/LeaveRequest'
+        meta:
+          $ref: '#/components/schemas/PageMeta'
+    CostCenter:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        code:
+          type: string
+        name:
+          type: string
+        status:
+          $ref: '#/components/schemas/CostCenterStatus'
+    CreateCostCenterRequest:
+      type: object
+      required: [code, name]
+      properties:
+        code:
+          type: string
+        name:
+          type: string
+    CostCenterListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/CostCenter'
+        meta:
+          $ref: '#/components/schemas/PageMeta'
+    ChartOfAccount:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        code:
+          type: string
+        name:
+          type: string
+        type:
+          $ref: '#/components/schemas/ChartOfAccountType'
+        parent_id:
+          type: string
+          format: uuid
+    CreateChartOfAccountRequest:
+      type: object
+      required: [code, name, type]
+      properties:
+        code:
+          type: string
+        name:
+          type: string
+        type:
+          $ref: '#/components/schemas/ChartOfAccountType'
+        parent_id:
+          type: string
+          format: uuid
+    ChartOfAccountListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/ChartOfAccount'
+        meta:
+          $ref: '#/components/schemas/PageMeta'
+    FiscalPeriod:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        start_date:
+          type: string
+          format: date
+        end_date:
+          type: string
+          format: date
+        status:
+          $ref: '#/components/schemas/FiscalPeriodStatus'
+    CreateFiscalPeriodRequest:
+      type: object
+      required: [name, start_date, end_date]
+      properties:
+        name:
+          type: string
+        start_date:
+          type: string
+          format: date
+        end_date:
+          type: string
+          format: date
+        status:
+          $ref: '#/components/schemas/FiscalPeriodStatus'
+    FiscalPeriodListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/FiscalPeriod'
+        meta:
+          $ref: '#/components/schemas/PageMeta'
+    JournalLineInput:
+      type: object
+      required: [account_id]
+      properties:
+        account_id:
+          type: string
+          format: uuid
+        cost_center_id:
+          type: string
+          format: uuid
+        description:
+          type: string
+        debit:
+          type: number
+          format: float
+        credit:
+          type: number
+          format: float
+    JournalEntry:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        fiscal_period_id:
+          type: string
+          format: uuid
+        reference:
+          type: string
+        status:
+          $ref: '#/components/schemas/JournalEntryStatus'
+        posted_at:
+          type: string
+          format: date-time
+    CreateJournalEntryRequest:
+      type: object
+      required: [fiscal_period_id, lines]
+      properties:
+        fiscal_period_id:
+          type: string
+          format: uuid
+        reference:
+          type: string
+        memo:
+          type: string
+        lines:
+          type: array
+          items:
+            $ref: '#/components/schemas/JournalLineInput'
+    JournalEntryListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/JournalEntry'
+        meta:
+          $ref: '#/components/schemas/PageMeta'
+    CompliancePolicy:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        version:
+          type: string
+        status:
+          $ref: '#/components/schemas/CompliancePolicyStatus'
+        effective_at:
+          type: string
+          format: date
+        review_at:
+          type: string
+          format: date
+        owner_id:
+          type: string
+          format: uuid
+    CreateCompliancePolicyRequest:
+      type: object
+      required: [title]
+      properties:
+        title:
+          type: string
+        version:
+          type: string
+        status:
+          $ref: '#/components/schemas/CompliancePolicyStatus'
+        effective_at:
+          type: string
+          format: date
+        review_at:
+          type: string
+          format: date
+        owner_id:
+          type: string
+          format: uuid
+    CompliancePolicyListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/CompliancePolicy'
+        meta:
+          $ref: '#/components/schemas/PageMeta'
+    ComplianceTask:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        policy_id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        status:
+          $ref: '#/components/schemas/ComplianceTaskStatus'
+        due_at:
+          type: string
+          format: date-time
+        assignee_id:
+          type: string
+          format: uuid
+    CreateComplianceTaskRequest:
+      type: object
+      required: [title]
+      properties:
+        policy_id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        status:
+          $ref: '#/components/schemas/ComplianceTaskStatus'
+        due_at:
+          type: string
+          format: date-time
+        assignee_id:
+          type: string
+          format: uuid
+    ComplianceTaskListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/ComplianceTask'
+        meta:
+          $ref: '#/components/schemas/PageMeta'
+    RiskRegisterItem:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        category:
+          $ref: '#/components/schemas/RiskCategory'
+        likelihood:
+          type: integer
+        impact:
+          type: integer
+        score:
+          type: integer
+        status:
+          $ref: '#/components/schemas/RiskRegisterStatus'
+        owner_id:
+          type: string
+          format: uuid
+        mitigation:
+          type: string
+    CreateRiskRegisterItemRequest:
+      type: object
+      required: [title]
+      properties:
+        title:
+          type: string
+        category:
+          $ref: '#/components/schemas/RiskCategory'
+        likelihood:
+          type: integer
+        impact:
+          type: integer
+        score:
+          type: integer
+        status:
+          $ref: '#/components/schemas/RiskRegisterStatus'
+        owner_id:
+          type: string
+          format: uuid
+        mitigation:
+          type: string
+    RiskRegisterItemListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/RiskRegisterItem'
+        meta:
+          $ref: '#/components/schemas/PageMeta'
+    ComplianceAudit:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        scope:
+          type: string
+        status:
+          $ref: '#/components/schemas/ComplianceAuditStatus'
+        started_at:
+          type: string
+          format: date
+        completed_at:
+          type: string
+          format: date
+        lead_auditor_id:
+          type: string
+          format: uuid
+    CreateComplianceAuditRequest:
+      type: object
+      required: [title]
+      properties:
+        title:
+          type: string
+        scope:
+          type: string
+        status:
+          $ref: '#/components/schemas/ComplianceAuditStatus'
+        started_at:
+          type: string
+          format: date
+        completed_at:
+          type: string
+          format: date
+        lead_auditor_id:
+          type: string
+          format: uuid
+    ComplianceAuditListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/ComplianceAudit'
+        meta:
+          $ref: '#/components/schemas/PageMeta'
+    PurchaseRequestItem:
+      type: object
+      properties:
+        description:
+          type: string
+        quantity:
+          type: integer
+        unit:
+          type: string
+        estimated_unit_cost:
+          type: number
+          format: float
+    PurchaseRequest:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        requester_id:
+          type: string
+          format: uuid
+        status:
+          $ref: '#/components/schemas/PurchaseRequestStatus'
+        needed_by:
+          type: string
+          format: date
+        notes:
+          type: string
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/PurchaseRequestItem'
+    CreatePurchaseRequestRequest:
+      type: object
+      required: [items]
+      properties:
+        requester_id:
+          type: string
+          format: uuid
+        needed_by:
+          type: string
+          format: date
+        notes:
+          type: string
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/PurchaseRequestItem'
+    PurchaseRequestListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/PurchaseRequest'
+        meta:
+          $ref: '#/components/schemas/PageMeta'
+    PurchaseOrderItem:
+      type: object
+      properties:
+        description:
+          type: string
+        quantity:
+          type: integer
+        unit_price:
+          type: number
+          format: float
+        total_price:
+          type: number
+          format: float
+    PurchaseOrder:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        vendor_id:
+          type: string
+          format: uuid
+        status:
+          $ref: '#/components/schemas/PurchaseOrderStatus'
+        ordered_at:
+          type: string
+          format: date-time
+        expected_at:
+          type: string
+          format: date
+        total_amount:
+          type: number
+          format: float
+        currency:
+          type: string
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/PurchaseOrderItem'
+    CreatePurchaseOrderRequest:
+      type: object
+      required: [vendor_id, items]
+      properties:
+        vendor_id:
+          type: string
+          format: uuid
+        ordered_at:
+          type: string
+          format: date-time
+        expected_at:
+          type: string
+          format: date
+        currency:
+          type: string
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/PurchaseOrderItem'
+    PurchaseOrderListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/PurchaseOrder'
+        meta:
+          $ref: '#/components/schemas/PageMeta'
+    AdvisoryEngagement:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        external_client_id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        scope:
+          type: string
+        status:
+          $ref: '#/components/schemas/AdvisoryEngagementStatus'
+        start_at:
+          type: string
+          format: date
+        end_at:
+          type: string
+          format: date
+        lead_id:
+          type: string
+          format: uuid
+    CreateAdvisoryEngagementRequest:
+      type: object
+      required: [title]
+      properties:
+        external_client_id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        scope:
+          type: string
+        status:
+          $ref: '#/components/schemas/AdvisoryEngagementStatus'
+        start_at:
+          type: string
+          format: date
+        end_at:
+          type: string
+          format: date
+        lead_id:
+          type: string
+          format: uuid
+    AdvisoryEngagementListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdvisoryEngagement'
+        meta:
+          $ref: '#/components/schemas/PageMeta'
+    AdvisoryDeliverable:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        advisory_engagement_id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        status:
+          $ref: '#/components/schemas/AdvisoryDeliverableStatus'
+        due_at:
+          type: string
+          format: date
+        delivered_at:
+          type: string
+          format: date
+    CreateAdvisoryDeliverableRequest:
+      type: object
+      required: [advisory_engagement_id, title]
+      properties:
+        advisory_engagement_id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        status:
+          $ref: '#/components/schemas/AdvisoryDeliverableStatus'
+        due_at:
+          type: string
+          format: date
+        delivered_at:
+          type: string
+          format: date
+    AdvisoryDeliverableListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdvisoryDeliverable'
+        meta:
+          $ref: '#/components/schemas/PageMeta'
+    SubsidiaryStatus:
+      type: string
+      enum: [active, inactive, suspended]
+    ProductStatus:
+      type: string
+      enum: [active, inactive, discontinued]
+    StockTransferStatus:
+      type: string
+      enum: [pending, in_transit, completed, cancelled]
+    StockReservationStatus:
+      type: string
+      enum: [active, released, expired, cancelled]
+    OrderStatus:
+      type: string
+      enum: [draft, pending, paid, fulfilled, cancelled, returned]
+    PaymentIntentStatus:
+      type: string
+      enum: [requires_payment_method, requires_capture, processing, captured, failed, cancelled]
+    RefundStatus:
+      type: string
+      enum: [pending, processing, succeeded, failed, cancelled]
+    ResellerStatus:
+      type: string
+      enum: [active, suspended, inactive]
+    CreditAccountStatus:
+      type: string
+      enum: [active, suspended, closed]
+    ShipmentStatus:
+      type: string
+      enum: [created, in_transit, delivered, failed, returned, cancelled]
+    ThirdPartyType:
+      type: string
+      enum: [client, vendor, partner]
+    ThirdPartyStatus:
+      type: string
+      enum: [active, inactive]
+    ServiceRequestCategory:
+      type: string
+      enum:
+        - management
+        - administrative
+        - financial
+        - accounting
+        - auditing
+        - human_resources
+        - compliance
+        - risk_management
+        - procurement
+        - business_advisory
+    ServiceRequestStatus:
+      type: string
+      enum: [open, approved, rejected, in_progress, on_hold, completed, cancelled]
+    ServiceRequestPriority:
+      type: string
+      enum: [low, normal, high, urgent]
+    ServiceTaskStatus:
+      type: string
+      enum: [open, in_progress, blocked, completed, cancelled]
+    DepartmentStatus:
+      type: string
+      enum: [active, inactive]
+    PositionStatus:
+      type: string
+      enum: [active, inactive]
+    EmployeeStatus:
+      type: string
+      enum: [active, suspended, terminated]
+    LeaveRequestStatus:
+      type: string
+      enum: [pending, approved, rejected, cancelled]
+    CostCenterStatus:
+      type: string
+      enum: [active, inactive]
+    ChartOfAccountType:
+      type: string
+      enum: [asset, liability, equity, income, expense]
+    FiscalPeriodStatus:
+      type: string
+      enum: [open, closed, locked]
+    JournalEntryStatus:
+      type: string
+      enum: [draft, posted, reversed]
+    CompliancePolicyStatus:
+      type: string
+      enum: [active, archived]
+    ComplianceTaskStatus:
+      type: string
+      enum: [open, in_progress, completed, overdue, cancelled]
+    RiskRegisterStatus:
+      type: string
+      enum: [open, mitigated, accepted, closed]
+    RiskCategory:
+      type: string
+      enum: [strategic, operational, financial, compliance, reputational, cyber, supply_chain, other]
+    ComplianceAuditStatus:
+      type: string
+      enum: [planned, in_progress, completed, closed]
+    AuditFindingStatus:
+      type: string
+      enum: [open, in_progress, resolved, closed]
+    AuditFindingSeverity:
+      type: string
+      enum: [low, medium, high, critical]
+    PurchaseRequestStatus:
+      type: string
+      enum: [pending, approved, rejected, cancelled]
+    PurchaseOrderStatus:
+      type: string
+      enum: [draft, issued, partially_received, received, cancelled]
+    AdvisoryEngagementStatus:
+      type: string
+      enum: [active, on_hold, completed, cancelled]
+    AdvisoryDeliverableStatus:
+      type: string
+      enum: [open, in_progress, delivered, accepted, rejected]

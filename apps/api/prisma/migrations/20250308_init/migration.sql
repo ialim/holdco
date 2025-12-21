@@ -1,0 +1,506 @@
+-- HoldCo Unified Backend - Postgres DDL (logical)
+-- This schema is a starting point; adjust constraints and indexes per workload.
+
+create extension if not exists pgcrypto;
+
+-- Tenancy and access
+create table if not exists tenant_groups (
+  id uuid primary key default gen_random_uuid(),
+  name text not null,
+  status text not null default 'active',
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists subsidiaries (
+  id uuid primary key default gen_random_uuid(),
+  group_id uuid not null references tenant_groups(id),
+  name text not null,
+  status text not null default 'active',
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  unique (group_id, name)
+);
+
+create table if not exists locations (
+  id uuid primary key default gen_random_uuid(),
+  group_id uuid not null references tenant_groups(id),
+  subsidiary_id uuid not null references subsidiaries(id),
+  type text not null,
+  name text not null,
+  address_line1 text,
+  address_line2 text,
+  city text,
+  state text,
+  country text,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists users (
+  id uuid primary key default gen_random_uuid(),
+  group_id uuid not null references tenant_groups(id),
+  email text not null,
+  name text,
+  status text not null default 'active',
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  unique (group_id, email)
+);
+
+create table if not exists roles (
+  id uuid primary key default gen_random_uuid(),
+  group_id uuid not null references tenant_groups(id),
+  name text not null,
+  scope text not null,
+  created_at timestamptz not null default now(),
+  unique (group_id, name)
+);
+
+create table if not exists permissions (
+  id uuid primary key default gen_random_uuid(),
+  code text not null unique,
+  description text
+);
+
+create table if not exists user_roles (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references users(id),
+  role_id uuid not null references roles(id),
+  subsidiary_id uuid references subsidiaries(id),
+  location_id uuid references locations(id),
+  created_at timestamptz not null default now()
+);
+
+create table if not exists role_permissions (
+  id uuid primary key default gen_random_uuid(),
+  role_id uuid not null references roles(id),
+  permission_id uuid not null references permissions(id),
+  created_at timestamptz not null default now(),
+  unique (role_id, permission_id)
+);
+
+-- Catalog
+create table if not exists brands (
+  id uuid primary key default gen_random_uuid(),
+  group_id uuid not null references tenant_groups(id),
+  name text not null,
+  status text not null default 'active',
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  unique (group_id, name)
+);
+
+create table if not exists suppliers (
+  id uuid primary key default gen_random_uuid(),
+  group_id uuid not null references tenant_groups(id),
+  name text not null,
+  contact_name text,
+  contact_phone text,
+  status text not null default 'active',
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  unique (group_id, name)
+);
+
+create table if not exists products (
+  id uuid primary key default gen_random_uuid(),
+  group_id uuid not null references tenant_groups(id),
+  subsidiary_id uuid references subsidiaries(id),
+  brand_id uuid references brands(id),
+  supplier_id uuid references suppliers(id),
+  sku text not null,
+  name text not null,
+  status text not null default 'active',
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  unique (group_id, sku)
+);
+
+create table if not exists variants (
+  id uuid primary key default gen_random_uuid(),
+  group_id uuid not null references tenant_groups(id),
+  subsidiary_id uuid references subsidiaries(id),
+  product_id uuid not null references products(id),
+  size text,
+  unit text,
+  barcode text,
+  created_at timestamptz not null default now(),
+  unique (group_id, barcode)
+);
+
+create table if not exists batches (
+  id uuid primary key default gen_random_uuid(),
+  group_id uuid not null references tenant_groups(id),
+  subsidiary_id uuid references subsidiaries(id),
+  product_id uuid not null references products(id),
+  code text not null,
+  expires_at date,
+  created_at timestamptz not null default now()
+);
+
+create table if not exists lots (
+  id uuid primary key default gen_random_uuid(),
+  group_id uuid not null references tenant_groups(id),
+  subsidiary_id uuid references subsidiaries(id),
+  batch_id uuid not null references batches(id),
+  quantity integer not null,
+  created_at timestamptz not null default now()
+);
+
+-- Inventory
+create table if not exists stock_levels (
+  id uuid primary key default gen_random_uuid(),
+  group_id uuid not null references tenant_groups(id),
+  subsidiary_id uuid not null references subsidiaries(id),
+  location_id uuid not null references locations(id),
+  product_id uuid not null references products(id),
+  variant_id uuid references variants(id),
+  on_hand integer not null default 0,
+  reserved integer not null default 0,
+  updated_at timestamptz not null default now(),
+  unique (group_id, subsidiary_id, location_id, product_id, variant_id)
+);
+
+create table if not exists stock_adjustments (
+  id uuid primary key default gen_random_uuid(),
+  group_id uuid not null references tenant_groups(id),
+  subsidiary_id uuid not null references subsidiaries(id),
+  location_id uuid not null references locations(id),
+  product_id uuid not null references products(id),
+  variant_id uuid references variants(id),
+  quantity integer not null,
+  reason text not null,
+  created_by uuid references users(id),
+  created_at timestamptz not null default now()
+);
+
+create table if not exists stock_transfers (
+  id uuid primary key default gen_random_uuid(),
+  group_id uuid not null references tenant_groups(id),
+  subsidiary_id uuid not null references subsidiaries(id),
+  from_location_id uuid not null references locations(id),
+  to_location_id uuid not null references locations(id),
+  product_id uuid not null references products(id),
+  variant_id uuid references variants(id),
+  quantity integer not null,
+  status text not null default 'pending',
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists stock_reservations (
+  id uuid primary key default gen_random_uuid(),
+  group_id uuid not null references tenant_groups(id),
+  subsidiary_id uuid not null references subsidiaries(id),
+  location_id uuid not null references locations(id),
+  order_id uuid,
+  product_id uuid not null references products(id),
+  variant_id uuid references variants(id),
+  quantity integer not null,
+  status text not null default 'active',
+  created_at timestamptz not null default now()
+);
+
+-- Pricing and promotions
+create table if not exists price_lists (
+  id uuid primary key default gen_random_uuid(),
+  group_id uuid not null references tenant_groups(id),
+  subsidiary_id uuid references subsidiaries(id),
+  name text not null,
+  currency text not null,
+  channel text,
+  valid_from date,
+  valid_to date,
+  created_at timestamptz not null default now()
+);
+
+create table if not exists price_rules (
+  id uuid primary key default gen_random_uuid(),
+  group_id uuid not null references tenant_groups(id),
+  subsidiary_id uuid references subsidiaries(id),
+  price_list_id uuid not null references price_lists(id),
+  product_id uuid not null references products(id),
+  variant_id uuid references variants(id),
+  min_qty integer not null default 1,
+  price numeric(12, 2) not null,
+  created_at timestamptz not null default now()
+);
+
+create table if not exists promotions (
+  id uuid primary key default gen_random_uuid(),
+  group_id uuid not null references tenant_groups(id),
+  subsidiary_id uuid references subsidiaries(id),
+  code text not null,
+  type text not null,
+  value numeric(12, 2) not null,
+  start_at timestamptz not null,
+  end_at timestamptz not null,
+  status text not null default 'active',
+  created_at timestamptz not null default now(),
+  unique (group_id, code)
+);
+
+-- Orders and payments
+create table if not exists customers (
+  id uuid primary key default gen_random_uuid(),
+  group_id uuid not null references tenant_groups(id),
+  subsidiary_id uuid references subsidiaries(id),
+  name text not null,
+  email text,
+  phone text,
+  status text not null default 'active',
+  created_at timestamptz not null default now()
+);
+
+create table if not exists resellers (
+  id uuid primary key default gen_random_uuid(),
+  group_id uuid not null references tenant_groups(id),
+  subsidiary_id uuid not null references subsidiaries(id),
+  name text not null,
+  status text not null default 'active',
+  created_at timestamptz not null default now()
+);
+
+create table if not exists carts (
+  id uuid primary key default gen_random_uuid(),
+  group_id uuid not null references tenant_groups(id),
+  subsidiary_id uuid not null references subsidiaries(id),
+  customer_id uuid references customers(id),
+  status text not null default 'open',
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists cart_items (
+  id uuid primary key default gen_random_uuid(),
+  cart_id uuid not null references carts(id) on delete cascade,
+  product_id uuid not null references products(id),
+  variant_id uuid references variants(id),
+  quantity integer not null,
+  unit_price numeric(12, 2) not null,
+  created_at timestamptz not null default now()
+);
+
+create table if not exists orders (
+  id uuid primary key default gen_random_uuid(),
+  group_id uuid not null references tenant_groups(id),
+  subsidiary_id uuid not null references subsidiaries(id),
+  location_id uuid references locations(id),
+  channel text,
+  order_no text not null,
+  customer_id uuid references customers(id),
+  reseller_id uuid references resellers(id),
+  status text not null default 'pending',
+  total_amount numeric(12, 2) not null,
+  currency text not null,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  unique (group_id, order_no)
+);
+
+create table if not exists order_items (
+  id uuid primary key default gen_random_uuid(),
+  order_id uuid not null references orders(id) on delete cascade,
+  product_id uuid not null references products(id),
+  variant_id uuid references variants(id),
+  quantity integer not null,
+  unit_price numeric(12, 2) not null,
+  total_price numeric(12, 2) not null
+);
+
+create table if not exists invoices (
+  id uuid primary key default gen_random_uuid(),
+  order_id uuid not null references orders(id),
+  status text not null default 'pending',
+  total_amount numeric(12, 2) not null,
+  created_at timestamptz not null default now()
+);
+
+create table if not exists payment_intents (
+  id uuid primary key default gen_random_uuid(),
+  group_id uuid not null references tenant_groups(id),
+  subsidiary_id uuid not null references subsidiaries(id),
+  order_id uuid not null references orders(id),
+  amount numeric(12, 2) not null,
+  currency text not null,
+  status text not null,
+  provider text,
+  reference text,
+  created_at timestamptz not null default now()
+);
+
+create table if not exists refunds (
+  id uuid primary key default gen_random_uuid(),
+  group_id uuid not null references tenant_groups(id),
+  subsidiary_id uuid not null references subsidiaries(id),
+  payment_intent_id uuid not null references payment_intents(id),
+  amount numeric(12, 2) not null,
+  reason text,
+  status text not null default 'pending',
+  created_at timestamptz not null default now()
+);
+
+create table if not exists returns (
+  id uuid primary key default gen_random_uuid(),
+  group_id uuid not null references tenant_groups(id),
+  subsidiary_id uuid not null references subsidiaries(id),
+  order_id uuid not null references orders(id),
+  status text not null default 'pending',
+  reason text,
+  created_at timestamptz not null default now()
+);
+
+-- Credit and collections
+create table if not exists credit_accounts (
+  id uuid primary key default gen_random_uuid(),
+  group_id uuid not null references tenant_groups(id),
+  subsidiary_id uuid not null references subsidiaries(id),
+  reseller_id uuid not null references resellers(id),
+  limit_amount numeric(12, 2) not null,
+  used_amount numeric(12, 2) not null default 0,
+  status text not null default 'active',
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists payment_schedules (
+  id uuid primary key default gen_random_uuid(),
+  group_id uuid not null references tenant_groups(id),
+  subsidiary_id uuid not null references subsidiaries(id),
+  credit_account_id uuid not null references credit_accounts(id),
+  due_date date not null,
+  amount numeric(12, 2) not null,
+  status text not null default 'pending',
+  created_at timestamptz not null default now()
+);
+
+create table if not exists repayments (
+  id uuid primary key default gen_random_uuid(),
+  group_id uuid not null references tenant_groups(id),
+  subsidiary_id uuid not null references subsidiaries(id),
+  credit_account_id uuid not null references credit_accounts(id),
+  amount numeric(12, 2) not null,
+  paid_at timestamptz not null default now(),
+  method text,
+  created_at timestamptz not null default now()
+);
+
+-- Loyalty
+create table if not exists loyalty_accounts (
+  id uuid primary key default gen_random_uuid(),
+  group_id uuid not null references tenant_groups(id),
+  subsidiary_id uuid not null references subsidiaries(id),
+  customer_id uuid not null references customers(id),
+  points_balance integer not null default 0,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  unique (customer_id)
+);
+
+create table if not exists points_ledger (
+  id uuid primary key default gen_random_uuid(),
+  group_id uuid not null references tenant_groups(id),
+  subsidiary_id uuid not null references subsidiaries(id),
+  loyalty_account_id uuid not null references loyalty_accounts(id),
+  points integer not null,
+  reason text,
+  created_at timestamptz not null default now()
+);
+
+create table if not exists campaigns (
+  id uuid primary key default gen_random_uuid(),
+  group_id uuid not null references tenant_groups(id),
+  subsidiary_id uuid references subsidiaries(id),
+  name text not null,
+  start_at timestamptz,
+  end_at timestamptz,
+  status text not null default 'active'
+);
+
+-- Logistics
+create table if not exists shipments (
+  id uuid primary key default gen_random_uuid(),
+  group_id uuid not null references tenant_groups(id),
+  subsidiary_id uuid not null references subsidiaries(id),
+  order_id uuid not null references orders(id),
+  carrier text not null,
+  status text not null default 'created',
+  tracking_no text,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists delivery_slots (
+  id uuid primary key default gen_random_uuid(),
+  group_id uuid not null references tenant_groups(id),
+  subsidiary_id uuid not null references subsidiaries(id),
+  shipment_id uuid not null references shipments(id),
+  start_at timestamptz not null,
+  end_at timestamptz not null
+);
+
+create table if not exists proofs_of_delivery (
+  id uuid primary key default gen_random_uuid(),
+  group_id uuid not null references tenant_groups(id),
+  subsidiary_id uuid not null references subsidiaries(id),
+  shipment_id uuid not null references shipments(id),
+  signed_by text,
+  received_at timestamptz
+);
+
+-- Reporting and audit
+create table if not exists audit_logs (
+  id uuid primary key default gen_random_uuid(),
+  group_id uuid not null references tenant_groups(id),
+  subsidiary_id uuid references subsidiaries(id),
+  actor_id uuid references users(id),
+  action text not null,
+  entity_type text not null,
+  entity_id uuid,
+  payload jsonb,
+  created_at timestamptz not null default now()
+);
+
+create table if not exists event_outbox (
+  id uuid primary key default gen_random_uuid(),
+  group_id uuid not null references tenant_groups(id),
+  subsidiary_id uuid references subsidiaries(id),
+  aggregate_type text not null,
+  aggregate_id uuid not null,
+  event_type text not null,
+  payload jsonb not null,
+  status text not null default 'pending',
+  available_at timestamptz not null default now(),
+  attempts integer not null default 0,
+  created_at timestamptz not null default now()
+);
+
+create table if not exists external_systems (
+  id uuid primary key default gen_random_uuid(),
+  name text not null unique,
+  created_at timestamptz not null default now()
+);
+
+create table if not exists external_id_maps (
+  id uuid primary key default gen_random_uuid(),
+  external_system_id uuid not null references external_systems(id),
+  entity_type text not null,
+  entity_id uuid not null,
+  external_id text not null,
+  created_at timestamptz not null default now(),
+  unique (external_system_id, entity_type, external_id)
+);
+
+-- Indexes
+create index if not exists idx_subsidiaries_group_id on subsidiaries(group_id);
+create index if not exists idx_locations_subsidiary_id on locations(subsidiary_id);
+create index if not exists idx_products_group_id on products(group_id);
+create index if not exists idx_variants_product_id on variants(product_id);
+create index if not exists idx_stock_levels_location_id on stock_levels(location_id);
+create index if not exists idx_orders_status on orders(status);
+create index if not exists idx_orders_created_at on orders(created_at);
+create index if not exists idx_payment_intents_order_id on payment_intents(order_id);
+create index if not exists idx_credit_accounts_reseller_id on credit_accounts(reseller_id);
+create index if not exists idx_shipments_order_id on shipments(order_id);
+create index if not exists idx_audit_logs_entity on audit_logs(entity_type, entity_id);

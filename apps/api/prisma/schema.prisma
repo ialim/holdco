@@ -1,0 +1,1589 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../node_modules/.prisma/client"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model TenantGroup {
+  id        String   @id @default(uuid()) @db.Uuid
+  name      String
+  status    String   @default("active")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @default(now()) @map("updated_at")
+
+  subsidiaries Subsidiary[]
+  locations    Location[]
+  users        User[]
+  roles        Role[]
+  brands       Brand[]
+  suppliers    Supplier[]
+  products     Product[]
+  variants     Variant[]
+  batches      Batch[]
+  lots         Lot[]
+  stockLevels  StockLevel[]
+  stockAdjustments StockAdjustment[]
+  stockTransfers   StockTransfer[]
+  stockReservations StockReservation[]
+  priceLists   PriceList[]
+  priceRules   PriceRule[]
+  promotions   Promotion[]
+  customers    Customer[]
+  resellers    Reseller[]
+  carts        Cart[]
+  orders       Order[]
+  paymentIntents PaymentIntent[]
+  refunds      Refund[]
+  returnRecords ReturnRecord[]
+  creditAccounts CreditAccount[]
+  paymentSchedules PaymentSchedule[]
+  repayments   Repayment[]
+  loyaltyAccounts LoyaltyAccount[]
+  pointsLedger PointsLedger[]
+  campaigns    Campaign[]
+  shipments    Shipment[]
+  deliverySlots DeliverySlot[]
+  proofsOfDelivery ProofOfDelivery[]
+  auditLogs    AuditLog[]
+  eventOutbox  EventOutbox[]
+  externalClients ExternalClient[]
+  serviceRequests ServiceRequest[]
+  departments  Department[]
+  positions    Position[]
+  employees    Employee[]
+  leaveRequests LeaveRequest[]
+  costCenters  CostCenter[]
+  chartOfAccounts ChartOfAccount[]
+  fiscalPeriods FiscalPeriod[]
+  journalEntries JournalEntry[]
+  compliancePolicies CompliancePolicy[]
+  complianceTasks ComplianceTask[]
+  riskRegisterItems RiskRegisterItem[]
+  complianceAudits ComplianceAudit[]
+  purchaseRequests PurchaseRequest[]
+  purchaseOrders PurchaseOrder[]
+  advisoryEngagements AdvisoryEngagement[]
+
+  @@map("tenant_groups")
+}
+
+model Subsidiary {
+  id        String   @id @default(uuid()) @db.Uuid
+  groupId   String   @db.Uuid @map("group_id")
+  name      String
+  status    String   @default("active")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @default(now()) @map("updated_at")
+
+  group     TenantGroup @relation(fields: [groupId], references: [id])
+  locations Location[]
+  userRoles UserRole[]
+  products     Product[]
+  variants     Variant[]
+  batches      Batch[]
+  lots         Lot[]
+  stockLevels  StockLevel[]
+  stockAdjustments StockAdjustment[]
+  stockTransfers   StockTransfer[]
+  stockReservations StockReservation[]
+  priceLists   PriceList[]
+  priceRules   PriceRule[]
+  promotions   Promotion[]
+  customers    Customer[]
+  resellers    Reseller[]
+  carts        Cart[]
+  orders       Order[]
+  paymentIntents PaymentIntent[]
+  refunds      Refund[]
+  returnRecords ReturnRecord[]
+  creditAccounts CreditAccount[]
+  paymentSchedules PaymentSchedule[]
+  repayments   Repayment[]
+  loyaltyAccounts LoyaltyAccount[]
+  pointsLedger PointsLedger[]
+  campaigns    Campaign[]
+  shipments    Shipment[]
+  deliverySlots DeliverySlot[]
+  proofsOfDelivery ProofOfDelivery[]
+  auditLogs    AuditLog[]
+  eventOutbox  EventOutbox[]
+  serviceRequests ServiceRequest[]
+  departments  Department[]
+  positions    Position[]
+  employees    Employee[]
+  leaveRequests LeaveRequest[]
+  costCenters  CostCenter[]
+  journalEntries JournalEntry[]
+  complianceTasks ComplianceTask[]
+  riskRegisterItems RiskRegisterItem[]
+  complianceAudits ComplianceAudit[]
+  purchaseRequests PurchaseRequest[]
+  purchaseOrders PurchaseOrder[]
+  advisoryEngagements AdvisoryEngagement[]
+  sellerInvoices Invoice[] @relation("InvoiceSeller")
+  buyerInvoices Invoice[] @relation("InvoiceBuyer")
+  ledgerAccounts LedgerAccount[]
+  ledgerEntries LedgerEntry[]
+  costPools CostPool[]
+  allocationWeights AllocationWeight[]
+  costAllocations CostAllocation[]
+  intercompanyAgreementsProvided IntercompanyAgreement[] @relation("IntercompanyAgreementProvider")
+  intercompanyAgreementsReceived IntercompanyAgreement[] @relation("IntercompanyAgreementRecipient")
+  paymentsMade Payment[] @relation("PaymentPayerCompany")
+  paymentsReceived Payment[] @relation("PaymentPayeeCompany")
+  whtCreditNotesIssued WhtCreditNote[] @relation("WhtCreditNoteIssuer")
+  whtCreditNotesReceived WhtCreditNote[] @relation("WhtCreditNoteBeneficiary")
+  vatReturns VatReturn[]
+  periodLocks PeriodLock[]
+
+  @@unique([groupId, name])
+  @@index([groupId])
+  @@map("subsidiaries")
+}
+
+model Location {
+  id            String   @id @default(uuid()) @db.Uuid
+  groupId       String   @db.Uuid @map("group_id")
+  subsidiaryId  String   @db.Uuid @map("subsidiary_id")
+  type          String
+  name          String
+  addressLine1  String?  @map("address_line1")
+  addressLine2  String?  @map("address_line2")
+  city          String?
+  state         String?
+  country       String?
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @default(now()) @map("updated_at")
+
+  group      TenantGroup @relation(fields: [groupId], references: [id])
+  subsidiary Subsidiary  @relation(fields: [subsidiaryId], references: [id])
+  userRoles  UserRole[]
+  stockLevels StockLevel[]
+  stockAdjustments StockAdjustment[]
+  stockReservations StockReservation[]
+  orders     Order[]
+  stockTransfersFrom StockTransfer[] @relation("StockTransferFromLocation")
+  stockTransfersTo   StockTransfer[] @relation("StockTransferToLocation")
+
+  @@index([subsidiaryId])
+  @@map("locations")
+}
+
+model User {
+  id        String   @id @default(uuid()) @db.Uuid
+  groupId   String   @db.Uuid @map("group_id")
+  email     String
+  name      String?
+  status    String   @default("active")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @default(now()) @map("updated_at")
+
+  group     TenantGroup @relation(fields: [groupId], references: [id])
+  userRoles UserRole[]
+  stockAdjustmentsCreated StockAdjustment[]
+  auditLogs AuditLog[]
+  assignedServiceRequests ServiceRequest[] @relation("ServiceRequestAssignedTo")
+  approvedServiceRequests ServiceRequest[] @relation("ServiceRequestApprovedBy")
+  rejectedServiceRequests ServiceRequest[] @relation("ServiceRequestRejectedBy")
+  serviceTasksAssigned ServiceTask[]
+  employees Employee[]
+  compliancePolicies CompliancePolicy[]
+  complianceTasks ComplianceTask[]
+  riskRegisterItems RiskRegisterItem[]
+  complianceAudits ComplianceAudit[]
+  auditFindings AuditFinding[]
+  purchaseRequests PurchaseRequest[]
+  advisoryEngagements AdvisoryEngagement[]
+
+  @@unique([groupId, email])
+  @@map("users")
+}
+
+model Role {
+  id        String   @id @default(uuid()) @db.Uuid
+  groupId   String   @db.Uuid @map("group_id")
+  name      String
+  scope     String
+  createdAt DateTime @default(now()) @map("created_at")
+
+  group          TenantGroup     @relation(fields: [groupId], references: [id])
+  userRoles      UserRole[]
+  rolePermissions RolePermission[]
+
+  @@unique([groupId, name])
+  @@map("roles")
+}
+
+model Permission {
+  id          String  @id @default(uuid()) @db.Uuid
+  code        String  @unique
+  description String?
+
+  rolePermissions RolePermission[]
+
+  @@map("permissions")
+}
+
+model UserRole {
+  id           String   @id @default(uuid()) @db.Uuid
+  userId       String   @db.Uuid @map("user_id")
+  roleId       String   @db.Uuid @map("role_id")
+  subsidiaryId String?  @db.Uuid @map("subsidiary_id")
+  locationId   String?  @db.Uuid @map("location_id")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  user       User       @relation(fields: [userId], references: [id])
+  role       Role       @relation(fields: [roleId], references: [id])
+  subsidiary Subsidiary? @relation(fields: [subsidiaryId], references: [id])
+  location   Location?  @relation(fields: [locationId], references: [id])
+
+  @@map("user_roles")
+}
+
+model RolePermission {
+  id           String   @id @default(uuid()) @db.Uuid
+  roleId       String   @db.Uuid @map("role_id")
+  permissionId String   @db.Uuid @map("permission_id")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  role       Role       @relation(fields: [roleId], references: [id])
+  permission Permission @relation(fields: [permissionId], references: [id])
+
+  @@unique([roleId, permissionId])
+  @@map("role_permissions")
+}
+
+model Brand {
+  id        String   @id @default(uuid()) @db.Uuid
+  groupId   String   @db.Uuid @map("group_id")
+  name      String
+  status    String   @default("active")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @default(now()) @map("updated_at")
+
+  group    TenantGroup @relation(fields: [groupId], references: [id])
+  products Product[]
+
+  @@unique([groupId, name])
+  @@map("brands")
+}
+
+model Supplier {
+  id           String   @id @default(uuid()) @db.Uuid
+  groupId      String   @db.Uuid @map("group_id")
+  name         String
+  contactName  String?  @map("contact_name")
+  contactPhone String?  @map("contact_phone")
+  status       String   @default("active")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @default(now()) @map("updated_at")
+
+  group    TenantGroup @relation(fields: [groupId], references: [id])
+  products Product[]
+
+  @@unique([groupId, name])
+  @@map("suppliers")
+}
+
+model Product {
+  id           String   @id @default(uuid()) @db.Uuid
+  groupId      String   @db.Uuid @map("group_id")
+  subsidiaryId String?  @db.Uuid @map("subsidiary_id")
+  brandId      String?  @db.Uuid @map("brand_id")
+  supplierId   String?  @db.Uuid @map("supplier_id")
+  sku          String
+  name         String
+  status       String   @default("active")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @default(now()) @map("updated_at")
+
+  group      TenantGroup @relation(fields: [groupId], references: [id])
+  subsidiary Subsidiary? @relation(fields: [subsidiaryId], references: [id])
+  brand      Brand?      @relation(fields: [brandId], references: [id])
+  supplier   Supplier?   @relation(fields: [supplierId], references: [id])
+  variants   Variant[]
+  batches    Batch[]
+  stockLevels StockLevel[]
+  stockAdjustments StockAdjustment[]
+  stockTransfers StockTransfer[]
+  stockReservations StockReservation[]
+  priceRules PriceRule[]
+  cartItems  CartItem[]
+  orderItems OrderItem[]
+
+  @@unique([groupId, sku])
+  @@index([groupId])
+  @@map("products")
+}
+
+model Variant {
+  id           String   @id @default(uuid()) @db.Uuid
+  groupId      String   @db.Uuid @map("group_id")
+  subsidiaryId String?  @db.Uuid @map("subsidiary_id")
+  productId    String   @db.Uuid @map("product_id")
+  size         String?
+  unit         String?
+  barcode      String?
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  group      TenantGroup @relation(fields: [groupId], references: [id])
+  subsidiary Subsidiary? @relation(fields: [subsidiaryId], references: [id])
+  product    Product     @relation(fields: [productId], references: [id])
+  stockLevels StockLevel[]
+  stockAdjustments StockAdjustment[]
+  stockTransfers StockTransfer[]
+  stockReservations StockReservation[]
+  priceRules PriceRule[]
+  cartItems  CartItem[]
+  orderItems OrderItem[]
+
+  @@unique([groupId, barcode])
+  @@index([productId])
+  @@map("variants")
+}
+
+model Batch {
+  id           String   @id @default(uuid()) @db.Uuid
+  groupId      String   @db.Uuid @map("group_id")
+  subsidiaryId String?  @db.Uuid @map("subsidiary_id")
+  productId    String   @db.Uuid @map("product_id")
+  code         String
+  expiresAt    DateTime? @db.Date @map("expires_at")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  group      TenantGroup @relation(fields: [groupId], references: [id])
+  subsidiary Subsidiary? @relation(fields: [subsidiaryId], references: [id])
+  product    Product     @relation(fields: [productId], references: [id])
+  lots       Lot[]
+
+  @@map("batches")
+}
+
+model Lot {
+  id           String   @id @default(uuid()) @db.Uuid
+  groupId      String   @db.Uuid @map("group_id")
+  subsidiaryId String?  @db.Uuid @map("subsidiary_id")
+  batchId      String   @db.Uuid @map("batch_id")
+  quantity     Int
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  group      TenantGroup @relation(fields: [groupId], references: [id])
+  subsidiary Subsidiary? @relation(fields: [subsidiaryId], references: [id])
+  batch      Batch       @relation(fields: [batchId], references: [id])
+
+  @@map("lots")
+}
+
+model StockLevel {
+  id           String   @id @default(uuid()) @db.Uuid
+  groupId      String   @db.Uuid @map("group_id")
+  subsidiaryId String   @db.Uuid @map("subsidiary_id")
+  locationId   String   @db.Uuid @map("location_id")
+  productId    String   @db.Uuid @map("product_id")
+  variantId    String?  @db.Uuid @map("variant_id")
+  onHand       Int      @default(0) @map("on_hand")
+  reserved     Int      @default(0)
+  updatedAt    DateTime @default(now()) @map("updated_at")
+
+  group      TenantGroup @relation(fields: [groupId], references: [id])
+  subsidiary Subsidiary  @relation(fields: [subsidiaryId], references: [id])
+  location   Location    @relation(fields: [locationId], references: [id])
+  product    Product     @relation(fields: [productId], references: [id])
+  variant    Variant?    @relation(fields: [variantId], references: [id])
+
+  @@unique([groupId, subsidiaryId, locationId, productId, variantId])
+  @@index([locationId])
+  @@map("stock_levels")
+}
+
+model StockAdjustment {
+  id           String   @id @default(uuid()) @db.Uuid
+  groupId      String   @db.Uuid @map("group_id")
+  subsidiaryId String   @db.Uuid @map("subsidiary_id")
+  locationId   String   @db.Uuid @map("location_id")
+  productId    String   @db.Uuid @map("product_id")
+  variantId    String?  @db.Uuid @map("variant_id")
+  quantity     Int
+  reason       String
+  createdById  String?  @db.Uuid @map("created_by")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  group      TenantGroup @relation(fields: [groupId], references: [id])
+  subsidiary Subsidiary  @relation(fields: [subsidiaryId], references: [id])
+  location   Location    @relation(fields: [locationId], references: [id])
+  product    Product     @relation(fields: [productId], references: [id])
+  variant    Variant?    @relation(fields: [variantId], references: [id])
+  createdBy  User?       @relation(fields: [createdById], references: [id])
+
+  @@map("stock_adjustments")
+}
+
+model StockTransfer {
+  id             String   @id @default(uuid()) @db.Uuid
+  groupId        String   @db.Uuid @map("group_id")
+  subsidiaryId   String   @db.Uuid @map("subsidiary_id")
+  fromLocationId String   @db.Uuid @map("from_location_id")
+  toLocationId   String   @db.Uuid @map("to_location_id")
+  productId      String   @db.Uuid @map("product_id")
+  variantId      String?  @db.Uuid @map("variant_id")
+  quantity       Int
+  status         String   @default("pending")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @default(now()) @map("updated_at")
+
+  group        TenantGroup @relation(fields: [groupId], references: [id])
+  subsidiary   Subsidiary  @relation(fields: [subsidiaryId], references: [id])
+  fromLocation Location    @relation("StockTransferFromLocation", fields: [fromLocationId], references: [id])
+  toLocation   Location    @relation("StockTransferToLocation", fields: [toLocationId], references: [id])
+  product      Product     @relation(fields: [productId], references: [id])
+  variant      Variant?    @relation(fields: [variantId], references: [id])
+
+  @@map("stock_transfers")
+}
+
+model StockReservation {
+  id           String   @id @default(uuid()) @db.Uuid
+  groupId      String   @db.Uuid @map("group_id")
+  subsidiaryId String   @db.Uuid @map("subsidiary_id")
+  locationId   String   @db.Uuid @map("location_id")
+  orderId      String?  @db.Uuid @map("order_id")
+  productId    String   @db.Uuid @map("product_id")
+  variantId    String?  @db.Uuid @map("variant_id")
+  quantity     Int
+  status       String   @default("active")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  group      TenantGroup @relation(fields: [groupId], references: [id])
+  subsidiary Subsidiary  @relation(fields: [subsidiaryId], references: [id])
+  location   Location    @relation(fields: [locationId], references: [id])
+  product    Product     @relation(fields: [productId], references: [id])
+  variant    Variant?    @relation(fields: [variantId], references: [id])
+
+  @@map("stock_reservations")
+}
+
+model PriceList {
+  id           String    @id @default(uuid()) @db.Uuid
+  groupId      String    @db.Uuid @map("group_id")
+  subsidiaryId String?   @db.Uuid @map("subsidiary_id")
+  name         String
+  currency     String
+  channel      String?
+  validFrom    DateTime? @db.Date @map("valid_from")
+  validTo      DateTime? @db.Date @map("valid_to")
+  createdAt    DateTime  @default(now()) @map("created_at")
+
+  group      TenantGroup @relation(fields: [groupId], references: [id])
+  subsidiary Subsidiary? @relation(fields: [subsidiaryId], references: [id])
+  priceRules PriceRule[]
+
+  @@map("price_lists")
+}
+
+model PriceRule {
+  id           String   @id @default(uuid()) @db.Uuid
+  groupId      String   @db.Uuid @map("group_id")
+  subsidiaryId String?  @db.Uuid @map("subsidiary_id")
+  priceListId  String   @db.Uuid @map("price_list_id")
+  productId    String   @db.Uuid @map("product_id")
+  variantId    String?  @db.Uuid @map("variant_id")
+  minQty       Int      @default(1) @map("min_qty")
+  price        Decimal  @db.Decimal(12, 2)
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  group      TenantGroup @relation(fields: [groupId], references: [id])
+  subsidiary Subsidiary? @relation(fields: [subsidiaryId], references: [id])
+  priceList  PriceList   @relation(fields: [priceListId], references: [id])
+  product    Product     @relation(fields: [productId], references: [id])
+  variant    Variant?    @relation(fields: [variantId], references: [id])
+
+  @@map("price_rules")
+}
+
+model Promotion {
+  id           String   @id @default(uuid()) @db.Uuid
+  groupId      String   @db.Uuid @map("group_id")
+  subsidiaryId String?  @db.Uuid @map("subsidiary_id")
+  code         String
+  type         String
+  value        Decimal  @db.Decimal(12, 2)
+  startAt      DateTime @map("start_at")
+  endAt        DateTime @map("end_at")
+  status       String   @default("active")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  group      TenantGroup @relation(fields: [groupId], references: [id])
+  subsidiary Subsidiary? @relation(fields: [subsidiaryId], references: [id])
+
+  @@unique([groupId, code])
+  @@map("promotions")
+}
+
+model Customer {
+  id           String   @id @default(uuid()) @db.Uuid
+  groupId      String   @db.Uuid @map("group_id")
+  subsidiaryId String?  @db.Uuid @map("subsidiary_id")
+  name         String
+  email        String?
+  phone        String?
+  status       String   @default("active")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  group      TenantGroup @relation(fields: [groupId], references: [id])
+  subsidiary Subsidiary? @relation(fields: [subsidiaryId], references: [id])
+  carts     Cart[]
+  orders    Order[]
+  loyaltyAccounts LoyaltyAccount[]
+
+  @@map("customers")
+}
+
+model Reseller {
+  id           String   @id @default(uuid()) @db.Uuid
+  groupId      String   @db.Uuid @map("group_id")
+  subsidiaryId String   @db.Uuid @map("subsidiary_id")
+  name         String
+  status       String   @default("active")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  group      TenantGroup @relation(fields: [groupId], references: [id])
+  subsidiary Subsidiary  @relation(fields: [subsidiaryId], references: [id])
+  orders     Order[]
+  creditAccounts CreditAccount[]
+
+  @@map("resellers")
+}
+
+model Cart {
+  id           String   @id @default(uuid()) @db.Uuid
+  groupId      String   @db.Uuid @map("group_id")
+  subsidiaryId String   @db.Uuid @map("subsidiary_id")
+  customerId   String?  @db.Uuid @map("customer_id")
+  status       String   @default("open")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @default(now()) @map("updated_at")
+
+  group      TenantGroup @relation(fields: [groupId], references: [id])
+  subsidiary Subsidiary  @relation(fields: [subsidiaryId], references: [id])
+  customer   Customer?   @relation(fields: [customerId], references: [id])
+  items      CartItem[]
+
+  @@map("carts")
+}
+
+model CartItem {
+  id        String   @id @default(uuid()) @db.Uuid
+  cartId    String   @db.Uuid @map("cart_id")
+  productId String   @db.Uuid @map("product_id")
+  variantId String?  @db.Uuid @map("variant_id")
+  quantity  Int
+  unitPrice Decimal  @db.Decimal(12, 2) @map("unit_price")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  cart    Cart    @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id])
+  variant Variant? @relation(fields: [variantId], references: [id])
+
+  @@map("cart_items")
+}
+
+model Order {
+  id           String   @id @default(uuid()) @db.Uuid
+  groupId      String   @db.Uuid @map("group_id")
+  subsidiaryId String   @db.Uuid @map("subsidiary_id")
+  locationId   String?  @db.Uuid @map("location_id")
+  channel      String?
+  orderNo      String   @map("order_no")
+  customerId   String?  @db.Uuid @map("customer_id")
+  resellerId   String?  @db.Uuid @map("reseller_id")
+  status       String   @default("pending")
+  totalAmount  Decimal  @db.Decimal(12, 2) @map("total_amount")
+  currency     String
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @default(now()) @map("updated_at")
+
+  group      TenantGroup @relation(fields: [groupId], references: [id])
+  subsidiary Subsidiary  @relation(fields: [subsidiaryId], references: [id])
+  location   Location?   @relation(fields: [locationId], references: [id])
+  customer   Customer?   @relation(fields: [customerId], references: [id])
+  reseller   Reseller?   @relation(fields: [resellerId], references: [id])
+  items      OrderItem[]
+  invoices   Invoice[]
+  payments   PaymentIntent[]
+  returnRecords ReturnRecord[]
+  shipments  Shipment[]
+
+  @@unique([groupId, orderNo])
+  @@index([status])
+  @@index([createdAt])
+  @@map("orders")
+}
+
+model OrderItem {
+  id         String  @id @default(uuid()) @db.Uuid
+  orderId    String  @db.Uuid @map("order_id")
+  productId  String  @db.Uuid @map("product_id")
+  variantId  String? @db.Uuid @map("variant_id")
+  quantity   Int
+  unitPrice  Decimal @db.Decimal(12, 2) @map("unit_price")
+  totalPrice Decimal @db.Decimal(12, 2) @map("total_price")
+
+  order   Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id])
+  variant Variant? @relation(fields: [variantId], references: [id])
+
+  @@map("order_items")
+}
+
+model Invoice {
+  id               String   @id @default(uuid()) @db.Uuid
+  orderId          String?  @db.Uuid @map("order_id")
+  invoiceType      String   @default("EXTERNAL") @map("invoice_type")
+  status           String   @default("pending")
+  sellerCompanyId  String   @db.Uuid @map("seller_company_id")
+  buyerCompanyId   String   @db.Uuid @map("buyer_company_id")
+  period           String
+  issueDate        DateTime @map("issue_date")
+  dueDate          DateTime @map("due_date")
+  subtotal         Decimal  @db.Decimal(12, 2)
+  vatAmount        Decimal  @db.Decimal(12, 2) @map("vat_amount")
+  totalAmount      Decimal  @db.Decimal(12, 2) @map("total_amount")
+  isCreditNote     Boolean  @default(false) @map("is_credit_note")
+  relatedInvoiceId String?  @db.Uuid @map("related_invoice_id")
+  createdAt        DateTime @default(now()) @map("created_at")
+
+  order          Order?      @relation(fields: [orderId], references: [id])
+  sellerCompany  Subsidiary  @relation("InvoiceSeller", fields: [sellerCompanyId], references: [id])
+  buyerCompany   Subsidiary  @relation("InvoiceBuyer", fields: [buyerCompanyId], references: [id])
+  relatedInvoice Invoice?    @relation("InvoiceCreditNoteRelation", fields: [relatedInvoiceId], references: [id])
+  creditNotes    Invoice[]   @relation("InvoiceCreditNoteRelation")
+  lines          InvoiceLine[]
+  payments       Payment[]
+
+  @@map("invoices")
+}
+
+model PaymentIntent {
+  id           String   @id @default(uuid()) @db.Uuid
+  groupId      String   @db.Uuid @map("group_id")
+  subsidiaryId String   @db.Uuid @map("subsidiary_id")
+  orderId      String   @db.Uuid @map("order_id")
+  amount       Decimal  @db.Decimal(12, 2)
+  currency     String
+  status       String
+  provider     String?
+  reference    String?
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  group      TenantGroup @relation(fields: [groupId], references: [id])
+  subsidiary Subsidiary  @relation(fields: [subsidiaryId], references: [id])
+  order      Order       @relation(fields: [orderId], references: [id])
+  refunds    Refund[]
+
+  @@index([orderId])
+  @@map("payment_intents")
+}
+
+model Refund {
+  id              String   @id @default(uuid()) @db.Uuid
+  groupId         String   @db.Uuid @map("group_id")
+  subsidiaryId    String   @db.Uuid @map("subsidiary_id")
+  paymentIntentId String   @db.Uuid @map("payment_intent_id")
+  amount          Decimal  @db.Decimal(12, 2)
+  reason          String?
+  status          String   @default("pending")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  group         TenantGroup @relation(fields: [groupId], references: [id])
+  subsidiary    Subsidiary  @relation(fields: [subsidiaryId], references: [id])
+  paymentIntent PaymentIntent @relation(fields: [paymentIntentId], references: [id])
+
+  @@map("refunds")
+}
+
+model ReturnRecord {
+  id           String   @id @default(uuid()) @db.Uuid
+  groupId      String   @db.Uuid @map("group_id")
+  subsidiaryId String   @db.Uuid @map("subsidiary_id")
+  orderId      String   @db.Uuid @map("order_id")
+  status       String   @default("pending")
+  reason       String?
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  group      TenantGroup @relation(fields: [groupId], references: [id])
+  subsidiary Subsidiary  @relation(fields: [subsidiaryId], references: [id])
+  order      Order       @relation(fields: [orderId], references: [id])
+
+  @@map("returns")
+}
+
+model CreditAccount {
+  id           String   @id @default(uuid()) @db.Uuid
+  groupId      String   @db.Uuid @map("group_id")
+  subsidiaryId String   @db.Uuid @map("subsidiary_id")
+  resellerId   String   @db.Uuid @map("reseller_id")
+  limitAmount  Decimal  @db.Decimal(12, 2) @map("limit_amount")
+  usedAmount   Decimal  @db.Decimal(12, 2) @default(0) @map("used_amount")
+  status       String   @default("active")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @default(now()) @map("updated_at")
+
+  group      TenantGroup @relation(fields: [groupId], references: [id])
+  subsidiary Subsidiary  @relation(fields: [subsidiaryId], references: [id])
+  reseller   Reseller    @relation(fields: [resellerId], references: [id])
+  schedules  PaymentSchedule[]
+  repayments Repayment[]
+
+  @@index([resellerId])
+  @@map("credit_accounts")
+}
+
+model PaymentSchedule {
+  id              String   @id @default(uuid()) @db.Uuid
+  groupId         String   @db.Uuid @map("group_id")
+  subsidiaryId    String   @db.Uuid @map("subsidiary_id")
+  creditAccountId String   @db.Uuid @map("credit_account_id")
+  dueDate         DateTime @db.Date @map("due_date")
+  amount          Decimal  @db.Decimal(12, 2)
+  status          String   @default("pending")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  group         TenantGroup @relation(fields: [groupId], references: [id])
+  subsidiary    Subsidiary  @relation(fields: [subsidiaryId], references: [id])
+  creditAccount CreditAccount @relation(fields: [creditAccountId], references: [id])
+
+  @@map("payment_schedules")
+}
+
+model Repayment {
+  id              String   @id @default(uuid()) @db.Uuid
+  groupId         String   @db.Uuid @map("group_id")
+  subsidiaryId    String   @db.Uuid @map("subsidiary_id")
+  creditAccountId String   @db.Uuid @map("credit_account_id")
+  amount          Decimal  @db.Decimal(12, 2)
+  paidAt          DateTime @default(now()) @map("paid_at")
+  method          String?
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  group         TenantGroup @relation(fields: [groupId], references: [id])
+  subsidiary    Subsidiary  @relation(fields: [subsidiaryId], references: [id])
+  creditAccount CreditAccount @relation(fields: [creditAccountId], references: [id])
+
+  @@map("repayments")
+}
+
+model LoyaltyAccount {
+  id            String   @id @default(uuid()) @db.Uuid
+  groupId       String   @db.Uuid @map("group_id")
+  subsidiaryId  String   @db.Uuid @map("subsidiary_id")
+  customerId    String   @db.Uuid @map("customer_id")
+  pointsBalance Int      @default(0) @map("points_balance")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @default(now()) @map("updated_at")
+
+  group      TenantGroup @relation(fields: [groupId], references: [id])
+  subsidiary Subsidiary  @relation(fields: [subsidiaryId], references: [id])
+  customer   Customer    @relation(fields: [customerId], references: [id])
+  ledger     PointsLedger[]
+
+  @@unique([customerId])
+  @@map("loyalty_accounts")
+}
+
+model PointsLedger {
+  id               String   @id @default(uuid()) @db.Uuid
+  groupId          String   @db.Uuid @map("group_id")
+  subsidiaryId     String   @db.Uuid @map("subsidiary_id")
+  loyaltyAccountId String   @db.Uuid @map("loyalty_account_id")
+  points           Int
+  reason           String?
+  createdAt        DateTime @default(now()) @map("created_at")
+
+  group          TenantGroup @relation(fields: [groupId], references: [id])
+  subsidiary     Subsidiary  @relation(fields: [subsidiaryId], references: [id])
+  loyaltyAccount LoyaltyAccount @relation(fields: [loyaltyAccountId], references: [id])
+
+  @@map("points_ledger")
+}
+
+model Campaign {
+  id           String   @id @default(uuid()) @db.Uuid
+  groupId      String   @db.Uuid @map("group_id")
+  subsidiaryId String?  @db.Uuid @map("subsidiary_id")
+  name         String
+  startAt      DateTime? @map("start_at")
+  endAt        DateTime? @map("end_at")
+  status       String   @default("active")
+
+  group      TenantGroup @relation(fields: [groupId], references: [id])
+  subsidiary Subsidiary? @relation(fields: [subsidiaryId], references: [id])
+
+  @@map("campaigns")
+}
+
+model Shipment {
+  id           String   @id @default(uuid()) @db.Uuid
+  groupId      String   @db.Uuid @map("group_id")
+  subsidiaryId String   @db.Uuid @map("subsidiary_id")
+  orderId      String   @db.Uuid @map("order_id")
+  carrier      String
+  status       String   @default("created")
+  trackingNo   String?  @map("tracking_no")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @default(now()) @map("updated_at")
+
+  group      TenantGroup @relation(fields: [groupId], references: [id])
+  subsidiary Subsidiary  @relation(fields: [subsidiaryId], references: [id])
+  order      Order       @relation(fields: [orderId], references: [id])
+  slots      DeliverySlot[]
+  proofs     ProofOfDelivery[]
+
+  @@index([orderId])
+  @@map("shipments")
+}
+
+model DeliverySlot {
+  id           String   @id @default(uuid()) @db.Uuid
+  groupId      String   @db.Uuid @map("group_id")
+  subsidiaryId String   @db.Uuid @map("subsidiary_id")
+  shipmentId   String   @db.Uuid @map("shipment_id")
+  startAt      DateTime @map("start_at")
+  endAt        DateTime @map("end_at")
+
+  group      TenantGroup @relation(fields: [groupId], references: [id])
+  subsidiary Subsidiary  @relation(fields: [subsidiaryId], references: [id])
+  shipment   Shipment    @relation(fields: [shipmentId], references: [id])
+
+  @@map("delivery_slots")
+}
+
+model ProofOfDelivery {
+  id           String   @id @default(uuid()) @db.Uuid
+  groupId      String   @db.Uuid @map("group_id")
+  subsidiaryId String   @db.Uuid @map("subsidiary_id")
+  shipmentId   String   @db.Uuid @map("shipment_id")
+  signedBy     String?  @map("signed_by")
+  receivedAt   DateTime? @map("received_at")
+
+  group      TenantGroup @relation(fields: [groupId], references: [id])
+  subsidiary Subsidiary  @relation(fields: [subsidiaryId], references: [id])
+  shipment   Shipment    @relation(fields: [shipmentId], references: [id])
+
+  @@map("proofs_of_delivery")
+}
+
+model AuditLog {
+  id         String   @id @default(uuid()) @db.Uuid
+  groupId    String   @db.Uuid @map("group_id")
+  subsidiaryId String? @db.Uuid @map("subsidiary_id")
+  actorId    String?  @db.Uuid @map("actor_id")
+  action     String
+  entityType String   @map("entity_type")
+  entityId   String?  @db.Uuid @map("entity_id")
+  payload    Json?
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  group      TenantGroup @relation(fields: [groupId], references: [id])
+  subsidiary Subsidiary? @relation(fields: [subsidiaryId], references: [id])
+  actor      User?        @relation(fields: [actorId], references: [id])
+
+  @@index([entityType, entityId])
+  @@map("audit_logs")
+}
+
+model EventOutbox {
+  id           String   @id @default(uuid()) @db.Uuid
+  groupId      String   @db.Uuid @map("group_id")
+  subsidiaryId String?  @db.Uuid @map("subsidiary_id")
+  aggregateType String  @map("aggregate_type")
+  aggregateId  String   @db.Uuid @map("aggregate_id")
+  eventType    String   @map("event_type")
+  payload      Json
+  status       String   @default("pending")
+  availableAt  DateTime @default(now()) @map("available_at")
+  attempts     Int      @default(0)
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  group      TenantGroup @relation(fields: [groupId], references: [id])
+  subsidiary Subsidiary? @relation(fields: [subsidiaryId], references: [id])
+
+  @@map("event_outbox")
+}
+
+model ExternalSystem {
+  id        String   @id @default(uuid()) @db.Uuid
+  name      String   @unique
+  createdAt DateTime @default(now()) @map("created_at")
+
+  externalIds ExternalIdMap[]
+
+  @@map("external_systems")
+}
+
+model ExternalIdMap {
+  id               String   @id @default(uuid()) @db.Uuid
+  externalSystemId String   @db.Uuid @map("external_system_id")
+  entityType       String   @map("entity_type")
+  entityId         String   @db.Uuid @map("entity_id")
+  externalId       String   @map("external_id")
+  createdAt        DateTime @default(now()) @map("created_at")
+
+  externalSystem ExternalSystem @relation(fields: [externalSystemId], references: [id])
+
+  @@unique([externalSystemId, entityType, externalId])
+  @@map("external_id_maps")
+}
+
+model ExternalClient {
+  id        String   @id @default(uuid()) @db.Uuid
+  groupId   String   @db.Uuid @map("group_id")
+  name      String
+  type      String
+  email     String?
+  phone     String?
+  status    String   @default("active")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @default(now()) @map("updated_at")
+
+  group            TenantGroup       @relation(fields: [groupId], references: [id])
+  serviceRequests  ServiceRequest[]
+  purchaseOrders   PurchaseOrder[]
+  advisoryEngagements AdvisoryEngagement[]
+
+  @@unique([groupId, name, type])
+  @@map("external_clients")
+}
+
+model ServiceRequest {
+  id              String   @id @default(uuid()) @db.Uuid
+  groupId         String   @db.Uuid @map("group_id")
+  subsidiaryId    String?  @db.Uuid @map("subsidiary_id")
+  externalClientId String? @db.Uuid @map("external_client_id")
+  category        String
+  title           String
+  description     String?
+  status          String   @default("open")
+  priority        String   @default("normal")
+  assignedToId    String?  @db.Uuid @map("assigned_to")
+  approvedById    String?  @db.Uuid @map("approved_by")
+  approvedAt      DateTime? @map("approved_at")
+  rejectedById    String?  @db.Uuid @map("rejected_by")
+  rejectedAt      DateTime? @map("rejected_at")
+  reason          String?
+  dueAt           DateTime? @map("due_at")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @default(now()) @map("updated_at")
+
+  group         TenantGroup  @relation(fields: [groupId], references: [id])
+  subsidiary    Subsidiary?  @relation(fields: [subsidiaryId], references: [id])
+  externalClient ExternalClient? @relation(fields: [externalClientId], references: [id])
+  assignedTo    User?        @relation("ServiceRequestAssignedTo", fields: [assignedToId], references: [id])
+  approvedBy    User?        @relation("ServiceRequestApprovedBy", fields: [approvedById], references: [id])
+  rejectedBy    User?        @relation("ServiceRequestRejectedBy", fields: [rejectedById], references: [id])
+  tasks         ServiceTask[]
+
+  @@map("service_requests")
+}
+
+model ServiceTask {
+  id               String   @id @default(uuid()) @db.Uuid
+  serviceRequestId String   @db.Uuid @map("service_request_id")
+  title            String
+  status           String   @default("open")
+  assignedToId     String?  @db.Uuid @map("assigned_to")
+  dueAt            DateTime? @map("due_at")
+  createdAt        DateTime @default(now()) @map("created_at")
+
+  serviceRequest ServiceRequest @relation(fields: [serviceRequestId], references: [id], onDelete: Cascade)
+  assignedTo     User?          @relation(fields: [assignedToId], references: [id])
+
+  @@map("service_tasks")
+}
+
+model Department {
+  id           String   @id @default(uuid()) @db.Uuid
+  groupId      String   @db.Uuid @map("group_id")
+  subsidiaryId String?  @db.Uuid @map("subsidiary_id")
+  code         String?
+  name         String
+  status       String   @default("active")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @default(now()) @map("updated_at")
+
+  group      TenantGroup @relation(fields: [groupId], references: [id])
+  subsidiary Subsidiary? @relation(fields: [subsidiaryId], references: [id])
+  employees  Employee[]
+
+  @@unique([groupId, code])
+  @@map("departments")
+}
+
+model Position {
+  id           String   @id @default(uuid()) @db.Uuid
+  groupId      String   @db.Uuid @map("group_id")
+  subsidiaryId String?  @db.Uuid @map("subsidiary_id")
+  title        String
+  level        String?
+  status       String   @default("active")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  group      TenantGroup @relation(fields: [groupId], references: [id])
+  subsidiary Subsidiary? @relation(fields: [subsidiaryId], references: [id])
+  employees  Employee[]
+
+  @@map("positions")
+}
+
+model Employee {
+  id           String   @id @default(uuid()) @db.Uuid
+  groupId      String   @db.Uuid @map("group_id")
+  subsidiaryId String   @db.Uuid @map("subsidiary_id")
+  userId       String?  @db.Uuid @map("user_id")
+  departmentId String?  @db.Uuid @map("department_id")
+  positionId   String?  @db.Uuid @map("position_id")
+  employeeNo   String   @map("employee_no")
+  status       String   @default("active")
+  hiredAt      DateTime? @db.Date @map("hired_at")
+  terminatedAt DateTime? @db.Date @map("terminated_at")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @default(now()) @map("updated_at")
+
+  group      TenantGroup @relation(fields: [groupId], references: [id])
+  subsidiary Subsidiary  @relation(fields: [subsidiaryId], references: [id])
+  user       User?       @relation(fields: [userId], references: [id])
+  department Department? @relation(fields: [departmentId], references: [id])
+  position   Position?   @relation(fields: [positionId], references: [id])
+  leaveRequests LeaveRequest[]
+
+  @@unique([groupId, employeeNo])
+  @@index([departmentId])
+  @@map("employees")
+}
+
+model LeaveRequest {
+  id           String   @id @default(uuid()) @db.Uuid
+  groupId      String   @db.Uuid @map("group_id")
+  subsidiaryId String   @db.Uuid @map("subsidiary_id")
+  employeeId   String   @db.Uuid @map("employee_id")
+  type         String
+  startDate    DateTime @db.Date @map("start_date")
+  endDate      DateTime @db.Date @map("end_date")
+  status       String   @default("pending")
+  reason       String?
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  group      TenantGroup @relation(fields: [groupId], references: [id])
+  subsidiary Subsidiary  @relation(fields: [subsidiaryId], references: [id])
+  employee   Employee    @relation(fields: [employeeId], references: [id])
+
+  @@map("leave_requests")
+}
+
+model CostCenter {
+  id           String   @id @default(uuid()) @db.Uuid
+  groupId      String   @db.Uuid @map("group_id")
+  subsidiaryId String?  @db.Uuid @map("subsidiary_id")
+  code         String
+  name         String
+  status       String   @default("active")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  group      TenantGroup @relation(fields: [groupId], references: [id])
+  subsidiary Subsidiary? @relation(fields: [subsidiaryId], references: [id])
+  journalLines JournalLine[]
+
+  @@unique([groupId, code])
+  @@map("cost_centers")
+}
+
+model ChartOfAccount {
+  id        String   @id @default(uuid()) @db.Uuid
+  groupId   String   @db.Uuid @map("group_id")
+  code      String
+  name      String
+  type      String
+  parentId  String?  @db.Uuid @map("parent_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  group    TenantGroup @relation(fields: [groupId], references: [id])
+  parent   ChartOfAccount? @relation("ChartOfAccountHierarchy", fields: [parentId], references: [id])
+  children ChartOfAccount[] @relation("ChartOfAccountHierarchy")
+  lines    JournalLine[]
+
+  @@unique([groupId, code])
+  @@map("chart_of_accounts")
+}
+
+model FiscalPeriod {
+  id        String   @id @default(uuid()) @db.Uuid
+  groupId   String   @db.Uuid @map("group_id")
+  name      String
+  startDate DateTime @db.Date @map("start_date")
+  endDate   DateTime @db.Date @map("end_date")
+  status    String   @default("open")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  group        TenantGroup @relation(fields: [groupId], references: [id])
+  journalEntries JournalEntry[]
+
+  @@map("fiscal_periods")
+}
+
+model JournalEntry {
+  id            String   @id @default(uuid()) @db.Uuid
+  groupId       String   @db.Uuid @map("group_id")
+  subsidiaryId  String?  @db.Uuid @map("subsidiary_id")
+  fiscalPeriodId String  @db.Uuid @map("fiscal_period_id")
+  reference     String?
+  memo          String?
+  status        String   @default("draft")
+  postedAt      DateTime? @map("posted_at")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  group        TenantGroup @relation(fields: [groupId], references: [id])
+  subsidiary   Subsidiary? @relation(fields: [subsidiaryId], references: [id])
+  fiscalPeriod FiscalPeriod @relation(fields: [fiscalPeriodId], references: [id])
+  lines        JournalLine[]
+
+  @@index([fiscalPeriodId])
+  @@map("journal_entries")
+}
+
+model JournalLine {
+  id            String   @id @default(uuid()) @db.Uuid
+  journalEntryId String  @db.Uuid @map("journal_entry_id")
+  accountId     String   @db.Uuid @map("account_id")
+  costCenterId  String?  @db.Uuid @map("cost_center_id")
+  description   String?
+  debit         Decimal  @db.Decimal(12, 2)
+  credit        Decimal  @db.Decimal(12, 2)
+
+  journalEntry JournalEntry @relation(fields: [journalEntryId], references: [id], onDelete: Cascade)
+  account      ChartOfAccount @relation(fields: [accountId], references: [id])
+  costCenter   CostCenter? @relation(fields: [costCenterId], references: [id])
+
+  @@map("journal_lines")
+}
+
+model CompliancePolicy {
+  id         String   @id @default(uuid()) @db.Uuid
+  groupId    String   @db.Uuid @map("group_id")
+  title      String
+  version    String?
+  status     String   @default("active")
+  effectiveAt DateTime? @db.Date @map("effective_at")
+  reviewAt   DateTime? @db.Date @map("review_at")
+  ownerId    String?  @db.Uuid @map("owner_id")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  group   TenantGroup @relation(fields: [groupId], references: [id])
+  owner   User?       @relation(fields: [ownerId], references: [id])
+  tasks   ComplianceTask[]
+
+  @@map("compliance_policies")
+}
+
+model ComplianceTask {
+  id           String   @id @default(uuid()) @db.Uuid
+  groupId      String   @db.Uuid @map("group_id")
+  subsidiaryId String?  @db.Uuid @map("subsidiary_id")
+  policyId     String?  @db.Uuid @map("policy_id")
+  title        String
+  status       String   @default("open")
+  dueAt        DateTime? @map("due_at")
+  assigneeId   String?  @db.Uuid @map("assignee_id")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  group      TenantGroup @relation(fields: [groupId], references: [id])
+  subsidiary Subsidiary? @relation(fields: [subsidiaryId], references: [id])
+  policy     CompliancePolicy? @relation(fields: [policyId], references: [id])
+  assignee   User?        @relation(fields: [assigneeId], references: [id])
+
+  @@map("compliance_tasks")
+}
+
+model RiskRegisterItem {
+  id           String   @id @default(uuid()) @db.Uuid
+  groupId      String   @db.Uuid @map("group_id")
+  subsidiaryId String?  @db.Uuid @map("subsidiary_id")
+  title        String
+  category     String?
+  likelihood   Int?
+  impact       Int?
+  score        Int?
+  status       String   @default("open")
+  ownerId      String?  @db.Uuid @map("owner_id")
+  mitigation   String?
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  group      TenantGroup @relation(fields: [groupId], references: [id])
+  subsidiary Subsidiary? @relation(fields: [subsidiaryId], references: [id])
+  owner      User?        @relation(fields: [ownerId], references: [id])
+
+  @@index([status])
+  @@map("risk_register_items")
+}
+
+model ComplianceAudit {
+  id           String   @id @default(uuid()) @db.Uuid
+  groupId      String   @db.Uuid @map("group_id")
+  subsidiaryId String?  @db.Uuid @map("subsidiary_id")
+  title        String
+  scope        String?
+  status       String   @default("planned")
+  startedAt    DateTime? @db.Date @map("started_at")
+  completedAt  DateTime? @db.Date @map("completed_at")
+  leadAuditorId String? @db.Uuid @map("lead_auditor_id")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  group      TenantGroup @relation(fields: [groupId], references: [id])
+  subsidiary Subsidiary? @relation(fields: [subsidiaryId], references: [id])
+  leadAuditor User?       @relation(fields: [leadAuditorId], references: [id])
+  findings    AuditFinding[]
+
+  @@map("compliance_audits")
+}
+
+model AuditFinding {
+  id                String   @id @default(uuid()) @db.Uuid
+  complianceAuditId String   @db.Uuid @map("compliance_audit_id")
+  severity          String
+  description       String
+  status            String   @default("open")
+  remediationDueAt  DateTime? @db.Date @map("remediation_due_at")
+  assigneeId        String?  @db.Uuid @map("assignee_id")
+  createdAt         DateTime @default(now()) @map("created_at")
+
+  complianceAudit ComplianceAudit @relation(fields: [complianceAuditId], references: [id], onDelete: Cascade)
+  assignee        User?           @relation(fields: [assigneeId], references: [id])
+
+  @@map("audit_findings")
+}
+
+model PurchaseRequest {
+  id           String   @id @default(uuid()) @db.Uuid
+  groupId      String   @db.Uuid @map("group_id")
+  subsidiaryId String   @db.Uuid @map("subsidiary_id")
+  requesterId  String?  @db.Uuid @map("requester_id")
+  status       String   @default("pending")
+  requestedAt  DateTime @default(now()) @map("requested_at")
+  neededBy     DateTime? @db.Date @map("needed_by")
+  notes        String?
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  group      TenantGroup @relation(fields: [groupId], references: [id])
+  subsidiary Subsidiary  @relation(fields: [subsidiaryId], references: [id])
+  requester  User?       @relation(fields: [requesterId], references: [id])
+  items      PurchaseRequestItem[]
+
+  @@map("purchase_requests")
+}
+
+model PurchaseRequestItem {
+  id                String   @id @default(uuid()) @db.Uuid
+  purchaseRequestId String   @db.Uuid @map("purchase_request_id")
+  description       String
+  quantity          Int
+  unit              String?
+  estimatedUnitCost Decimal? @db.Decimal(12, 2) @map("estimated_unit_cost")
+
+  purchaseRequest PurchaseRequest @relation(fields: [purchaseRequestId], references: [id], onDelete: Cascade)
+
+  @@map("purchase_request_items")
+}
+
+model PurchaseOrder {
+  id           String   @id @default(uuid()) @db.Uuid
+  groupId      String   @db.Uuid @map("group_id")
+  subsidiaryId String   @db.Uuid @map("subsidiary_id")
+  vendorId     String?  @db.Uuid @map("vendor_id")
+  status       String   @default("draft")
+  orderedAt    DateTime? @map("ordered_at")
+  expectedAt   DateTime? @db.Date @map("expected_at")
+  totalAmount  Decimal? @db.Decimal(12, 2) @map("total_amount")
+  currency     String?
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  group      TenantGroup @relation(fields: [groupId], references: [id])
+  subsidiary Subsidiary  @relation(fields: [subsidiaryId], references: [id])
+  vendor     ExternalClient? @relation(fields: [vendorId], references: [id])
+  items      PurchaseOrderItem[]
+
+  @@index([vendorId])
+  @@map("purchase_orders")
+}
+
+model PurchaseOrderItem {
+  id              String   @id @default(uuid()) @db.Uuid
+  purchaseOrderId String   @db.Uuid @map("purchase_order_id")
+  description     String
+  quantity        Int
+  unitPrice       Decimal  @db.Decimal(12, 2) @map("unit_price")
+  totalPrice      Decimal  @db.Decimal(12, 2) @map("total_price")
+
+  purchaseOrder PurchaseOrder @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
+
+  @@map("purchase_order_items")
+}
+
+model AdvisoryEngagement {
+  id              String   @id @default(uuid()) @db.Uuid
+  groupId         String   @db.Uuid @map("group_id")
+  subsidiaryId    String?  @db.Uuid @map("subsidiary_id")
+  externalClientId String? @db.Uuid @map("external_client_id")
+  title           String
+  scope           String?
+  status          String   @default("active")
+  startAt         DateTime? @db.Date @map("start_at")
+  endAt           DateTime? @db.Date @map("end_at")
+  leadId          String?  @db.Uuid @map("lead_id")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  group          TenantGroup @relation(fields: [groupId], references: [id])
+  subsidiary     Subsidiary? @relation(fields: [subsidiaryId], references: [id])
+  externalClient ExternalClient? @relation(fields: [externalClientId], references: [id])
+  lead           User?       @relation(fields: [leadId], references: [id])
+  deliverables   AdvisoryDeliverable[]
+
+  @@index([externalClientId])
+  @@map("advisory_engagements")
+}
+
+model AdvisoryDeliverable {
+  id                 String   @id @default(uuid()) @db.Uuid
+  advisoryEngagementId String  @db.Uuid @map("advisory_engagement_id")
+  title              String
+  status             String   @default("open")
+  dueAt              DateTime? @db.Date @map("due_at")
+  deliveredAt        DateTime? @db.Date @map("delivered_at")
+  createdAt          DateTime @default(now()) @map("created_at")
+
+  advisoryEngagement AdvisoryEngagement @relation(fields: [advisoryEngagementId], references: [id], onDelete: Cascade)
+
+  @@map("advisory_deliverables")
+}
+
+model LedgerAccount {
+  id        String   @id @default(uuid()) @db.Uuid
+  companyId String   @db.Uuid @map("company_id")
+  code      String
+  name      String?
+  type      String
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @default(now()) @map("updated_at")
+
+  company Subsidiary @relation(fields: [companyId], references: [id])
+  entries LedgerEntry[]
+
+  @@unique([companyId, code])
+  @@map("ledger_accounts")
+}
+
+model LedgerEntry {
+  id         String   @id @default(uuid()) @db.Uuid
+  companyId  String   @db.Uuid @map("company_id")
+  period     String
+  entryDate  DateTime @map("entry_date")
+  accountId  String   @db.Uuid @map("account_id")
+  debit      Decimal  @db.Decimal(12, 2)
+  credit     Decimal  @db.Decimal(12, 2)
+  memo       String?
+  sourceType String   @map("source_type")
+  sourceRef  String   @map("source_ref")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  company Subsidiary  @relation(fields: [companyId], references: [id])
+  account LedgerAccount @relation(fields: [accountId], references: [id])
+
+  @@index([companyId, period])
+  @@map("ledger_entries")
+}
+
+model CostPool {
+  id        String   @id @default(uuid()) @db.Uuid
+  companyId String   @db.Uuid @map("company_id")
+  period    String
+  totalCost Decimal  @db.Decimal(12, 2) @map("total_cost")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  company        Subsidiary   @relation(fields: [companyId], references: [id])
+  lines          CostPoolLine[]
+  allocationRule AllocationRule?
+  allocations    CostAllocation[]
+
+  @@unique([companyId, period])
+  @@map("cost_pools")
+}
+
+model CostPoolLine {
+  id         String   @id @default(uuid()) @db.Uuid
+  costPoolId String   @db.Uuid @map("cost_pool_id")
+  category   String
+  amount     Decimal  @db.Decimal(12, 2)
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  costPool CostPool @relation(fields: [costPoolId], references: [id], onDelete: Cascade)
+
+  @@map("cost_pool_lines")
+}
+
+model AllocationRule {
+  id         String   @id @default(uuid()) @db.Uuid
+  costPoolId String   @unique @db.Uuid @map("cost_pool_id")
+  method     String
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  costPool CostPool @relation(fields: [costPoolId], references: [id], onDelete: Cascade)
+  weights  AllocationWeight[]
+
+  @@map("allocation_rules")
+}
+
+model AllocationWeight {
+  id               String   @id @default(uuid()) @db.Uuid
+  allocationRuleId String   @db.Uuid @map("allocation_rule_id")
+  recipientCompanyId String @db.Uuid @map("recipient_company_id")
+  weight           Decimal  @db.Decimal(8, 6)
+  createdAt        DateTime @default(now()) @map("created_at")
+
+  allocationRule  AllocationRule @relation(fields: [allocationRuleId], references: [id], onDelete: Cascade)
+  recipientCompany Subsidiary    @relation(fields: [recipientCompanyId], references: [id])
+
+  @@unique([allocationRuleId, recipientCompanyId])
+  @@map("allocation_weights")
+}
+
+model CostAllocation {
+  id                String   @id @default(uuid()) @db.Uuid
+  costPoolId         String   @db.Uuid @map("cost_pool_id")
+  recipientCompanyId String   @db.Uuid @map("recipient_company_id")
+  allocatedCost      Decimal  @db.Decimal(12, 2) @map("allocated_cost")
+  createdAt          DateTime @default(now()) @map("created_at")
+
+  costPool         CostPool   @relation(fields: [costPoolId], references: [id], onDelete: Cascade)
+  recipientCompany Subsidiary @relation(fields: [recipientCompanyId], references: [id])
+
+  @@unique([costPoolId, recipientCompanyId])
+  @@map("cost_allocations")
+}
+
+model IntercompanyAgreement {
+  id                 String   @id @default(uuid()) @db.Uuid
+  providerCompanyId  String   @db.Uuid @map("provider_company_id")
+  recipientCompanyId String   @db.Uuid @map("recipient_company_id")
+  type               String
+  pricingModel       String   @map("pricing_model")
+  markupRate         Decimal? @db.Decimal(8, 4) @map("markup_rate")
+  fixedFeeAmount     Decimal? @db.Decimal(12, 2) @map("fixed_fee_amount")
+  vatApplies         Boolean  @default(false) @map("vat_applies")
+  vatRate            Decimal  @db.Decimal(8, 4) @map("vat_rate")
+  whtApplies         Boolean  @default(false) @map("wht_applies")
+  whtRate            Decimal  @db.Decimal(8, 4) @map("wht_rate")
+  whtTaxType         String?  @map("wht_tax_type")
+  effectiveFrom      DateTime @map("effective_from")
+  effectiveTo        DateTime? @map("effective_to")
+  createdAt          DateTime @default(now()) @map("created_at")
+
+  providerCompany  Subsidiary @relation("IntercompanyAgreementProvider", fields: [providerCompanyId], references: [id])
+  recipientCompany Subsidiary @relation("IntercompanyAgreementRecipient", fields: [recipientCompanyId], references: [id])
+  lines            InvoiceLine[]
+
+  @@index([providerCompanyId])
+  @@map("intercompany_agreements")
+}
+
+model InvoiceLine {
+  id           String   @id @default(uuid()) @db.Uuid
+  invoiceId    String   @db.Uuid @map("invoice_id")
+  agreementId  String?  @db.Uuid @map("agreement_id")
+  description  String
+  netAmount    Decimal  @db.Decimal(12, 2) @map("net_amount")
+  vatRate      Decimal  @db.Decimal(8, 4) @map("vat_rate")
+  vatAmount    Decimal  @db.Decimal(12, 2) @map("vat_amount")
+  whtRate      Decimal  @db.Decimal(8, 4) @map("wht_rate")
+  whtAmount    Decimal  @db.Decimal(12, 2) @map("wht_amount")
+  grossAmount  Decimal  @db.Decimal(12, 2) @map("gross_amount")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  invoice   Invoice               @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  agreement IntercompanyAgreement? @relation(fields: [agreementId], references: [id])
+
+  @@index([invoiceId])
+  @@map("invoice_lines")
+}
+
+model Payment {
+  id                String   @id @default(uuid()) @db.Uuid
+  invoiceId         String   @db.Uuid @map("invoice_id")
+  payerCompanyId    String   @db.Uuid @map("payer_company_id")
+  payeeCompanyId    String   @db.Uuid @map("payee_company_id")
+  paymentDate       DateTime @map("payment_date")
+  amountPaid        Decimal  @db.Decimal(12, 2) @map("amount_paid")
+  whtWithheldAmount Decimal  @db.Decimal(12, 2) @map("wht_withheld_amount")
+  reference         String?
+  notes             String?
+  createdAt         DateTime @default(now()) @map("created_at")
+
+  invoice      Invoice    @relation(fields: [invoiceId], references: [id])
+  payerCompany Subsidiary @relation("PaymentPayerCompany", fields: [payerCompanyId], references: [id])
+  payeeCompany Subsidiary @relation("PaymentPayeeCompany", fields: [payeeCompanyId], references: [id])
+
+  @@index([invoiceId])
+  @@map("payments")
+}
+
+model WhtCreditNote {
+  id                   String   @id @default(uuid()) @db.Uuid
+  period               String
+  issuerCompanyId      String   @db.Uuid @map("issuer_company_id")
+  beneficiaryCompanyId String   @db.Uuid @map("beneficiary_company_id")
+  taxType              String   @map("tax_type")
+  amount               Decimal  @db.Decimal(12, 2)
+  remittanceDate       DateTime? @map("remittance_date")
+  firReceiptRef        String?  @map("fir_receipt_ref")
+  createdAt            DateTime @default(now()) @map("created_at")
+
+  issuerCompany      Subsidiary @relation("WhtCreditNoteIssuer", fields: [issuerCompanyId], references: [id])
+  beneficiaryCompany Subsidiary @relation("WhtCreditNoteBeneficiary", fields: [beneficiaryCompanyId], references: [id])
+
+  @@index([issuerCompanyId, period])
+  @@map("wht_credit_notes")
+}
+
+model VatReturn {
+  id            String   @id @default(uuid()) @db.Uuid
+  companyId     String   @db.Uuid @map("company_id")
+  period        String
+  outputVat     Decimal  @db.Decimal(12, 2) @map("output_vat")
+  inputVat      Decimal  @db.Decimal(12, 2) @map("input_vat")
+  netVatPayable Decimal  @db.Decimal(12, 2) @map("net_vat_payable")
+  status        String   @default("DRAFT")
+  filedAt       DateTime? @map("filed_at")
+  paymentRef    String?  @map("payment_ref")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  company Subsidiary @relation(fields: [companyId], references: [id])
+
+  @@unique([companyId, period])
+  @@map("vat_returns")
+}
+
+model PeriodLock {
+  id        String   @id @default(uuid()) @db.Uuid
+  companyId String   @db.Uuid @map("company_id")
+  period    String
+  locked    Boolean  @default(false)
+  lockedAt  DateTime? @map("locked_at")
+  lockedBy  String?  @map("locked_by")
+  reason    String?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  company Subsidiary @relation(fields: [companyId], references: [id])
+
+  @@unique([companyId, period])
+  @@map("period_locks")
+}

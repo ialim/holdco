@@ -1,0 +1,2 @@
+receipt_no,store_id,order_date,customer_email,customer_phone,customer_name,total_amount,currency,status,channel
+ORD-0001,STORE-001,2024-05-12T10:00:00Z,ada.nwosu@example.com,+2348098765432,Ada Nwosu,25000,NGN,completed,retail

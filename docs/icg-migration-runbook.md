@@ -20,12 +20,53 @@ This runbook covers a one-time migration from the legacy ICG POS system into the
 ## Data mapping
 | ICG entity | Source fields | Target table | Notes |
 | --- | --- | --- | --- |
-| Product | product_code, name, brand, status | product, brand | map unique SKU to product.sku |
-| Variant | size, unit, barcode | variant | barcode goes to variant.barcode |
+| Product | product_code, name, brand, sex, concentration, status | product, brand | map unique SKU to product.sku |
+| Variant | size, unit, type, barcode | variant | barcode goes to variant.barcode |
 | Inventory | store_id, product_code, qty | stock_level | map store_id to location_id |
 | Price list | list_name, currency, price | price_list, price_rule | currency default if missing |
 | Customer | name, phone, email | customer | dedupe by phone or email |
 | Sales | receipt_no, items, totals | order, order_item, payment_intent | tag as historical orders |
+
+## CSV export format
+CSV templates are provided in `apps/api/scripts/icg/templates`. Use the same headers in your exports.
+
+Required files:
+- `brands.csv` (brand_code, brand_name, status)
+- `products.csv` (product_code, name, brand_code, sex, concentration, status)
+- `variants.csv` (product_code, size, unit, type, barcode)
+- `price_lists.csv` (list_name, currency, channel, valid_from, valid_to)
+- `price_rules.csv` (list_name, product_code, variant_barcode, price, min_qty)
+- `customers.csv` (name, phone, email, status)
+- `inventory.csv` (store_id, product_code, variant_barcode, qty)
+- `orders.csv` (receipt_no, store_id, order_date, customer_email, customer_phone, customer_name, total_amount, currency, status, channel)
+- `order_items.csv` (receipt_no, line_no, product_code, variant_barcode, quantity, unit_price, total_price)
+- `payments.csv` (receipt_no, amount, currency, status, provider, reference, payment_date)
+
+Store to location mapping template:
+- `apps/api/scripts/icg/mappings/store-location.template.csv`
+
+## Migration scripts
+1) Copy `apps/api/scripts/icg/config.template.json` to `apps/api/scripts/icg/config.json` and fill in values.
+2) Run imports in order (use `--dry-run` to preview):
+
+```
+npm --prefix apps/api run icg:import:brands -- --config scripts/icg/config.json --file /path/to/brands.csv
+npm --prefix apps/api run icg:import:products -- --config scripts/icg/config.json --file /path/to/products.csv
+npm --prefix apps/api run icg:import:variants -- --config scripts/icg/config.json --file /path/to/variants.csv
+npm --prefix apps/api run icg:import:price-lists -- --config scripts/icg/config.json --file /path/to/price_lists.csv
+npm --prefix apps/api run icg:import:price-rules -- --config scripts/icg/config.json --file /path/to/price_rules.csv
+npm --prefix apps/api run icg:import:customers -- --config scripts/icg/config.json --file /path/to/customers.csv
+npm --prefix apps/api run icg:import:inventory -- --config scripts/icg/config.json --file /path/to/inventory.csv
+npm --prefix apps/api run icg:import:orders -- --config scripts/icg/config.json --file /path/to/orders.csv
+npm --prefix apps/api run icg:import:order-items -- --config scripts/icg/config.json --file /path/to/order_items.csv
+npm --prefix apps/api run icg:import:payments -- --config scripts/icg/config.json --file /path/to/payments.csv
+```
+
+Validation:
+
+```
+npm --prefix apps/api run icg:validate -- --config scripts/icg/config.json --dir /path/to/csv-folder
+```
 
 ## Migration phases
 1. Discovery

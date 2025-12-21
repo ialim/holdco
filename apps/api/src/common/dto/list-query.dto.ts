@@ -29,6 +29,14 @@ export class ListQueryDto {
 
   @IsOptional()
   @IsUUID()
+  product_id?: string;
+
+  @IsOptional()
+  @IsUUID()
+  variant_id?: string;
+
+  @IsOptional()
+  @IsUUID()
   price_list_id?: string;
 
   @IsOptional()

@@ -1,4 +1,5 @@
 import { BadRequestException, Injectable } from "@nestjs/common";
+import { Prisma } from "@prisma/client";
 import { ListQueryDto } from "../common/dto/list-query.dto";
 import { PrismaService } from "../prisma/prisma.service";
 import { StockAdjustmentDto } from "./dto/stock-adjustment.dto";
@@ -17,6 +18,8 @@ export class InventoryService {
       groupId,
       subsidiaryId,
       ...(locationId ? { locationId } : {}),
+      ...(query.product_id ? { productId: query.product_id } : {}),
+      ...(query.variant_id ? { variantId: query.variant_id } : {}),
     };
 
     const [total, levels] = await this.prisma.$transaction([
@@ -54,7 +57,7 @@ export class InventoryService {
 
     const variantKey = body.variant_id ?? null;
 
-    const adjustment = await this.prisma.$transaction(async (tx) => {
+    const adjustment = await this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       const created = await tx.stockAdjustment.create({
         data: {
           groupId,
@@ -151,7 +154,7 @@ export class InventoryService {
 
     const variantKey = body.variant_id ?? null;
 
-    const reservation = await this.prisma.$transaction(async (tx) => {
+    const reservation = await this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       const created = await tx.stockReservation.create({
         data: {
           groupId,

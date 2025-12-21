@@ -59,13 +59,15 @@ const FINANCE_SUBSIDIARY = [
   "finance.tax_impact.read",
 ];
 
+const FINANCE_ADMIN = [...FINANCE_ALL, "shared_services.request.read"];
+
 const ROLE_PERMISSION_MAP: Record<string, string[]> = {
   SUPER_ADMIN: ["*"],
   GROUP_ADMIN: ["*"],
   HOLDCO_ADMIN: ["*"],
   HOLDCO_FINANCE: FINANCE_ALL,
   SUBSIDIARY_FINANCE: FINANCE_SUBSIDIARY,
-  FINANCE_ADMIN: FINANCE_ALL,
+  FINANCE_ADMIN,
   SHARED_SERVICES_MANAGER: [...SHARED_SERVICES_ALL, ...HR_ALL, ...COMPLIANCE_ALL],
   SHARED_SERVICES_AGENT: [
     "shared_services.request.read",

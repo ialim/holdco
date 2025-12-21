@@ -3158,6 +3158,12 @@ components:
           type: string
           minLength: 2
           example: Lumine Eau de Parfum
+        sex:
+          type: string
+          example: female
+        concentration:
+          type: string
+          example: EDP
         brand_id:
           type: string
           format: uuid
@@ -3180,6 +3186,12 @@ components:
           type: string
           minLength: 2
           example: Lumine Eau de Parfum
+        sex:
+          type: string
+          example: female
+        concentration:
+          type: string
+          example: EDP
         brand_id:
           type: string
           format: uuid
@@ -3210,6 +3222,9 @@ components:
         unit:
           type: string
           example: ml
+        type:
+          type: string
+          example: gift set
         barcode:
           type: string
           example: '6291106061234'
@@ -3227,6 +3242,9 @@ components:
         unit:
           type: string
           example: ml
+        type:
+          type: string
+          example: gift set
         barcode:
           type: string
           example: '6291106061234'
@@ -4531,6 +4549,11 @@ components:
           type: string
         status:
           $ref: '#/components/schemas/CostCenterStatus'
+      example:
+        id: 1a6e35d8-8f29-4c0e-8eaf-1d3d9d6bf5f1
+        code: OPS
+        name: Operations
+        status: active
     CreateCostCenterRequest:
       type: object
       required: [code, name]
@@ -4539,6 +4562,9 @@ components:
           type: string
         name:
           type: string
+      example:
+        code: OPS
+        name: Operations
     CostCenterListResponse:
       type: object
       properties:
@@ -4548,6 +4574,16 @@ components:
             $ref: '#/components/schemas/CostCenter'
         meta:
           $ref: '#/components/schemas/PageMeta'
+      example:
+        data:
+          - id: 1a6e35d8-8f29-4c0e-8eaf-1d3d9d6bf5f1
+            code: OPS
+            name: Operations
+            status: active
+        meta:
+          limit: 50
+          offset: 0
+          total: 1
     ChartOfAccount:
       type: object
       properties:
@@ -4563,6 +4599,11 @@ components:
         parent_id:
           type: string
           format: uuid
+      example:
+        id: 2b7b8d2a-1f15-4b7c-9c7f-5f65d8b2f9ac
+        code: "4000"
+        name: Sales Revenue
+        type: income
     CreateChartOfAccountRequest:
       type: object
       required: [code, name, type]
@@ -4576,6 +4617,10 @@ components:
         parent_id:
           type: string
           format: uuid
+      example:
+        code: "4000"
+        name: Sales Revenue
+        type: income
     ChartOfAccountListResponse:
       type: object
       properties:
@@ -4585,6 +4630,16 @@ components:
             $ref: '#/components/schemas/ChartOfAccount'
         meta:
           $ref: '#/components/schemas/PageMeta'
+      example:
+        data:
+          - id: 2b7b8d2a-1f15-4b7c-9c7f-5f65d8b2f9ac
+            code: "4000"
+            name: Sales Revenue
+            type: income
+        meta:
+          limit: 50
+          offset: 0
+          total: 1
     FiscalPeriod:
       type: object
       properties:
@@ -4601,6 +4656,12 @@ components:
           format: date
         status:
           $ref: '#/components/schemas/FiscalPeriodStatus'
+      example:
+        id: 3c9e5b0d-2a3e-4c55-8d79-8d9a81b8d1e0
+        name: 2024-06
+        start_date: '2024-06-01'
+        end_date: '2024-06-30'
+        status: open
     CreateFiscalPeriodRequest:
       type: object
       required: [name, start_date, end_date]
@@ -4615,6 +4676,11 @@ components:
           format: date
         status:
           $ref: '#/components/schemas/FiscalPeriodStatus'
+      example:
+        name: 2024-06
+        start_date: '2024-06-01'
+        end_date: '2024-06-30'
+        status: open
     FiscalPeriodListResponse:
       type: object
       properties:
@@ -4624,6 +4690,17 @@ components:
             $ref: '#/components/schemas/FiscalPeriod'
         meta:
           $ref: '#/components/schemas/PageMeta'
+      example:
+        data:
+          - id: 3c9e5b0d-2a3e-4c55-8d79-8d9a81b8d1e0
+            name: 2024-06
+            start_date: '2024-06-01'
+            end_date: '2024-06-30'
+            status: open
+        meta:
+          limit: 50
+          offset: 0
+          total: 1
     JournalLineInput:
       type: object
       required: [account_id]
@@ -4658,6 +4735,12 @@ components:
         posted_at:
           type: string
           format: date-time
+      example:
+        id: 5f4e7b86-7ed2-4dd1-9f31-1ed8f0f7f7ab
+        fiscal_period_id: 3c9e5b0d-2a3e-4c55-8d79-8d9a81b8d1e0
+        reference: JE-001
+        status: draft
+        posted_at:
     CreateJournalEntryRequest:
       type: object
       required: [fiscal_period_id, lines]
@@ -4673,6 +4756,15 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/JournalLineInput'
+      example:
+        fiscal_period_id: 3c9e5b0d-2a3e-4c55-8d79-8d9a81b8d1e0
+        reference: JE-001
+        memo: Month-end accrual
+        lines:
+          - account_id: 2b7b8d2a-1f15-4b7c-9c7f-5f65d8b2f9ac
+            debit: 1500
+          - account_id: 7f7d832b-b246-4b36-9d2d-92b70d2d3c65
+            credit: 1500
     JournalEntryListResponse:
       type: object
       properties:
@@ -4682,6 +4774,16 @@ components:
             $ref: '#/components/schemas/JournalEntry'
         meta:
           $ref: '#/components/schemas/PageMeta'
+      example:
+        data:
+          - id: 5f4e7b86-7ed2-4dd1-9f31-1ed8f0f7f7ab
+            fiscal_period_id: 3c9e5b0d-2a3e-4c55-8d79-8d9a81b8d1e0
+            reference: JE-001
+            status: draft
+        meta:
+          limit: 50
+          offset: 0
+          total: 1
     CostPoolLineInput:
       type: object
       required: [category, amount]
@@ -4720,6 +4822,20 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/CostPoolWeightInput'
+      example:
+        holdcoCompanyId: 9c5a1f42-66e9-4c9a-9b2c-1e40b5e8c5a2
+        period: 2024-06
+        allocationMethod: BY_FIXED_SPLIT
+        lines:
+          - category: shared_services
+            amount: 120000
+          - category: infrastructure
+            amount: 80000
+        weights:
+          - recipientCompanyId: 0b6b37fb-1f2f-4e11-ae7d-3c91b0f5c5e7
+            weight: 0.6
+          - recipientCompanyId: 5d24e5d8-1a4a-4d3c-9f6e-1f7d2c3b4a5c
+            weight: 0.4
     CostPoolResponse:
       type: object
       properties:
@@ -4728,6 +4844,9 @@ components:
           format: uuid
         totalCost:
           type: string
+      example:
+        costPoolId: 6e01a4a0-3a19-4c72-9b1d-2a7a4a1b8f20
+        totalCost: "200000.00"
     AllocateCostPoolResponse:
       type: object
       properties:
@@ -4736,6 +4855,9 @@ components:
           format: uuid
         allocationsCount:
           type: integer
+      example:
+        costPoolId: 6e01a4a0-3a19-4c72-9b1d-2a7a4a1b8f20
+        allocationsCount: 2
     MonthCloseRequest:
       type: object
       required: [holdcoCompanyId, period, issueDate, lines, weights]
@@ -4760,6 +4882,22 @@ components:
             $ref: '#/components/schemas/CostPoolWeightInput'
         lockedBy:
           type: string
+      example:
+        holdcoCompanyId: 9c5a1f42-66e9-4c9a-9b2c-1e40b5e8c5a2
+        period: 2024-06
+        issueDate: '2024-06-30T18:00:00Z'
+        dueDays: 30
+        lines:
+          - category: shared_services
+            amount: 120000
+          - category: infrastructure
+            amount: 80000
+        weights:
+          - recipientCompanyId: 0b6b37fb-1f2f-4e11-ae7d-3c91b0f5c5e7
+            weight: 0.6
+          - recipientCompanyId: 5d24e5d8-1a4a-4d3c-9f6e-1f7d2c3b4a5c
+            weight: 0.4
+        lockedBy: finance-team
     IntercompanyInvoiceRef:
       type: object
       properties:
@@ -4778,6 +4916,11 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/IntercompanyInvoiceRef'
+      example:
+        period: 2024-06
+        invoices:
+          - recipientCompanyId: 0b6b37fb-1f2f-4e11-ae7d-3c91b0f5c5e7
+            invoiceId: 4d9d76cb-3a63-4bc1-b7b7-0a6d8b06c9e2
     MonthCloseResponse:
       type: object
       properties:
@@ -4787,6 +4930,16 @@ components:
           $ref: '#/components/schemas/IntercompanyInvoicesResponse'
         locked:
           type: boolean
+      example:
+        costPool:
+          costPoolId: 6e01a4a0-3a19-4c72-9b1d-2a7a4a1b8f20
+          totalCost: "200000.00"
+        invoices:
+          period: 2024-06
+          invoices:
+            - recipientCompanyId: 0b6b37fb-1f2f-4e11-ae7d-3c91b0f5c5e7
+              invoiceId: 4d9d76cb-3a63-4bc1-b7b7-0a6d8b06c9e2
+        locked: true
     GenerateIntercompanyInvoicesRequest:
       type: object
       required: [holdcoCompanyId, issueDate]
@@ -4799,6 +4952,10 @@ components:
           format: date-time
         dueDays:
           type: integer
+      example:
+        holdcoCompanyId: 9c5a1f42-66e9-4c9a-9b2c-1e40b5e8c5a2
+        issueDate: '2024-06-30T18:00:00Z'
+        dueDays: 30
     FinanceInvoice:
       type: object
       properties:
@@ -4834,12 +4991,27 @@ components:
         relatedInvoiceId:
           type: string
           format: uuid
+      example:
+        id: 4d9d76cb-3a63-4bc1-b7b7-0a6d8b06c9e2
+        invoiceType: INTERCOMPANY
+        status: ISSUED
+        sellerCompanyId: 9c5a1f42-66e9-4c9a-9b2c-1e40b5e8c5a2
+        buyerCompanyId: 0b6b37fb-1f2f-4e11-ae7d-3c91b0f5c5e7
+        period: 2024-06
+        issueDate: '2024-06-30T18:00:00Z'
+        dueDate: '2024-07-30T18:00:00Z'
+        subtotal: "175000.00"
+        vatAmount: "13125.00"
+        totalAmount: "188125.00"
+        isCreditNote: false
     PostLedgerPeriodRequest:
       type: object
       required: [period]
       properties:
         period:
           type: string
+      example:
+        period: 2024-06
     PostLedgerPeriodResponse:
       type: object
       properties:
@@ -4847,6 +5019,9 @@ components:
           type: string
         postedCount:
           type: integer
+      example:
+        period: 2024-06
+        postedCount: 12
     RecordIntercompanyPaymentRequest:
       type: object
       required: [invoiceId, paymentDate, amountPaid]
@@ -4867,6 +5042,13 @@ components:
           type: string
         notes:
           type: string
+      example:
+        invoiceId: 4d9d76cb-3a63-4bc1-b7b7-0a6d8b06c9e2
+        paymentDate: '2024-07-15T10:00:00Z'
+        amountPaid: 180000
+        whtWithheldAmount: 5000
+        reference: TRX-88219
+        notes: Bank transfer
     PaymentStatusInfo:
       type: object
       properties:
@@ -4888,6 +5070,14 @@ components:
           type: integer
         invoice:
           $ref: '#/components/schemas/PaymentStatusInfo'
+      example:
+        paymentId: 7b1d26bb-5e7a-4b7d-9d44-b2f2c7c4f8ad
+        expectedWht: "5000.00"
+        creditNotesCreated: 1
+        invoice:
+          paid: "180000.00"
+          total: "188125.00"
+          status: PART_PAID
     WhtScheduleItem:
       type: object
       properties:
@@ -4911,6 +5101,17 @@ components:
             $ref: '#/components/schemas/WhtScheduleItem'
         total:
           type: string
+      example:
+        issuerCompanyId: 9c5a1f42-66e9-4c9a-9b2c-1e40b5e8c5a2
+        period: 2024-06
+        items:
+          - taxType: SERVICES
+            amount: "12000.00"
+            count: 4
+          - taxType: ROYALTIES
+            amount: "5000.00"
+            count: 1
+        total: "17000.00"
     WhtRemitRequest:
       type: object
       required: [issuerCompanyId, period, taxType, remittanceDate, firReceiptRef]
@@ -4927,11 +5128,19 @@ components:
           format: date-time
         firReceiptRef:
           type: string
+      example:
+        issuerCompanyId: 9c5a1f42-66e9-4c9a-9b2c-1e40b5e8c5a2
+        period: 2024-06
+        taxType: SERVICES
+        remittanceDate: '2024-07-10T09:30:00Z'
+        firReceiptRef: FIRS-992813
     WhtRemitResponse:
       type: object
       properties:
         updatedCount:
           type: integer
+      example:
+        updatedCount: 3
     VatReturn:
       type: object
       properties:
@@ -4956,6 +5165,16 @@ components:
           format: date-time
         paymentRef:
           type: string
+      example:
+        id: 8b4b1b7b-0a5b-4b12-a6e7-9f4a9c1f2a88
+        companyId: 0b6b37fb-1f2f-4e11-ae7d-3c91b0f5c5e7
+        period: 2024-06
+        outputVat: "24000.00"
+        inputVat: "12000.00"
+        netVatPayable: "12000.00"
+        status: FILED
+        filedAt: '2024-07-05T10:00:00Z'
+        paymentRef: VAT-2024-06-991
     FileVatReturnRequest:
       type: object
       required: [companyId, period]
@@ -4967,6 +5186,10 @@ components:
           type: string
         paymentRef:
           type: string
+      example:
+        companyId: 0b6b37fb-1f2f-4e11-ae7d-3c91b0f5c5e7
+        period: 2024-06
+        paymentRef: VAT-2024-06-991
     PeriodLockRequest:
       type: object
       required: [companyId, period]
@@ -4980,6 +5203,11 @@ components:
           type: string
         reason:
           type: string
+      example:
+        companyId: 0b6b37fb-1f2f-4e11-ae7d-3c91b0f5c5e7
+        period: 2024-06
+        lockedBy: finance-team
+        reason: Month close
     PeriodLock:
       type: object
       properties:
@@ -5000,6 +5228,14 @@ components:
           type: string
         reason:
           type: string
+      example:
+        id: 9c5f49d6-2f05-4d8e-8a67-3f6c6f3d2b9d
+        companyId: 0b6b37fb-1f2f-4e11-ae7d-3c91b0f5c5e7
+        period: 2024-06
+        locked: true
+        lockedAt: '2024-06-30T18:30:00Z'
+        lockedBy: finance-team
+        reason: Month close
     CreditNoteLineInput:
       type: object
       required: [originalLineId, creditNetAmount]
@@ -5028,6 +5264,14 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/CreditNoteLineInput'
+      example:
+        originalInvoiceId: 4d9d76cb-3a63-4bc1-b7b7-0a6d8b06c9e2
+        issueDate: '2024-07-05T10:00:00Z'
+        reason: Billing adjustment
+        fullReversal: false
+        lines:
+          - originalLineId: 27c2f6f9-0639-4f8f-9b5c-9a0d0b3f9c4e
+            creditNetAmount: 5000
     TaxImpactVatSummary:
       type: object
       properties:
@@ -5062,6 +5306,20 @@ components:
           $ref: '#/components/schemas/TaxImpactVatSummary'
         wht:
           $ref: '#/components/schemas/TaxImpactWhtSummary'
+      example:
+        companyId: 0b6b37fb-1f2f-4e11-ae7d-3c91b0f5c5e7
+        period: 2024-06
+        vat:
+          outputVat: "24000.00"
+          inputVat: "12000.00"
+          netVatPayable: "12000.00"
+        wht:
+          withheldByCompany: "17000.00"
+          creditsEarnedTotal: "5000.00"
+          creditsByType:
+            SERVICES: "12000.00"
+            ROYALTIES: "5000.00"
+          unremittedCreditNotesCount: 2
     ConsolidatedPLResponse:
       type: object
       properties:
@@ -5079,6 +5337,14 @@ components:
           type: string
         note:
           type: string
+      example:
+        period: 2024-06
+        revenue: "250000.00"
+        cogs: "120000.00"
+        grossProfit: "130000.00"
+        operatingExpenses: "45000.00"
+        netProfit: "85000.00"
+        note: Consolidated from posted ledger entries.
     CompliancePolicy:
       type: object
       properties:

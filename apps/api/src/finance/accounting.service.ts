@@ -1,10 +1,24 @@
 import { BadRequestException, Injectable } from "@nestjs/common";
+import { Decimal } from "@prisma/client/runtime/library";
 import { PrismaService } from "../prisma/prisma.service";
 import { ListQueryDto } from "../common/dto/list-query.dto";
 import { CreateChartOfAccountDto } from "./dto/create-chart-of-account.dto";
 import { CreateCostCenterDto } from "./dto/create-cost-center.dto";
 import { CreateFiscalPeriodDto } from "./dto/create-fiscal-period.dto";
 import { CreateJournalEntryDto } from "./dto/create-journal-entry.dto";
+
+function dec(value: number | string | null | undefined) {
+  return new Decimal(value ?? 0);
+}
+
+function round2(value: Decimal) {
+  return new Decimal(value.toFixed(2));
+}
+
+type ChartOfAccountRecord = { id: string; code: string; name: string; type: string; parentId: string | null };
+type CostCenterRecord = { id: string; code: string; name: string; status: string };
+type FiscalPeriodRecord = { id: string; name: string; startDate: Date; endDate: Date; status: string };
+type JournalEntryRecord = { id: string; fiscalPeriodId: string; reference: string | null; status: string; postedAt: Date | null };
 
 @Injectable()
 export class AccountingService {
@@ -26,7 +40,7 @@ export class AccountingService {
     ]);
 
     return {
-      data: accounts.map((account) => this.mapChartOfAccount(account)),
+      data: accounts.map((account: ChartOfAccountRecord) => this.mapChartOfAccount(account)),
       meta: this.buildMeta(query, total),
     };
   }
@@ -64,7 +78,7 @@ export class AccountingService {
     ]);
 
     return {
-      data: centers.map((center) => this.mapCostCenter(center)),
+      data: centers.map((center: CostCenterRecord) => this.mapCostCenter(center)),
       meta: this.buildMeta(query, total),
     };
   }
@@ -101,7 +115,7 @@ export class AccountingService {
     ]);
 
     return {
-      data: periods.map((period) => this.mapFiscalPeriod(period)),
+      data: periods.map((period: FiscalPeriodRecord) => this.mapFiscalPeriod(period)),
       meta: this.buildMeta(query, total),
     };
   }
@@ -139,7 +153,7 @@ export class AccountingService {
     ]);
 
     return {
-      data: entries.map((entry) => this.mapJournalEntry(entry)),
+      data: entries.map((entry: JournalEntryRecord) => this.mapJournalEntry(entry)),
       meta: this.buildMeta(query, total),
     };
   }
@@ -148,6 +162,19 @@ export class AccountingService {
     if (!groupId) throw new BadRequestException("X-Group-Id header is required");
     if (!subsidiaryId) throw new BadRequestException("X-Subsidiary-Id header is required");
     if (!body.lines?.length) throw new BadRequestException("Journal entry lines are required");
+
+    const period = await this.prisma.fiscalPeriod.findFirst({
+      where: { id: body.fiscal_period_id, groupId },
+    });
+    if (!period) throw new BadRequestException("Fiscal period not found");
+
+    const periodStatus = period.status.toLowerCase();
+    if (periodStatus === "locked" || periodStatus === "closed") {
+      throw new BadRequestException("Fiscal period is locked");
+    }
+
+    let debitTotal = dec(0);
+    let creditTotal = dec(0);
 
     const lines = body.lines.map((line) => {
       const debit = line.debit ?? 0;
@@ -158,6 +185,8 @@ export class AccountingService {
       if (debit === 0 && credit === 0) {
         throw new BadRequestException("Journal line must include a debit or credit amount");
       }
+      debitTotal = debitTotal.plus(dec(debit));
+      creditTotal = creditTotal.plus(dec(credit));
       return {
         accountId: line.account_id,
         costCenterId: line.cost_center_id,
@@ -166,6 +195,12 @@ export class AccountingService {
         credit,
       };
     });
+
+    const roundedDebit = round2(debitTotal);
+    const roundedCredit = round2(creditTotal);
+    if (!roundedDebit.equals(roundedCredit)) {
+      throw new BadRequestException("Journal entry must balance debits and credits");
+    }
 
     const entry = await this.prisma.journalEntry.create({
       data: {

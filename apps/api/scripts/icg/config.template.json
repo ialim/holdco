@@ -1,0 +1,8 @@
+{
+  "groupId": "77cb0703-8e6b-4381-8388-a548f1165935",
+  "defaultCurrency": "NGN",
+  "channel": "retail",
+  "externalSystemName": "ICG",
+  "storeLocationMapFile": "scripts/icg/mappings/store-location.csv",
+  "defaultSubsidiaryId": ""
+}

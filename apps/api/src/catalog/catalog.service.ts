@@ -94,19 +94,20 @@ export class CatalogService {
     if (!groupId) throw new BadRequestException("X-Group-Id header is required");
     if (!subsidiaryId) throw new BadRequestException("X-Subsidiary-Id header is required");
 
-    const where = {
+    const where: Record<string, unknown> = {
       groupId,
       subsidiaryId,
       ...(query.status ? { status: query.status } : {}),
-      ...(query.q
-        ? {
-            OR: [
-              { name: { contains: query.q, mode: "insensitive" as const } },
-              { sku: { contains: query.q, mode: "insensitive" as const } },
-            ],
-          }
-        : {}),
     };
+
+    if (query.barcode) {
+      where.variants = { some: { barcode: query.barcode } };
+    } else if (query.q) {
+      where.OR = [
+        { name: { contains: query.q, mode: "insensitive" as const } },
+        { sku: { contains: query.q, mode: "insensitive" as const } },
+      ];
+    }
 
     const [total, products] = await this.prisma.$transaction([
       this.prisma.product.count({ where }),
@@ -130,6 +131,8 @@ export class CatalogService {
         sku: body.sku,
         name: body.name,
         brandId: body.brand_id,
+        sex: body.sex,
+        concentration: body.concentration,
       },
     });
 
@@ -181,6 +184,7 @@ export class CatalogService {
         productId: body.product_id,
         size: body.size,
         unit: body.unit,
+        type: body.type,
         barcode: body.barcode,
       },
     });
@@ -206,23 +210,42 @@ export class CatalogService {
     };
   }
 
-  private mapProduct(product: { id: string; sku: string; name: string; brandId: string | null; status: string; createdAt: Date }) {
+  private mapProduct(product: {
+    id: string;
+    sku: string;
+    name: string;
+    brandId: string | null;
+    sex: string | null;
+    concentration: string | null;
+    status: string;
+    createdAt: Date;
+  }) {
     return {
       id: product.id,
       sku: product.sku,
       name: product.name,
       brand_id: product.brandId ?? undefined,
+      sex: product.sex ?? undefined,
+      concentration: product.concentration ?? undefined,
       status: product.status,
       created_at: product.createdAt.toISOString(),
     };
   }
 
-  private mapVariant(variant: { id: string; productId: string; size: string | null; unit: string | null; barcode: string | null }) {
+  private mapVariant(variant: {
+    id: string;
+    productId: string;
+    size: string | null;
+    unit: string | null;
+    type: string | null;
+    barcode: string | null;
+  }) {
     return {
       id: variant.id,
       product_id: variant.productId,
       size: variant.size ?? undefined,
       unit: variant.unit ?? undefined,
+      type: variant.type ?? undefined,
       barcode: variant.barcode ?? undefined,
     };
   }

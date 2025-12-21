@@ -14,4 +14,12 @@ export class CreateProductDto {
   @IsOptional()
   @IsUUID()
   brand_id?: string;
+
+  @IsOptional()
+  @IsString()
+  sex?: string;
+
+  @IsOptional()
+  @IsString()
+  concentration?: string;
 }

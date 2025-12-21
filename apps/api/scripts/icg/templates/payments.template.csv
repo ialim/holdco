@@ -1,0 +1,2 @@
+receipt_no,amount,currency,status,provider,reference,payment_date
+ORD-0001,25000,NGN,captured,paystack,PSK-892133,2024-05-12T10:05:00Z

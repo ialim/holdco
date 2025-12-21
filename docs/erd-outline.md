@@ -23,8 +23,8 @@ Relationships
 Tables
 - brand: id, name
 - supplier: id, name, contact_name, contact_phone
-- product: id, brand_id, name, sku, status
-- variant: id, product_id, size, unit, barcode
+- product: id, brand_id, name, sku, sex, concentration, status
+- variant: id, product_id, size, unit, type, barcode
 - batch: id, product_id, code, expires_at
 - lot: id, batch_id, quantity
 

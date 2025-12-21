@@ -3,3 +3,4 @@ finance_module_pack/
 shared_services_module_pack/
 .env
 apps/api/.env
+apps/api/dist/

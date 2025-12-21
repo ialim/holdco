@@ -1,1 +1,0 @@
-{"version":3,"file":"assign-user-role.dto.js","sourceRoot":"","sources":["../../../src/roles/dto/assign-user-role.dto.ts"],"names":[],"mappings":";;;;;;;;;;;;AAAA,qDAAqD;AAErD,MAAa,iBAAiB;CAW7B;AAXD,8CAWC;AATC;IADC,IAAA,wBAAM,GAAE;;kDACQ;AAIjB;IAFC,IAAA,4BAAU,GAAE;IACZ,IAAA,wBAAM,GAAE;;wDACc;AAIvB;IAFC,IAAA,4BAAU,GAAE;IACZ,IAAA,wBAAM,GAAE;;sDACY"}

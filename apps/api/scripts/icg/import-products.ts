@@ -11,6 +11,7 @@ type ProductRow = {
   brand_name?: string;
   sex?: string;
   concentration?: string;
+  type?: string;
   status?: string;
 };
 
@@ -87,6 +88,7 @@ async function run() {
     const status = normalize(row.status) || "active";
     const sex = normalize(row.sex) || undefined;
     const concentration = normalize(row.concentration) || undefined;
+    const type = normalize(row.type) || undefined;
     const brandId = args.dryRun
       ? undefined
       : await ensureBrand({
@@ -119,6 +121,7 @@ async function run() {
           brandId,
           sex,
           concentration,
+          type,
         },
       });
       productId = updatedProduct.id;
@@ -136,6 +139,7 @@ async function run() {
             brandId,
             sex,
             concentration,
+            type,
           },
         });
         productId = updatedProduct.id;
@@ -150,6 +154,7 @@ async function run() {
             brandId,
             sex,
             concentration,
+            type,
           },
         });
         productId = createdProduct.id;

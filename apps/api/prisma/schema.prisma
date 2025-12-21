@@ -297,6 +297,7 @@ model Product {
   supplierId   String?  @db.Uuid @map("supplier_id")
   sku          String
   name         String
+  type         String?
   sex          String?
   concentration String?
   status       String   @default("active")
@@ -329,7 +330,6 @@ model Variant {
   productId    String   @db.Uuid @map("product_id")
   size         String?
   unit         String?
-  type         String?
   barcode      String?
   createdAt    DateTime @default(now()) @map("created_at")
 

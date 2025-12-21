@@ -8,7 +8,6 @@ type VariantRow = {
   product_code?: string;
   size?: string;
   unit?: string;
-  type?: string;
   barcode?: string;
 };
 
@@ -69,7 +68,6 @@ async function run() {
           productId: product.id,
           size: normalize(row.size) || null,
           unit: normalize(row.unit) || null,
-          type: normalize(row.type) || null,
           barcode,
         },
       });
@@ -86,7 +84,6 @@ async function run() {
             productId: product.id,
             size: normalize(row.size) || null,
             unit: normalize(row.unit) || null,
-            type: normalize(row.type) || null,
           },
         });
         variantId = updatedVariant.id;
@@ -98,7 +95,6 @@ async function run() {
             productId: product.id,
             size: normalize(row.size) || null,
             unit: normalize(row.unit) || null,
-            type: normalize(row.type) || null,
             barcode,
           },
         });

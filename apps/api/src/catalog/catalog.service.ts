@@ -133,6 +133,7 @@ export class CatalogService {
         brandId: body.brand_id,
         sex: body.sex,
         concentration: body.concentration,
+        type: body.type,
       },
     });
 
@@ -184,7 +185,6 @@ export class CatalogService {
         productId: body.product_id,
         size: body.size,
         unit: body.unit,
-        type: body.type,
         barcode: body.barcode,
       },
     });
@@ -217,6 +217,7 @@ export class CatalogService {
     brandId: string | null;
     sex: string | null;
     concentration: string | null;
+    type: string | null;
     status: string;
     createdAt: Date;
   }) {
@@ -227,6 +228,7 @@ export class CatalogService {
       brand_id: product.brandId ?? undefined,
       sex: product.sex ?? undefined,
       concentration: product.concentration ?? undefined,
+      type: product.type ?? undefined,
       status: product.status,
       created_at: product.createdAt.toISOString(),
     };
@@ -237,7 +239,6 @@ export class CatalogService {
     productId: string;
     size: string | null;
     unit: string | null;
-    type: string | null;
     barcode: string | null;
   }) {
     return {
@@ -245,7 +246,6 @@ export class CatalogService {
       product_id: variant.productId,
       size: variant.size ?? undefined,
       unit: variant.unit ?? undefined,
-      type: variant.type ?? undefined,
       barcode: variant.barcode ?? undefined,
     };
   }

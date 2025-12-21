@@ -3164,6 +3164,9 @@ components:
         concentration:
           type: string
           example: EDP
+        type:
+          type: string
+          example: gift set
         brand_id:
           type: string
           format: uuid
@@ -3192,6 +3195,9 @@ components:
         concentration:
           type: string
           example: EDP
+        type:
+          type: string
+          example: gift set
         brand_id:
           type: string
           format: uuid
@@ -3222,9 +3228,6 @@ components:
         unit:
           type: string
           example: ml
-        type:
-          type: string
-          example: gift set
         barcode:
           type: string
           example: '6291106061234'
@@ -3242,9 +3245,6 @@ components:
         unit:
           type: string
           example: ml
-        type:
-          type: string
-          example: gift set
         barcode:
           type: string
           example: '6291106061234'

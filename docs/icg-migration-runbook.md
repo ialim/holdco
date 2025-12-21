@@ -20,8 +20,8 @@ This runbook covers a one-time migration from the legacy ICG POS system into the
 ## Data mapping
 | ICG entity | Source fields | Target table | Notes |
 | --- | --- | --- | --- |
-| Product | product_code, name, brand, sex, concentration, status | product, brand | map unique SKU to product.sku |
-| Variant | size, unit, type, barcode | variant | barcode goes to variant.barcode |
+| Product | product_code, name, brand, sex, concentration, type, status | product, brand | map unique SKU to product.sku |
+| Variant | size, unit, barcode | variant | barcode goes to variant.barcode |
 | Inventory | store_id, product_code, qty | stock_level | map store_id to location_id |
 | Price list | list_name, currency, price | price_list, price_rule | currency default if missing |
 | Customer | name, phone, email | customer | dedupe by phone or email |
@@ -32,8 +32,8 @@ CSV templates are provided in `apps/api/scripts/icg/templates`. Use the same hea
 
 Required files:
 - `brands.csv` (brand_code, brand_name, status)
-- `products.csv` (product_code, name, brand_code, sex, concentration, status)
-- `variants.csv` (product_code, size, unit, type, barcode)
+- `products.csv` (product_code, name, brand_code, sex, concentration, type, status)
+- `variants.csv` (product_code, size, unit, barcode)
 - `price_lists.csv` (list_name, currency, channel, valid_from, valid_to)
 - `price_rules.csv` (list_name, product_code, variant_barcode, price, min_qty)
 - `customers.csv` (name, phone, email, status)

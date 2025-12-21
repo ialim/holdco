@@ -15,8 +15,4 @@ export class CreateVariantDto {
   @IsOptional()
   @IsString()
   barcode?: string;
-
-  @IsOptional()
-  @IsString()
-  type?: string;
 }

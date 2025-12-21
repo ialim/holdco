@@ -22,4 +22,8 @@ export class CreateProductDto {
   @IsOptional()
   @IsString()
   concentration?: string;
+
+  @IsOptional()
+  @IsString()
+  type?: string;
 }

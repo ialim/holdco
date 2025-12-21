@@ -914,7 +914,20 @@ model EventOutbox {
   group      TenantGroup @relation(fields: [groupId], references: [id])
   subsidiary Subsidiary? @relation(fields: [subsidiaryId], references: [id])
 
+  @@index([status, availableAt])
+  @@index([aggregateType, aggregateId])
   @@map("event_outbox")
+}
+
+model EventInbox {
+  id           String   @id @default(uuid()) @db.Uuid
+  consumerName String   @map("consumer_name")
+  eventId      String   @db.Uuid @map("event_id")
+  processedAt  DateTime @default(now()) @map("processed_at")
+
+  @@unique([consumerName, eventId])
+  @@index([eventId])
+  @@map("event_inbox")
 }
 
 model ExternalSystem {

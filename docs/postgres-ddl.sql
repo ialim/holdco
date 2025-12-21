@@ -486,6 +486,19 @@ create table if not exists event_outbox (
   created_at timestamptz not null default now()
 );
 
+create index if not exists event_outbox_status_available_at_idx on event_outbox (status, available_at);
+create index if not exists event_outbox_aggregate_idx on event_outbox (aggregate_type, aggregate_id);
+
+create table if not exists event_inbox (
+  id uuid primary key default gen_random_uuid(),
+  consumer_name text not null,
+  event_id uuid not null,
+  processed_at timestamptz not null default now(),
+  unique (consumer_name, event_id)
+);
+
+create index if not exists event_inbox_event_id_idx on event_inbox (event_id);
+
 create table if not exists external_systems (
   id uuid primary key default gen_random_uuid(),
   name text not null unique,

@@ -5,6 +5,7 @@ import { AdvisoryModule } from "./advisory/advisory.module";
 import { CatalogModule } from "./catalog/catalog.module";
 import { ComplianceModule } from "./compliance/compliance.module";
 import { CreditModule } from "./credit/credit.module";
+import { EventsModule } from "./events/events.module";
 import { FinanceModule } from "./finance/finance.module";
 import { HrModule } from "./hr/hr.module";
 import { InventoryModule } from "./inventory/inventory.module";
@@ -24,6 +25,7 @@ import { TenancyModule } from "./tenancy/tenancy.module";
   imports: [
     AuthModule,
     PrismaModule,
+    EventsModule,
     FinanceModule,
     SharedServicesModule,
     RolesModule,

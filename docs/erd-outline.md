@@ -196,6 +196,7 @@ Relationships
 Tables
 - audit_log: id, actor_id, action, entity_type, entity_id, payload, created_at
 - event_outbox: id, aggregate_type, aggregate_id, event_type, payload, status, created_at
+- event_inbox: id, consumer_name, event_id, processed_at
 - external_system: id, name
 - external_id_map: id, external_system_id, external_id, entity_type, entity_id
 

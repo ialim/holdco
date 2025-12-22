@@ -141,6 +141,14 @@ await channel.consume("orders.consumer", async (message) => {
 });
 ```
 
+## Consumer configuration
+Environment variables for the built-in order events consumer:
+- `EVENTS_CONSUMERS_ENABLED=true|false` (default false)
+- `ORDER_EVENTS_QUEUE=orders.consumer`
+- `ORDER_EVENTS_ROUTING_KEYS=order.*` (comma-separated)
+- `EVENTS_PREFETCH=10`
+- `EVENTS_EXCHANGE=holdco.events`
+
 ## Operational notes
 - Metrics: publish latency, attempts, dead-letter count, and consumer lag.
 - Retention: archive `published` rows older than 30-90 days.

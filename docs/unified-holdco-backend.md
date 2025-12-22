@@ -54,6 +54,7 @@ Build a unified backend for all subsidiaries using NestJS + Postgres + Redis + R
 - Implemented modules: catalog, inventory, pricing, orders, payments, credit, loyalty, finance, shared-services, and supporting RBAC/tenancy scaffolding.
 - In progress: tenancy enforcement validation across all endpoints, migration dry runs with real exports, and POS cutover readiness.
 - Not started: outbox/eventing implementation, integration adapters (payments/logistics/ERP/data warehouse), and load/security test suites.
+- Operational: `/v1/metrics` is protected with `METRICS_TOKEN` (see `docs/event-outbox-design.md`).
 
 ## Testing and validation
 - Contract tests for public API and internal service interfaces.

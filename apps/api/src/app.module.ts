@@ -7,7 +7,9 @@ import { ComplianceModule } from "./compliance/compliance.module";
 import { CreditModule } from "./credit/credit.module";
 import { EventsModule } from "./events/events.module";
 import { FinanceModule } from "./finance/finance.module";
+import { HealthModule } from "./health/health.module";
 import { HrModule } from "./hr/hr.module";
+import { MetricsModule } from "./metrics/metrics.module";
 import { InventoryModule } from "./inventory/inventory.module";
 import { LogisticsModule } from "./logistics/logistics.module";
 import { LoyaltyModule } from "./loyalty/loyalty.module";
@@ -26,6 +28,8 @@ import { TenancyModule } from "./tenancy/tenancy.module";
     AuthModule,
     PrismaModule,
     EventsModule,
+    HealthModule,
+    MetricsModule,
     FinanceModule,
     SharedServicesModule,
     RolesModule,

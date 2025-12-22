@@ -114,16 +114,44 @@ Standard envelope:
 }
 ```
 
+## Consumer wiring example (amqplib)
+Minimal example showing idempotent handling and ack/nack flow. Assumes a PrismaService instance named `prisma`.
+```
+import { connect } from "amqplib";
+import { EventInboxService } from "../events/event-inbox.service";
+import { OrderEventsConsumer } from "../events/examples/order-events.consumer";
+
+const connection = await connect(process.env.RABBITMQ_URL ?? "");
+const channel = await connection.createChannel();
+await channel.assertQueue("orders.consumer", { durable: true });
+await channel.bindQueue("orders.consumer", "holdco.events", "order.*");
+channel.prefetch(10);
+
+const inbox = new EventInboxService(prisma);
+const consumer = new OrderEventsConsumer(inbox);
+
+await channel.consume("orders.consumer", async (message) => {
+  const ok = await consumer.handleMessage(message);
+  if (!message) return;
+  if (ok) {
+    channel.ack(message);
+  } else {
+    channel.nack(message, false, true);
+  }
+});
+```
+
 ## Operational notes
 - Metrics: publish latency, attempts, dead-letter count, and consumer lag.
 - Retention: archive `published` rows older than 30-90 days.
 - Replays: build a replay tool that re-queues by `aggregate_type` and date range.
 
 ## Implementation tasks
-- [ ] Add DB indexes for `event_outbox`: `(status, available_at)` and `(aggregate_type, aggregate_id)`.
-- [ ] Add `event_inbox` table + Prisma model with `consumer_name`, `event_id`, `processed_at`; enforce unique `(consumer_name, event_id)`.
-- [ ] Implement outbox publisher worker (poll + `FOR UPDATE SKIP LOCKED`, batch size, retry/backoff).
-- [ ] Enable RabbitMQ publisher confirms; mark rows `published` only after ack, otherwise increment attempts and reschedule.
-- [ ] Add consumer-side idempotency helper that inserts into `event_inbox` before side effects.
-- [ ] Add configuration knobs: batch size, poll interval, max attempts, backoff base/max.
-- [ ] Add metrics/logging for publish latency, attempts, and dead-letter counts.
+- [x] Add DB indexes for `event_outbox`: `(status, available_at)` and `(aggregate_type, aggregate_id)`.
+- [x] Add `event_inbox` table + Prisma model with `consumer_name`, `event_id`, `processed_at`; enforce unique `(consumer_name, event_id)`.
+- [x] Implement outbox publisher worker (poll + `FOR UPDATE SKIP LOCKED`, batch size, retry/backoff).
+- [x] Enable RabbitMQ publisher confirms; mark rows `published` only after ack, otherwise increment attempts and reschedule.
+- [x] Add consumer-side idempotency helper that inserts into `event_inbox` before side effects.
+- [x] Add configuration knobs: batch size, poll interval, max attempts, backoff base/max.
+- [x] Add outbox publisher status to `/v1/health`.
+- [x] Add metrics/logging for publish latency, attempts, and dead-letter counts; expose `/v1/metrics`.

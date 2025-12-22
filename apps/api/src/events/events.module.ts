@@ -6,6 +6,6 @@ import { OutboxPublisherService } from "./outbox.publisher";
 @Module({
   imports: [PrismaModule],
   providers: [EventInboxService, OutboxPublisherService],
-  exports: [EventInboxService],
+  exports: [EventInboxService, OutboxPublisherService],
 })
 export class EventsModule {}

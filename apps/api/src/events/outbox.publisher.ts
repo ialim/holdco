@@ -1,9 +1,51 @@
 import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from "@nestjs/common";
 import { EventOutbox } from "@prisma/client";
 import { ChannelModel, ConfirmChannel, connect } from "amqplib";
+import { Counter, Gauge, Histogram, register } from "prom-client";
 import { PrismaService } from "../prisma/prisma.service";
 
 type OutboxRow = EventOutbox;
+
+function getOrCreateCounter(name: string, help: string) {
+  const existing = register.getSingleMetric(name);
+  return (existing as Counter<string>) ?? new Counter({ name, help });
+}
+
+function getOrCreateGauge(name: string, help: string) {
+  const existing = register.getSingleMetric(name);
+  return (existing as Gauge<string>) ?? new Gauge({ name, help });
+}
+
+function getOrCreateHistogram(name: string, help: string, buckets?: number[]) {
+  const existing = register.getSingleMetric(name);
+  return (existing as Histogram<string>) ?? new Histogram({ name, help, buckets });
+}
+
+const outboxPublishedCounter = getOrCreateCounter(
+  "holdco_outbox_published_total",
+  "Total number of outbox events published.",
+);
+const outboxFailedCounter = getOrCreateCounter(
+  "holdco_outbox_failed_total",
+  "Total number of outbox publish failures.",
+);
+const outboxConnectedGauge = getOrCreateGauge(
+  "holdco_outbox_connected",
+  "Outbox publisher connection status (1=connected, 0=disconnected).",
+);
+const outboxLastTickGauge = getOrCreateGauge(
+  "holdco_outbox_last_tick_timestamp",
+  "Unix timestamp of the last outbox poll tick.",
+);
+const outboxLastPublishGauge = getOrCreateGauge(
+  "holdco_outbox_last_publish_timestamp",
+  "Unix timestamp of the last successful publish.",
+);
+const outboxTickDuration = getOrCreateHistogram(
+  "holdco_outbox_tick_duration_ms",
+  "Duration of outbox polling tick in milliseconds.",
+  [50, 100, 250, 500, 1000, 2500, 5000],
+);
 
 @Injectable()
 export class OutboxPublisherService implements OnModuleInit, OnModuleDestroy {
@@ -12,6 +54,14 @@ export class OutboxPublisherService implements OnModuleInit, OnModuleDestroy {
   private channel?: ConfirmChannel;
   private timer?: NodeJS.Timeout;
   private running = false;
+  private lastTickAt?: Date;
+  private lastPublishAt?: Date;
+  private lastErrorAt?: Date;
+  private lastErrorMessage?: string;
+  private publishedCount = 0;
+  private failedCount = 0;
+  private lastBatchSize = 0;
+  private lastTickDurationMs?: number;
 
   private readonly exchange = process.env.EVENTS_EXCHANGE ?? "holdco.events";
   private readonly rabbitUrl = process.env.RABBITMQ_URL;
@@ -54,22 +104,48 @@ export class OutboxPublisherService implements OnModuleInit, OnModuleDestroy {
     } catch (error) {
       this.logger.warn(`Failed to close outbox connection: ${(error as Error).message}`);
     }
+    outboxConnectedGauge.set(0);
+  }
+
+  getStatus() {
+    return {
+      enabled: this.enabled,
+      connected: Boolean(this.connection && this.channel),
+      last_tick_at: this.lastTickAt?.toISOString(),
+      last_publish_at: this.lastPublishAt?.toISOString(),
+      last_error_at: this.lastErrorAt?.toISOString(),
+      last_error: this.lastErrorMessage,
+      metrics: {
+        published: this.publishedCount,
+        failed: this.failedCount,
+        last_batch_size: this.lastBatchSize,
+        last_tick_duration_ms: this.lastTickDurationMs,
+      },
+    };
   }
 
   private async tick() {
     if (this.running) return;
     this.running = true;
+    const start = Date.now();
     try {
+      this.lastTickAt = new Date();
+      outboxLastTickGauge.set(Math.floor(this.lastTickAt.getTime() / 1000));
       await this.ensureChannel();
       if (!this.channel) return;
 
       const rows = await this.claimPending();
+      this.lastBatchSize = rows.length;
       for (const row of rows) {
         await this.publishRow(row);
       }
     } catch (error) {
+      this.lastErrorAt = new Date();
+      this.lastErrorMessage = (error as Error).message;
       this.logger.error(`Outbox tick failed: ${(error as Error).message}`);
     } finally {
+      this.lastTickDurationMs = Date.now() - start;
+      outboxTickDuration.observe(this.lastTickDurationMs);
       this.running = false;
     }
   }
@@ -82,6 +158,8 @@ export class OutboxPublisherService implements OnModuleInit, OnModuleDestroy {
       const connection = await connect(this.rabbitUrl);
       this.connection = connection;
       connection.on("error", (error) => {
+        this.lastErrorAt = new Date();
+        this.lastErrorMessage = error.message;
         this.logger.error(`RabbitMQ connection error: ${error.message}`);
       });
       connection.on("close", () => {
@@ -93,10 +171,14 @@ export class OutboxPublisherService implements OnModuleInit, OnModuleDestroy {
       const channel = await connection.createConfirmChannel();
       this.channel = channel;
       await channel.assertExchange(this.exchange, "topic", { durable: true });
+      outboxConnectedGauge.set(1);
     } catch (error) {
+      this.lastErrorAt = new Date();
+      this.lastErrorMessage = (error as Error).message;
       this.logger.error(`Failed to connect to RabbitMQ: ${(error as Error).message}`);
       this.channel = undefined;
       this.connection = undefined;
+      outboxConnectedGauge.set(0);
     }
   }
 
@@ -143,6 +225,10 @@ export class OutboxPublisherService implements OnModuleInit, OnModuleDestroy {
         where: { id: row.id },
         data: { status: "published" },
       });
+      this.lastPublishAt = new Date();
+      outboxLastPublishGauge.set(Math.floor(this.lastPublishAt.getTime() / 1000));
+      this.publishedCount += 1;
+      outboxPublishedCounter.inc();
     } catch (error) {
       const attempts = row.attempts + 1;
       const status = attempts >= this.maxAttempts ? "dead" : "failed";
@@ -157,6 +243,10 @@ export class OutboxPublisherService implements OnModuleInit, OnModuleDestroy {
         },
       });
 
+      this.lastErrorAt = new Date();
+      this.lastErrorMessage = (error as Error).message;
+      this.failedCount += 1;
+      outboxFailedCounter.inc();
       this.logger.warn(`Publish failed for ${row.id}: ${(error as Error).message}`);
     }
   }

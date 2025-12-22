@@ -146,6 +146,10 @@ await channel.consume("orders.consumer", async (message) => {
 - Retention: archive `published` rows older than 30-90 days.
 - Replays: build a replay tool that re-queues by `aggregate_type` and date range.
 
+## Metrics endpoint
+- `GET /v1/metrics` exposes Prometheus metrics.
+- Set `METRICS_TOKEN` and pass it via `x-metrics-token` or `Authorization: Bearer <token>`.
+
 ## Implementation tasks
 - [x] Add DB indexes for `event_outbox`: `(status, available_at)` and `(aggregate_type, aggregate_id)`.
 - [x] Add `event_inbox` table + Prisma model with `consumer_name`, `event_id`, `processed_at`; enforce unique `(consumer_name, event_id)`.

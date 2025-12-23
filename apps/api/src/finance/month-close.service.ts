@@ -5,6 +5,7 @@ import { IntercompanyInvoicingService } from "./intercompany-invoicing.service";
 import { PeriodLockService } from "./period-lock.service";
 import { Decimal } from "@prisma/client/runtime/library";
 import { AllocationMethod } from "./finance.enums";
+import { assertCompanyInGroup } from "./finance-tenancy";
 
 @Injectable()
 export class MonthCloseService {
@@ -16,6 +17,7 @@ export class MonthCloseService {
   ) {}
 
   async runMonthClose(params: {
+    groupId: string;
     holdcoCompanyId: string;
     period: string;
     issueDate: Date;
@@ -24,9 +26,11 @@ export class MonthCloseService {
     weights: { recipientCompanyId: string; weight: Decimal | string | number }[];
     lockedBy?: string;
   }) {
+    await assertCompanyInGroup(this.prisma, params.groupId, params.holdcoCompanyId, "Holding company");
     await this.periodLockService.assertNotLocked(params.holdcoCompanyId, params.period);
 
     const cp = await this.costPoolService.createCostPool({
+      groupId: params.groupId,
       holdcoCompanyId: params.holdcoCompanyId,
       period: params.period,
       lines: params.lines,
@@ -34,9 +38,10 @@ export class MonthCloseService {
       weights: params.weights,
     });
 
-    await this.costPoolService.allocateCostPool(cp.costPoolId);
+    await this.costPoolService.allocateCostPool(params.groupId, cp.costPoolId);
 
     const inv = await this.invoicingService.generateIntercompanyInvoices({
+      groupId: params.groupId,
       holdcoCompanyId: params.holdcoCompanyId,
       period: params.period,
       issueDate: params.issueDate,
@@ -44,6 +49,7 @@ export class MonthCloseService {
     });
 
     await this.periodLockService.lockPeriod({
+      groupId: params.groupId,
       companyId: params.holdcoCompanyId,
       period: params.period,
       lockedBy: params.lockedBy,

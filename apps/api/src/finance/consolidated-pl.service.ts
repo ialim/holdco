@@ -2,6 +2,7 @@ import { Injectable } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
 import { Decimal } from "@prisma/client/runtime/library";
 import { LedgerAccountType } from "./finance.enums";
+import { requireGroupId } from "./finance-tenancy";
 
 function dec(v: any) { return new Decimal(v); }
 function round2(d: Decimal) { return new Decimal(d.toFixed(2)); }
@@ -10,11 +11,12 @@ function round2(d: Decimal) { return new Decimal(d.toFixed(2)); }
 export class ConsolidatedPLService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async consolidatedPL(params: { period: string; excludeIntercompanyAccounts?: boolean }) {
+  async consolidatedPL(params: { groupId: string; period: string; excludeIntercompanyAccounts?: boolean }) {
+    requireGroupId(params.groupId);
     const excludeIC = params.excludeIntercompanyAccounts ?? true;
 
     const entries = await this.prisma.ledgerEntry.findMany({
-      where: { period: params.period },
+      where: { period: params.period, company: { groupId: params.groupId } },
       include: { account: true },
     });
 

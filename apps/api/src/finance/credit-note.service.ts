@@ -3,6 +3,7 @@ import { PrismaService } from "../prisma/prisma.service";
 import { Decimal } from "@prisma/client/runtime/library";
 import { InvoiceStatus, InvoiceType } from "./finance.enums";
 import { LedgerPostingService } from "./ledger-posting.service";
+import { requireGroupId } from "./finance-tenancy";
 
 function dec(v: any) { return new Decimal(v); }
 function round2(d: Decimal) { return new Decimal(d.toFixed(2)); }
@@ -12,14 +13,19 @@ export class CreditNoteService {
   constructor(private readonly prisma: PrismaService, private readonly ledgerPostingService: LedgerPostingService) {}
 
   async createCreditNote(params: {
+    groupId: string;
     originalInvoiceId: string;
     issueDate: Date;
     reason: string;
     lines?: { originalLineId: string; creditNetAmount: string | number }[];
     fullReversal?: boolean;
   }) {
-    const original = await this.prisma.invoice.findUnique({
-      where: { id: params.originalInvoiceId },
+    requireGroupId(params.groupId);
+    const original = await this.prisma.invoice.findFirst({
+      where: {
+        id: params.originalInvoiceId,
+        OR: [{ sellerCompany: { groupId: params.groupId } }, { buyerCompany: { groupId: params.groupId } }],
+      },
       include: { lines: true },
     });
     if (!original) throw new BadRequestException("Original invoice not found");
@@ -83,7 +89,7 @@ export class CreditNoteService {
       },
     });
 
-    await this.ledgerPostingService.postInvoiceToLedger({ invoiceId: cn.id });
+    await this.ledgerPostingService.postInvoiceToLedger({ groupId: params.groupId, invoiceId: cn.id });
     return cn;
   }
 }

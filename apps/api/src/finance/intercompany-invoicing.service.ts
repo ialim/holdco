@@ -4,6 +4,7 @@ import { Decimal } from "@prisma/client/runtime/library";
 import { AgreementType, PricingModel, InvoiceStatus, InvoiceType } from "./finance.enums";
 import { LedgerPostingService } from "./ledger-posting.service";
 import { PeriodLockService } from "./period-lock.service";
+import { assertCompaniesInGroup, assertCompanyInGroup, assertInvoiceInGroup, requireGroupId } from "./finance-tenancy";
 
 function dec(v: any) { return new Decimal(v); }
 function round2(d: Decimal) { return new Decimal(d.toFixed(2)); }
@@ -17,11 +18,15 @@ export class IntercompanyInvoicingService {
   ) {}
 
   async generateIntercompanyInvoices(params: {
+    groupId: string;
     holdcoCompanyId: string;
     period: string;
     issueDate: Date;
     dueDays?: number;
   }) {
+    requireGroupId(params.groupId);
+    await assertCompanyInGroup(this.prisma, params.groupId, params.holdcoCompanyId, "Holding company");
+
     const dueDays = params.dueDays ?? 30;
 
     const pool = await this.prisma.costPool.findUnique({
@@ -44,6 +49,11 @@ export class IntercompanyInvoicingService {
       byRecipient[ag.recipientCompanyId] ??= {};
       if (ag.type === AgreementType.MANAGEMENT) byRecipient[ag.recipientCompanyId].mgmt = ag;
       if (ag.type === AgreementType.IP_LICENSE) byRecipient[ag.recipientCompanyId].ip = ag;
+    }
+
+    const recipientIds = pool.allocations.map((alloc) => alloc.recipientCompanyId);
+    if (recipientIds.length) {
+      await assertCompaniesInGroup(this.prisma, params.groupId, recipientIds, "Recipient company");
     }
 
     const results: { recipientCompanyId: string; invoiceId: string }[] = [];
@@ -169,9 +179,9 @@ export class IntercompanyInvoicingService {
     return { period: params.period, invoices: results };
   }
 
-  async issueInvoice(invoiceId: string) {
-    const invoice = await this.prisma.invoice.findUnique({ where: { id: invoiceId } });
-    if (!invoice) throw new BadRequestException("Invoice not found");
+  async issueInvoice(groupId: string, invoiceId: string) {
+    requireGroupId(groupId);
+    const invoice = await assertInvoiceInGroup(this.prisma, groupId, invoiceId);
     if (!invoice.period) throw new BadRequestException("Invoice period missing");
 
     await this.periodLockService.assertNotLocked(invoice.sellerCompanyId, invoice.period);
@@ -181,7 +191,7 @@ export class IntercompanyInvoicingService {
       data: { status: InvoiceStatus.ISSUED },
     });
 
-    await this.ledgerPostingService.postInvoiceToLedger({ invoiceId });
+    await this.ledgerPostingService.postInvoiceToLedger({ groupId, invoiceId });
 
     return updated;
   }

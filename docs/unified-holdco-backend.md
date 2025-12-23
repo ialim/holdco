@@ -52,7 +52,8 @@ Build a unified backend for all subsidiaries using NestJS + Postgres + Redis + R
 ## Current status
 - Completed artifacts: [OpenAPI v1 stub](openapi-v1.yaml), [ERD outline](erd-outline.md), [ICG migration runbook](icg-migration-runbook.md), [ICG CSV tooling](../apps/api/scripts/icg/README.md), [RBAC policies](rbac-policies.md), and [event/outbox design](event-outbox-design.md).
 - Implemented modules: catalog, inventory, pricing, orders, payments, credit, loyalty, finance, shared-services, events/outbox, and supporting RBAC/tenancy scaffolding.
-- In progress: tenancy enforcement validation across all endpoints, migration dry runs with real exports, and POS cutover readiness.
+- Completed: tenancy enforcement validation across all endpoints.
+- In progress: migration dry runs with real exports, and POS cutover readiness.
 - Not started: data warehouse adapter and load/security test suites.
 - Operational: `/v1/metrics` is protected with `METRICS_TOKEN` (see `docs/event-outbox-design.md`).
 

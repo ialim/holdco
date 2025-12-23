@@ -109,8 +109,13 @@ export class OrdersService {
     if (!groupId) throw new BadRequestException("X-Group-Id header is required");
     if (!subsidiaryId) throw new BadRequestException("X-Subsidiary-Id header is required");
 
+    const existing = await this.prisma.order.findFirst({
+      where: { id: orderId, groupId, subsidiaryId },
+    });
+    if (!existing) throw new NotFoundException("Order not found");
+
     const order = await this.prisma.order.update({
-      where: { id: orderId },
+      where: { id: existing.id },
       data: { status: "cancelled" },
       include: { items: true },
     });
@@ -122,8 +127,13 @@ export class OrdersService {
     if (!groupId) throw new BadRequestException("X-Group-Id header is required");
     if (!subsidiaryId) throw new BadRequestException("X-Subsidiary-Id header is required");
 
+    const existing = await this.prisma.order.findFirst({
+      where: { id: orderId, groupId, subsidiaryId },
+    });
+    if (!existing) throw new NotFoundException("Order not found");
+
     const order = await this.prisma.order.update({
-      where: { id: orderId },
+      where: { id: existing.id },
       data: { status: "fulfilled" },
       include: { items: true },
     });

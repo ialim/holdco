@@ -2,6 +2,7 @@ import { Injectable, BadRequestException } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
 import { Decimal } from "@prisma/client/runtime/library";
 import { InvoiceType, InvoiceStatus } from "./finance.enums";
+import { assertInvoiceInGroup, requireGroupId } from "./finance-tenancy";
 
 function dec(v: any) { return new Decimal(v); }
 function round2(d: Decimal) { return new Decimal(d.toFixed(2)); }
@@ -16,9 +17,9 @@ async function getAccountId(prisma: PrismaService, companyId: string, code: stri
 export class LedgerPostingService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async postInvoiceToLedger(params: { invoiceId: string }) {
-    const invoice = await this.prisma.invoice.findUnique({ where: { id: params.invoiceId } });
-    if (!invoice) throw new BadRequestException("Invoice not found");
+  async postInvoiceToLedger(params: { groupId: string; invoiceId: string }) {
+    requireGroupId(params.groupId);
+    const invoice = await assertInvoiceInGroup(this.prisma, params.groupId, params.invoiceId);
     if (invoice.status === InvoiceStatus.VOID) throw new BadRequestException("Cannot post VOID invoice");
     if (!invoice.period) throw new BadRequestException("Invoice period is required for ledger posting");
 
@@ -80,12 +81,17 @@ export class LedgerPostingService {
     return { posted: true, invoiceId: invoice.id, net: net.toString(), type: "EXTERNAL" };
   }
 
-  async postAllInvoicesForPeriod(params: { period: string }) {
+  async postAllInvoicesForPeriod(params: { groupId: string; period: string }) {
+    requireGroupId(params.groupId);
     const invoices = await this.prisma.invoice.findMany({
-      where: { period: params.period, status: { not: InvoiceStatus.VOID } },
+      where: {
+        period: params.period,
+        status: { not: InvoiceStatus.VOID },
+        OR: [{ sellerCompany: { groupId: params.groupId } }, { buyerCompany: { groupId: params.groupId } }],
+      },
       select: { id: true },
     });
-    for (const inv of invoices) await this.postInvoiceToLedger({ invoiceId: inv.id });
+    for (const inv of invoices) await this.postInvoiceToLedger({ groupId: params.groupId, invoiceId: inv.id });
     return { period: params.period, postedCount: invoices.length };
   }
 }

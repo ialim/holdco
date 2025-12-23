@@ -159,8 +159,9 @@ export class FinanceController {
 
   @Permissions("finance.month_close.run")
   @Post("month-close")
-  monthClose(@Body() body: any) {
+  monthClose(@Headers("x-group-id") groupId: string, @Body() body: any) {
     return this.monthCloseService.runMonthClose({
+      groupId,
       holdcoCompanyId: body.holdcoCompanyId,
       period: body.period,
       issueDate: new Date(body.issueDate),
@@ -173,20 +174,21 @@ export class FinanceController {
 
   @Permissions("finance.cost_pools.manage")
   @Post("cost-pools")
-  createCostPool(@Body() body: any) {
-    return this.costPoolService.createCostPool(body);
+  createCostPool(@Headers("x-group-id") groupId: string, @Body() body: any) {
+    return this.costPoolService.createCostPool({ groupId, ...body });
   }
 
   @Permissions("finance.cost_pools.manage")
   @Post("cost-pools/:id/allocate")
-  allocate(@Param("id") id: string) {
-    return this.costPoolService.allocateCostPool(id);
+  allocate(@Headers("x-group-id") groupId: string, @Param("id") id: string) {
+    return this.costPoolService.allocateCostPool(groupId, id);
   }
 
   @Permissions("finance.intercompany.generate")
   @Post("intercompany/:period/generate")
-  generate(@Param("period") period: string, @Body() body: any) {
+  generate(@Headers("x-group-id") groupId: string, @Param("period") period: string, @Body() body: any) {
     return this.invoicingService.generateIntercompanyInvoices({
+      groupId,
       holdcoCompanyId: body.holdcoCompanyId,
       period,
       issueDate: new Date(body.issueDate),
@@ -196,20 +198,21 @@ export class FinanceController {
 
   @Permissions("finance.invoices.issue")
   @Post("invoices/:id/issue")
-  issueInvoice(@Param("id") id: string) {
-    return this.invoicingService.issueInvoice(id);
+  issueInvoice(@Headers("x-group-id") groupId: string, @Param("id") id: string) {
+    return this.invoicingService.issueInvoice(groupId, id);
   }
 
   @Permissions("finance.ledger.post")
   @Post("ledger/post-period")
-  postPeriod(@Body() body: any) {
-    return this.ledgerPostingService.postAllInvoicesForPeriod({ period: body.period });
+  postPeriod(@Headers("x-group-id") groupId: string, @Body() body: any) {
+    return this.ledgerPostingService.postAllInvoicesForPeriod({ groupId, period: body.period });
   }
 
   @Permissions("finance.payments.record")
   @Post("payments/intercompany")
-  recordPayment(@Body() body: any) {
+  recordPayment(@Headers("x-group-id") groupId: string, @Body() body: any) {
     return this.paymentsService.recordIntercompanyPayment({
+      groupId,
       invoiceId: body.invoiceId,
       paymentDate: new Date(body.paymentDate),
       amountPaid: body.amountPaid,
@@ -221,14 +224,19 @@ export class FinanceController {
 
   @Permissions("finance.wht.schedule.read")
   @Get("wht-schedule/:issuerCompanyId/:period")
-  whtSchedule(@Param("issuerCompanyId") issuerCompanyId: string, @Param("period") period: string) {
-    return this.whtRemittanceService.getWhtSchedule({ issuerCompanyId, period });
+  whtSchedule(
+    @Headers("x-group-id") groupId: string,
+    @Param("issuerCompanyId") issuerCompanyId: string,
+    @Param("period") period: string,
+  ) {
+    return this.whtRemittanceService.getWhtSchedule({ groupId, issuerCompanyId, period });
   }
 
   @Permissions("finance.wht.remit")
   @Post("wht-remit")
-  whtRemit(@Body() body: any) {
+  whtRemit(@Headers("x-group-id") groupId: string, @Body() body: any) {
     return this.whtRemittanceService.markRemitted({
+      groupId,
       issuerCompanyId: body.issuerCompanyId,
       period: body.period,
       taxType: body.taxType as TaxType,
@@ -239,32 +247,38 @@ export class FinanceController {
 
   @Permissions("finance.vat.generate")
   @Get("vat/:companyId/:period")
-  vat(@Param("companyId") companyId: string, @Param("period") period: string) {
-    return this.taxService.generateVatReturn({ companyId, period });
+  vat(@Headers("x-group-id") groupId: string, @Param("companyId") companyId: string, @Param("period") period: string) {
+    return this.taxService.generateVatReturn({ groupId, companyId, period });
   }
 
   @Permissions("finance.vat.file")
   @Post("vat/file")
-  fileVat(@Body() body: any) {
-    return this.taxService.fileVatReturn({ companyId: body.companyId, period: body.period, paymentRef: body.paymentRef });
+  fileVat(@Headers("x-group-id") groupId: string, @Body() body: any) {
+    return this.taxService.fileVatReturn({
+      groupId,
+      companyId: body.companyId,
+      period: body.period,
+      paymentRef: body.paymentRef,
+    });
   }
 
   @Permissions("finance.period_lock.manage")
   @Post("period-lock/lock")
-  lock(@Body() body: any) {
-    return this.periodLockService.lockPeriod(body);
+  lock(@Headers("x-group-id") groupId: string, @Body() body: any) {
+    return this.periodLockService.lockPeriod({ groupId, ...body });
   }
 
   @Permissions("finance.period_lock.manage")
   @Post("period-lock/unlock")
-  unlock(@Body() body: any) {
-    return this.periodLockService.unlockPeriod(body);
+  unlock(@Headers("x-group-id") groupId: string, @Body() body: any) {
+    return this.periodLockService.unlockPeriod({ groupId, ...body });
   }
 
   @Permissions("finance.credit_notes.manage")
   @Post("credit-notes")
-  createCredit(@Body() body: any) {
+  createCredit(@Headers("x-group-id") groupId: string, @Body() body: any) {
     return this.creditNoteService.createCreditNote({
+      groupId,
       originalInvoiceId: body.originalInvoiceId,
       issueDate: new Date(body.issueDate),
       reason: body.reason,
@@ -275,13 +289,13 @@ export class FinanceController {
 
   @Permissions("finance.tax_impact.read")
   @Get("tax-impact/:companyId/:period")
-  taxImpact(@Param("companyId") companyId: string, @Param("period") period: string) {
-    return this.taxImpactService.companyTaxImpact({ companyId, period });
+  taxImpact(@Headers("x-group-id") groupId: string, @Param("companyId") companyId: string, @Param("period") period: string) {
+    return this.taxImpactService.companyTaxImpact({ groupId, companyId, period });
   }
 
   @Permissions("finance.consolidated_pl.read")
   @Get("reports/consolidated-pl/:period")
-  consolidatedPL(@Param("period") period: string) {
-    return this.consolidatedPLService.consolidatedPL({ period, excludeIntercompanyAccounts: true });
+  consolidatedPL(@Headers("x-group-id") groupId: string, @Param("period") period: string) {
+    return this.consolidatedPLService.consolidatedPL({ groupId, period, excludeIntercompanyAccounts: true });
   }
 }

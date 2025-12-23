@@ -2,6 +2,7 @@ import { Injectable } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
 import { Decimal } from "@prisma/client/runtime/library";
 import { InvoiceStatus } from "./finance.enums";
+import { assertCompanyInGroup, requireGroupId } from "./finance-tenancy";
 
 function dec(v: any) { return new Decimal(v); }
 function round2(d: Decimal) { return new Decimal(d.toFixed(2)); }
@@ -10,7 +11,10 @@ function round2(d: Decimal) { return new Decimal(d.toFixed(2)); }
 export class TaxImpactService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async companyTaxImpact(params: { companyId: string; period: string }) {
+  async companyTaxImpact(params: { groupId: string; companyId: string; period: string }) {
+    requireGroupId(params.groupId);
+    await assertCompanyInGroup(this.prisma, params.groupId, params.companyId);
+
     const sold = await this.prisma.invoice.findMany({
       where: { sellerCompanyId: params.companyId, period: params.period, status: { not: InvoiceStatus.VOID } },
       select: { vatAmount: true },

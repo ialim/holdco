@@ -2,18 +2,31 @@ import { Injectable, BadRequestException } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
 import { Decimal } from "@prisma/client/runtime/library";
 import { AllocationMethod } from "./finance.enums";
+import { assertCompaniesInGroup, assertCompanyInGroup, requireGroupId } from "./finance-tenancy";
 
 @Injectable()
 export class CostPoolService {
   constructor(private readonly prisma: PrismaService) {}
 
   async createCostPool(params: {
+    groupId: string;
     holdcoCompanyId: string;
     period: string; // "YYYY-MM"
     lines: { category: string; amount: Decimal | string | number }[];
     allocationMethod?: AllocationMethod;
     weights?: { recipientCompanyId: string; weight: Decimal | string | number }[];
   }) {
+    requireGroupId(params.groupId);
+    await assertCompanyInGroup(this.prisma, params.groupId, params.holdcoCompanyId, "Holding company");
+    if (params.weights?.length) {
+      await assertCompaniesInGroup(
+        this.prisma,
+        params.groupId,
+        params.weights.map((w) => w.recipientCompanyId),
+        "Recipient company",
+      );
+    }
+
     const totalCost = params.lines.reduce((sum, l) => sum.plus(new Decimal(l.amount)), new Decimal(0));
 
     const costPool = await this.prisma.costPool.upsert({
@@ -61,9 +74,11 @@ export class CostPoolService {
     return { costPoolId: costPool.id, totalCost: costPool.totalCost };
   }
 
-  async allocateCostPool(costPoolId: string) {
-    const pool = await this.prisma.costPool.findUnique({
-      where: { id: costPoolId },
+  async allocateCostPool(groupId: string, costPoolId: string) {
+    requireGroupId(groupId);
+
+    const pool = await this.prisma.costPool.findFirst({
+      where: { id: costPoolId, company: { groupId } },
       include: { allocationRule: { include: { weights: true } } },
     });
     if (!pool) throw new BadRequestException("CostPool not found");

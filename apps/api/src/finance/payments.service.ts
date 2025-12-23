@@ -2,6 +2,7 @@ import { Injectable, BadRequestException } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
 import { Decimal } from "@prisma/client/runtime/library";
 import { TaxType, InvoiceStatus } from "./finance.enums";
+import { requireGroupId } from "./finance-tenancy";
 
 function dec(v: any) { return new Decimal(v); }
 function round2(d: Decimal) { return new Decimal(d.toFixed(2)); }
@@ -27,6 +28,7 @@ export class PaymentsService {
   constructor(private readonly prisma: PrismaService) {}
 
   async recordIntercompanyPayment(params: {
+    groupId: string;
     invoiceId: string;
     paymentDate: Date;
     amountPaid: Decimal | string | number;
@@ -34,8 +36,12 @@ export class PaymentsService {
     reference?: string;
     notes?: string;
   }) {
-    const invoice = await this.prisma.invoice.findUnique({
-      where: { id: params.invoiceId },
+    requireGroupId(params.groupId);
+    const invoice = await this.prisma.invoice.findFirst({
+      where: {
+        id: params.invoiceId,
+        OR: [{ sellerCompany: { groupId: params.groupId } }, { buyerCompany: { groupId: params.groupId } }],
+      },
       include: { lines: { include: { agreement: true } } },
     });
     if (!invoice) throw new BadRequestException("Invoice not found");

@@ -2,6 +2,7 @@ import { Injectable } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
 import { Decimal } from "@prisma/client/runtime/library";
 import { InvoiceStatus } from "./finance.enums";
+import { assertCompanyInGroup, requireGroupId } from "./finance-tenancy";
 
 function dec(v: any) { return new Decimal(v); }
 function round2(d: Decimal) { return new Decimal(d.toFixed(2)); }
@@ -10,7 +11,10 @@ function round2(d: Decimal) { return new Decimal(d.toFixed(2)); }
 export class TaxService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async generateVatReturn(params: { companyId: string; period: string }) {
+  async generateVatReturn(params: { groupId: string; companyId: string; period: string }) {
+    requireGroupId(params.groupId);
+    await assertCompanyInGroup(this.prisma, params.groupId, params.companyId);
+
     const sold = await this.prisma.invoice.findMany({
       where: { sellerCompanyId: params.companyId, period: params.period, status: { not: InvoiceStatus.VOID } },
       select: { vatAmount: true },
@@ -32,9 +36,16 @@ export class TaxService {
     });
   }
 
-  async fileVatReturn(params: { companyId: string; period: string; paymentRef?: string }) {
-    const vr = await this.prisma.vatReturn.findUnique({
-      where: { companyId_period: { companyId: params.companyId, period: params.period } },
+  async fileVatReturn(params: { groupId: string; companyId: string; period: string; paymentRef?: string }) {
+    requireGroupId(params.groupId);
+    await assertCompanyInGroup(this.prisma, params.groupId, params.companyId);
+
+    const vr = await this.prisma.vatReturn.findFirst({
+      where: {
+        companyId: params.companyId,
+        period: params.period,
+        company: { groupId: params.groupId },
+      },
     });
     if (!vr) throw new Error("VAT return not generated yet");
 

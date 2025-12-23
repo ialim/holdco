@@ -2,6 +2,7 @@ import { Injectable, BadRequestException } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
 import { Decimal } from "@prisma/client/runtime/library";
 import { TaxType } from "./finance.enums";
+import { assertCompanyInGroup, requireGroupId } from "./finance-tenancy";
 
 function dec(v: any) { return new Decimal(v); }
 function round2(d: Decimal) { return new Decimal(d.toFixed(2)); }
@@ -10,7 +11,10 @@ function round2(d: Decimal) { return new Decimal(d.toFixed(2)); }
 export class WhtRemittanceService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async getWhtSchedule(params: { issuerCompanyId: string; period: string }) {
+  async getWhtSchedule(params: { groupId: string; issuerCompanyId: string; period: string }) {
+    requireGroupId(params.groupId);
+    await assertCompanyInGroup(this.prisma, params.groupId, params.issuerCompanyId, "Issuer company");
+
     const notes = await this.prisma.whtCreditNote.findMany({
       where: { issuerCompanyId: params.issuerCompanyId, period: params.period, remittanceDate: null },
     });
@@ -31,7 +35,10 @@ export class WhtRemittanceService {
     };
   }
 
-  async markRemitted(params: { issuerCompanyId: string; period: string; taxType: TaxType; remittanceDate: Date; firReceiptRef: string }) {
+  async markRemitted(params: { groupId: string; issuerCompanyId: string; period: string; taxType: TaxType; remittanceDate: Date; firReceiptRef: string }) {
+    requireGroupId(params.groupId);
+    await assertCompanyInGroup(this.prisma, params.groupId, params.issuerCompanyId, "Issuer company");
+
     const result = await this.prisma.whtCreditNote.updateMany({
       where: { issuerCompanyId: params.issuerCompanyId, period: params.period, taxType: params.taxType, remittanceDate: null },
       data: { remittanceDate: params.remittanceDate, firReceiptRef: params.firReceiptRef },

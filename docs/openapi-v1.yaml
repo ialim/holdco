@@ -2036,6 +2036,8 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthorized'
   /v1/finance/month-close:
+    parameters:
+      - $ref: '#/components/parameters/GroupId'
     post:
       tags: [Finance]
       operationId: runMonthClose
@@ -2060,6 +2062,8 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthorized'
   /v1/finance/cost-pools:
+    parameters:
+      - $ref: '#/components/parameters/GroupId'
     post:
       tags: [Finance]
       operationId: createCostPool
@@ -2085,6 +2089,7 @@ paths:
           $ref: '#/components/responses/Unauthorized'
   /v1/finance/cost-pools/{id}/allocate:
     parameters:
+      - $ref: '#/components/parameters/GroupId'
       - name: id
         in: path
         required: true
@@ -2110,6 +2115,7 @@ paths:
           $ref: '#/components/responses/Unauthorized'
   /v1/finance/intercompany/{period}/generate:
     parameters:
+      - $ref: '#/components/parameters/GroupId'
       - name: period
         in: path
         required: true
@@ -2140,6 +2146,7 @@ paths:
           $ref: '#/components/responses/Unauthorized'
   /v1/finance/invoices/{id}/issue:
     parameters:
+      - $ref: '#/components/parameters/GroupId'
       - name: id
         in: path
         required: true
@@ -2164,6 +2171,8 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthorized'
   /v1/finance/ledger/post-period:
+    parameters:
+      - $ref: '#/components/parameters/GroupId'
     post:
       tags: [Finance]
       operationId: postLedgerForPeriod
@@ -2188,6 +2197,8 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthorized'
   /v1/finance/payments/intercompany:
+    parameters:
+      - $ref: '#/components/parameters/GroupId'
     post:
       tags: [Finance]
       operationId: recordIntercompanyPayment
@@ -2213,6 +2224,7 @@ paths:
           $ref: '#/components/responses/Unauthorized'
   /v1/finance/wht-schedule/{issuerCompanyId}/{period}:
     parameters:
+      - $ref: '#/components/parameters/GroupId'
       - name: issuerCompanyId
         in: path
         required: true
@@ -2240,6 +2252,8 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthorized'
   /v1/finance/wht-remit:
+    parameters:
+      - $ref: '#/components/parameters/GroupId'
     post:
       tags: [Finance]
       operationId: remitWhtCredits
@@ -2265,6 +2279,7 @@ paths:
           $ref: '#/components/responses/Unauthorized'
   /v1/finance/vat/{companyId}/{period}:
     parameters:
+      - $ref: '#/components/parameters/GroupId'
       - name: companyId
         in: path
         required: true
@@ -2292,6 +2307,8 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthorized'
   /v1/finance/vat/file:
+    parameters:
+      - $ref: '#/components/parameters/GroupId'
     post:
       tags: [Finance]
       operationId: fileVatReturn
@@ -2316,6 +2333,8 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthorized'
   /v1/finance/period-lock/lock:
+    parameters:
+      - $ref: '#/components/parameters/GroupId'
     post:
       tags: [Finance]
       operationId: lockPeriod
@@ -2340,6 +2359,8 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthorized'
   /v1/finance/period-lock/unlock:
+    parameters:
+      - $ref: '#/components/parameters/GroupId'
     post:
       tags: [Finance]
       operationId: unlockPeriod
@@ -2364,6 +2385,8 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthorized'
   /v1/finance/credit-notes:
+    parameters:
+      - $ref: '#/components/parameters/GroupId'
     post:
       tags: [Finance]
       operationId: createCreditNote
@@ -2389,6 +2412,7 @@ paths:
           $ref: '#/components/responses/Unauthorized'
   /v1/finance/tax-impact/{companyId}/{period}:
     parameters:
+      - $ref: '#/components/parameters/GroupId'
       - name: companyId
         in: path
         required: true
@@ -2417,6 +2441,7 @@ paths:
           $ref: '#/components/responses/Unauthorized'
   /v1/finance/reports/consolidated-pl/{period}:
     parameters:
+      - $ref: '#/components/parameters/GroupId'
       - name: period
         in: path
         required: true

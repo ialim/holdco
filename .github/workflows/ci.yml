@@ -64,3 +64,4 @@ jobs:
           trap "kill $APP_PID" EXIT
           curl --retry 10 --retry-connrefused --retry-delay 2 http://localhost:3000/v1/health
           npm --prefix apps/api run tenant:smoke
+          npm --prefix apps/api run adapter:smoke

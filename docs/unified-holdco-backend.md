@@ -61,6 +61,7 @@ Build a unified backend for all subsidiaries using NestJS + Postgres + Redis + R
 ## Testing and validation
 - Contract tests for public API and internal service interfaces.
 - Tenant isolation smoke test: `npm --prefix apps/api run tenant:smoke` (requires API running, seeded DB, and `JWT_SECRET`; optional `API_BASE_URL`).
+- Adapter flows smoke test: `npm --prefix apps/api run adapter:smoke` (requires API running, seeded DB, and `JWT_SECRET`; optional `API_BASE_URL`).
 - End to end flow tests for each subsidiary scenario (wholesale, retail, credit, ecom).
 - Migration dry runs with reconciliation of product, stock, and transaction totals.
 - Load tests for peak campaigns and bulk ordering.

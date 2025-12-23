@@ -1,17 +1,31 @@
 import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
+import { randomUUID } from "crypto";
 import { PrismaService } from "../prisma/prisma.service";
 import { CreatePaymentIntentDto } from "./dto/create-payment-intent.dto";
 import { CreateRefundDto } from "./dto/create-refund.dto";
+import { PaymentGatewayFactory } from "./payment-gateway.factory";
 
 @Injectable()
 export class PaymentsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly gatewayFactory: PaymentGatewayFactory,
+  ) {}
 
   async createPaymentIntent(groupId: string, subsidiaryId: string, body: CreatePaymentIntentDto) {
     if (!groupId) throw new BadRequestException("X-Group-Id header is required");
     if (!subsidiaryId) throw new BadRequestException("X-Subsidiary-Id header is required");
 
-    const status = body.capture_method === "manual" ? "requires_capture" : "requires_capture";
+    const provider = body.provider ?? this.gatewayFactory.defaultProvider();
+    const gateway = this.gatewayFactory.get(provider);
+    const reference = `pi_${randomUUID()}`;
+    const gatewayResult = await gateway.createPaymentIntent({
+      amount: body.amount,
+      currency: body.currency,
+      reference,
+      orderId: body.order_id,
+    });
+    const status = gatewayResult.status ?? (body.capture_method === "manual" ? "requires_capture" : "requires_capture");
 
     const intent = await this.prisma.paymentIntent.create({
       data: {
@@ -21,7 +35,8 @@ export class PaymentsService {
         amount: body.amount,
         currency: body.currency,
         status,
-        provider: body.provider,
+        provider: gateway.name,
+        reference: gatewayResult.reference ?? reference,
       },
     });
 
@@ -33,6 +48,7 @@ export class PaymentsService {
       status: intent.status,
       provider: intent.provider ?? undefined,
       reference: intent.reference ?? undefined,
+      checkout_url: gatewayResult.checkout_url,
     };
   }
 
@@ -43,9 +59,17 @@ export class PaymentsService {
     const existing = await this.prisma.paymentIntent.findFirst({ where: { id: paymentId, groupId, subsidiaryId } });
     if (!existing) throw new NotFoundException("Payment intent not found");
 
+    const gateway = this.gatewayFactory.get(existing.provider ?? undefined);
+    const captureResult = gateway.capturePaymentIntent
+      ? await gateway.capturePaymentIntent(existing.reference ?? existing.id)
+      : { status: "captured" };
+
     const intent = await this.prisma.paymentIntent.update({
       where: { id: paymentId },
-      data: { status: "captured" },
+      data: {
+        status: captureResult.status ?? "captured",
+        reference: captureResult.reference ?? existing.reference,
+      },
     });
 
     return {
@@ -63,6 +87,16 @@ export class PaymentsService {
     if (!groupId) throw new BadRequestException("X-Group-Id header is required");
     if (!subsidiaryId) throw new BadRequestException("X-Subsidiary-Id header is required");
 
+    const intent = await this.prisma.paymentIntent.findFirst({
+      where: { id: body.payment_id, groupId, subsidiaryId },
+    });
+    if (!intent) throw new NotFoundException("Payment intent not found");
+
+    const gateway = this.gatewayFactory.get(intent.provider ?? undefined);
+    const refundResult = gateway.createRefund
+      ? await gateway.createRefund(intent.reference ?? intent.id, body.amount)
+      : { status: "processing" };
+
     const refund = await this.prisma.refund.create({
       data: {
         groupId,
@@ -70,7 +104,7 @@ export class PaymentsService {
         paymentIntentId: body.payment_id,
         amount: body.amount,
         reason: body.reason,
-        status: "pending",
+        status: refundResult.status ?? "pending",
       },
     });
 

@@ -2,10 +2,14 @@ import { BadRequestException, Injectable, NotFoundException } from "@nestjs/comm
 import { ListQueryDto } from "../common/dto/list-query.dto";
 import { PrismaService } from "../prisma/prisma.service";
 import { CreateShipmentDto } from "./dto/create-shipment.dto";
+import { LogisticsGatewayFactory } from "./logistics-gateway.factory";
 
 @Injectable()
 export class LogisticsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly gatewayFactory: LogisticsGatewayFactory,
+  ) {}
 
   async listShipments(groupId: string, subsidiaryId: string, query: ListQueryDto) {
     if (!groupId) throw new BadRequestException("X-Group-Id header is required");
@@ -43,13 +47,20 @@ export class LogisticsService {
     if (!groupId) throw new BadRequestException("X-Group-Id header is required");
     if (!subsidiaryId) throw new BadRequestException("X-Subsidiary-Id header is required");
 
+    const gateway = this.gatewayFactory.get(body.carrier);
+    const carrier = gateway.name;
+    const gatewayResult = body.tracking_no
+      ? { tracking_no: body.tracking_no, status: "created" }
+      : await gateway.createShipment({ orderId: body.order_id, carrier });
+
     const shipment = await this.prisma.shipment.create({
       data: {
         groupId,
         subsidiaryId,
         orderId: body.order_id,
-        carrier: body.carrier,
-        trackingNo: body.tracking_no,
+        carrier,
+        trackingNo: gatewayResult.tracking_no,
+        status: gatewayResult.status ?? "created",
       },
     });
 

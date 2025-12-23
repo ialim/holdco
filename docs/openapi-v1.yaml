@@ -788,6 +788,53 @@ paths:
           $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
+  /v1/payments/reconcile:
+    parameters:
+      - $ref: '#/components/parameters/GroupId'
+      - $ref: '#/components/parameters/SubsidiaryId'
+    post:
+      tags: [Payments]
+      operationId: reconcilePayments
+      summary: Reconcile payments
+      x-rbac:
+        permissions: [payments.reconcile]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReconcilePaymentsRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReconcilePaymentsResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /v1/payments/webhooks/{provider}:
+    post:
+      tags: [Payments]
+      operationId: handlePaymentWebhook
+      summary: Provider webhook callback
+      parameters:
+        - $ref: '#/components/parameters/PaymentProvider'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: OK
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
   /v1/resellers:
     parameters:
       - $ref: '#/components/parameters/GroupId'
@@ -1130,6 +1177,26 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
+  /v1/logistics/webhooks/{carrier}:
+    post:
+      tags: [Logistics]
+      operationId: handleLogisticsWebhook
+      summary: Carrier webhook callback
+      parameters:
+        - $ref: '#/components/parameters/LogisticsCarrier'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: OK
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
   /v1/reports/sales:
     parameters:
       - $ref: '#/components/parameters/GroupId'
@@ -2819,6 +2886,22 @@ components:
         type: string
         format: uuid
       description: Store or warehouse identifier
+    PaymentProvider:
+      name: provider
+      in: path
+      required: true
+      schema:
+        type: string
+        example: paystack
+      description: Payment provider identifier
+    LogisticsCarrier:
+      name: carrier
+      in: path
+      required: true
+      schema:
+        type: string
+        example: shipbubble
+      description: Logistics carrier identifier
     Channel:
       name: X-Channel
       in: header
@@ -3800,6 +3883,9 @@ components:
         reference:
           type: string
           example: PSK-892133
+        checkout_url:
+          type: string
+          example: https://checkout.paystack.com/PSK-892133
     RefundRequest:
       type: object
       required: [payment_id, amount]
@@ -3834,6 +3920,40 @@ components:
           example: 25000
         status:
           $ref: '#/components/schemas/RefundStatus'
+    ReconcilePaymentsRequest:
+      type: object
+      properties:
+        provider:
+          type: string
+          example: paystack
+        from:
+          type: string
+          format: date-time
+          example: '2025-01-01T00:00:00Z'
+        to:
+          type: string
+          format: date-time
+          example: '2025-01-31T23:59:59Z'
+    ReconcilePaymentsResponse:
+      type: object
+      properties:
+        provider:
+          type: string
+          example: paystack
+        status:
+          type: string
+          example: pending
+        message:
+          type: string
+          example: Reconciliation stub; integrate Paystack transactions API.
+        from:
+          type: string
+          format: date-time
+          example: '2025-01-01T00:00:00Z'
+        to:
+          type: string
+          format: date-time
+          example: '2025-01-31T23:59:59Z'
     Reseller:
       type: object
       properties:

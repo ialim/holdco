@@ -56,7 +56,7 @@ async function main() {
     "pricing.promotion.write",
   ];
   const ordersPermissions = ["orders.read", "orders.write", "orders.cancel", "orders.fulfill"];
-  const paymentsPermissions = ["payments.intent.create", "payments.capture", "payments.refund"];
+  const paymentsPermissions = ["payments.intent.create", "payments.capture", "payments.refund", "payments.reconcile"];
   const creditPermissions = [
     "credit.reseller.read",
     "credit.reseller.write",

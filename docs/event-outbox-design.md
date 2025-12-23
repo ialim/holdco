@@ -149,6 +149,24 @@ Environment variables for the built-in order events consumer:
 - `EVENTS_PREFETCH=10`
 - `EVENTS_EXCHANGE=holdco.events`
 
+## Suggested env sample
+```
+RABBITMQ_URL=amqp://rabbit:rabbit@localhost:5672
+EVENTS_EXCHANGE=holdco.events
+OUTBOX_PUBLISHER_ENABLED=true
+OUTBOX_POLL_INTERVAL_MS=2000
+OUTBOX_BATCH_SIZE=50
+OUTBOX_MAX_ATTEMPTS=10
+OUTBOX_BACKOFF_BASE_SECONDS=5
+OUTBOX_BACKOFF_MAX_SECONDS=900
+OUTBOX_LOCK_TIMEOUT_SECONDS=300
+EVENTS_CONSUMERS_ENABLED=true
+ORDER_EVENTS_QUEUE=orders.consumer
+ORDER_EVENTS_ROUTING_KEYS=order.*
+EVENTS_PREFETCH=10
+METRICS_TOKEN=change_me_metrics
+```
+
 ## Operational notes
 - Metrics: publish latency, attempts, dead-letter count, and consumer lag.
 - Retention: archive `published` rows older than 30-90 days.

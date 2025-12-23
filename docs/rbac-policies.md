@@ -46,6 +46,7 @@ Payments
 - `payments.intent.create`
 - `payments.capture`
 - `payments.refund`
+- `payments.reconcile`
 
 Credit & collections
 - `credit.reseller.read`

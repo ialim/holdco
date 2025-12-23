@@ -22,5 +22,6 @@ import { PaystackGateway } from "./gateways/paystack.gateway";
     FlutterwaveGateway,
     ManualGateway,
   ],
+  exports: [PaymentsService],
 })
 export class PaymentsModule {}

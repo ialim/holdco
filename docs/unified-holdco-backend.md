@@ -45,7 +45,7 @@ Build a unified backend for all subsidiaries using NestJS + Postgres + Redis + R
 - [x] Design event schema, outbox pattern, idempotency strategy, and RabbitMQ topology. See `docs/event-outbox-design.md`.
 - [x] Produce an ICG migration runbook (extract, transform, validate, reconcile, cutover).
 - [x] Implement core services with shared primitives (catalog, inventory, pricing, orders).
-- [ ] Add subsidiary adapters for wholesale, retail POS replacement, reseller credit, and digital commerce.
+- [x] Add subsidiary adapters for wholesale, retail POS replacement, reseller credit, and digital commerce.
 - [ ] Integrate payments, logistics, reporting, and audit logging.
 - [ ] Roll out in phases: digital commerce first, then retail, then wholesale, then credit.
 
@@ -54,11 +54,13 @@ Build a unified backend for all subsidiaries using NestJS + Postgres + Redis + R
 - Implemented modules: catalog, inventory, pricing, orders, payments, credit, loyalty, finance, shared-services, events/outbox, and supporting RBAC/tenancy scaffolding.
 - Completed: tenancy enforcement validation across all endpoints.
 - In progress: migration dry runs with real exports, and POS cutover readiness.
+- Completed: subsidiary adapters for wholesale, retail POS, reseller credit, and digital commerce.
 - Not started: data warehouse adapter and load/security test suites.
 - Operational: `/v1/metrics` is protected with `METRICS_TOKEN` (see `docs/event-outbox-design.md`).
 
 ## Testing and validation
 - Contract tests for public API and internal service interfaces.
+- Tenant isolation smoke test: `npm --prefix apps/api run tenant:smoke` (requires API running, seeded DB, and `JWT_SECRET`; optional `API_BASE_URL`).
 - End to end flow tests for each subsidiary scenario (wholesale, retail, credit, ecom).
 - Migration dry runs with reconciliation of product, stock, and transaction totals.
 - Load tests for peak campaigns and bulk ordering.

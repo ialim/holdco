@@ -7,5 +7,6 @@ import { LoyaltyService } from "./loyalty.service";
   imports: [PrismaModule],
   controllers: [LoyaltyController],
   providers: [LoyaltyService],
+  exports: [LoyaltyService],
 })
 export class LoyaltyModule {}

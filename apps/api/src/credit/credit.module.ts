@@ -7,5 +7,6 @@ import { CreditService } from "./credit.service";
   imports: [PrismaModule],
   controllers: [CreditController],
   providers: [CreditService],
+  exports: [CreditService],
 })
 export class CreditModule {}

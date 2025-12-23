@@ -9,6 +9,27 @@ on:
 jobs:
   api:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: holdco
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U postgres"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/holdco?schema=public
+      JWT_SECRET: ci_smoke_secret
+      PORT: 3000
+      API_BASE_URL: http://localhost:3000
+      OUTBOX_PUBLISHER_ENABLED: "false"
+      EVENTS_CONSUMERS_ENABLED: "false"
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -28,3 +49,18 @@ jobs:
 
       - name: Test
         run: npm --prefix apps/api run test
+
+      - name: Migrate database
+        run: npx --yes prisma@5.11.0 migrate deploy --schema apps/api/prisma/schema.prisma
+
+      - name: Seed database
+        run: npm --prefix apps/api run prisma:seed
+
+      - name: Tenant smoke test
+        run: |
+          set -euo pipefail
+          npm --prefix apps/api run start &
+          APP_PID=$!
+          trap "kill $APP_PID" EXIT
+          curl --retry 10 --retry-connrefused --retry-delay 2 http://localhost:3000/v1/health
+          npm --prefix apps/api run tenant:smoke

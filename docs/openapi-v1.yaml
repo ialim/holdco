@@ -28,6 +28,7 @@ tags:
   - name: Compliance
   - name: Procurement
   - name: Advisory
+  - name: Adapters
 paths:
   /v1/auth/login:
     post:
@@ -707,6 +708,162 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
+  /v1/adapters/wholesale/orders:
+    parameters:
+      - $ref: '#/components/parameters/GroupId'
+      - $ref: '#/components/parameters/SubsidiaryId'
+      - $ref: '#/components/parameters/LocationId'
+    post:
+      tags: [Adapters]
+      operationId: createWholesaleOrder
+      summary: Create wholesale order
+      x-rbac:
+        permissions: [orders.write]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateOrderRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /v1/adapters/wholesale/orders/{order_id}/fulfill:
+    parameters:
+      - $ref: '#/components/parameters/GroupId'
+      - $ref: '#/components/parameters/SubsidiaryId'
+      - $ref: '#/components/parameters/OrderId'
+    post:
+      tags: [Adapters]
+      operationId: fulfillWholesaleOrder
+      summary: Fulfill wholesale order
+      x-rbac:
+        permissions: [orders.fulfill]
+      responses:
+        '200':
+          description: OK
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /v1/adapters/retail/checkout:
+    parameters:
+      - $ref: '#/components/parameters/GroupId'
+      - $ref: '#/components/parameters/SubsidiaryId'
+      - $ref: '#/components/parameters/LocationId'
+    post:
+      tags: [Adapters]
+      operationId: retailCheckout
+      summary: Retail POS checkout
+      x-rbac:
+        permissions: [orders.write, payments.intent.create, inventory.stock.reserve, loyalty.points.issue]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdapterCheckoutRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdapterCheckoutResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /v1/adapters/digital/checkout:
+    parameters:
+      - $ref: '#/components/parameters/GroupId'
+      - $ref: '#/components/parameters/SubsidiaryId'
+      - $ref: '#/components/parameters/LocationId'
+    post:
+      tags: [Adapters]
+      operationId: digitalCheckout
+      summary: Digital commerce checkout
+      x-rbac:
+        permissions: [orders.write, payments.intent.create]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdapterCheckoutRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdapterCheckoutResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /v1/adapters/credit/onboard:
+    parameters:
+      - $ref: '#/components/parameters/GroupId'
+      - $ref: '#/components/parameters/SubsidiaryId'
+    post:
+      tags: [Adapters]
+      operationId: onboardReseller
+      summary: Onboard reseller with credit account
+      x-rbac:
+        permissions: [credit.reseller.write, credit.account.write, credit.limit.write]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResellerOnboardRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResellerOnboardResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /v1/adapters/credit/repayments:
+    parameters:
+      - $ref: '#/components/parameters/GroupId'
+      - $ref: '#/components/parameters/SubsidiaryId'
+    post:
+      tags: [Adapters]
+      operationId: recordResellerRepayment
+      summary: Record reseller repayment
+      x-rbac:
+        permissions: [credit.repayment.write]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RepaymentRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Repayment'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
   /v1/payments/intents:
     parameters:
       - $ref: '#/components/parameters/GroupId'
@@ -6133,6 +6290,76 @@ components:
     ThirdPartyStatus:
       type: string
       enum: [active, inactive]
+    AdapterPaymentRequest:
+      type: object
+      properties:
+        amount:
+          type: number
+        currency:
+          type: string
+        provider:
+          type: string
+        capture_method:
+          type: string
+    AdapterLoyaltyRequest:
+      type: object
+      required: [customer_id, points]
+      properties:
+        customer_id:
+          type: string
+          format: uuid
+        points:
+          type: number
+        reason:
+          type: string
+    AdapterCheckoutRequest:
+      type: object
+      required: [order]
+      properties:
+        order:
+          $ref: '#/components/schemas/CreateOrderRequest'
+        payment:
+          $ref: '#/components/schemas/AdapterPaymentRequest'
+        reserve_stock:
+          type: boolean
+        capture_payment:
+          type: boolean
+        loyalty:
+          $ref: '#/components/schemas/AdapterLoyaltyRequest'
+    AdapterCheckoutResponse:
+      type: object
+      properties:
+        order:
+          $ref: '#/components/schemas/Order'
+        reservations:
+          type: array
+          items:
+            $ref: '#/components/schemas/StockReservation'
+        payment_intent:
+          $ref: '#/components/schemas/PaymentIntent'
+        captured_payment:
+          $ref: '#/components/schemas/PaymentIntent'
+        loyalty:
+          $ref: '#/components/schemas/LoyaltyAccount'
+    ResellerOnboardRequest:
+      type: object
+      required: [reseller, credit]
+      properties:
+        reseller:
+          $ref: '#/components/schemas/CreateResellerRequest'
+        credit:
+          type: object
+          required: [limit_amount]
+          properties:
+            limit_amount:
+              type: number
+    ResellerOnboardResponse:
+      type: object
+      properties:
+        reseller:
+          $ref: '#/components/schemas/Reseller'
+        credit_account:
+          $ref: '#/components/schemas/CreditAccount'
     ServiceRequestCategory:
       type: string
       enum:

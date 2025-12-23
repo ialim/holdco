@@ -74,3 +74,29 @@ Build a unified backend for all subsidiaries using NestJS + Postgres + Redis + R
 - Which payment gateways and logistics partners should be integrated first?
 - What are the expected scale targets (orders/day, SKUs, stores, warehouses)?
 - What cutover window is acceptable for the ICG POS replacement?
+
+## Recommended integration targets (NG/West Africa)
+Payments:
+- Paystack + Flutterwave (cards, transfers, USSD)
+- Optional secondary: Monnify or Interswitch for deeper bank/USSD coverage
+
+Logistics:
+- Aggregator: Shipbubble or Sendbox
+- Direct carriers: GIG Logistics, Kwik (metro), DHL/FedEx (international)
+- Internal: Alims Logistics as a first-class carrier adapter
+
+ERP/Accounting:
+- Enterprise: Sage 50/300 (common locally)
+- SMB/flexible: Odoo or QuickBooks
+- Interim: CSV/SFTP GL exports until ERP selection is final
+
+## Baseline scale targets
+- Stores: 10–50, Warehouses: 1–5, SKUs: 10k–50k
+- Orders/day: 1k–5k average, 10k–25k peak
+- Inventory transactions/day: 5k–20k
+- Peak API throughput: 50–150 req/s during campaigns
+
+## ICG cutover recommendation
+- Phased waves: digital commerce → retail pilot stores → full retail → wholesale/credit
+- Each wave: weekend overnight freeze, 4–8 hours for final delta load + reconciliation
+- Optional 1–2 week ICG read-only period for audit-only access

@@ -11,6 +11,7 @@ import { TaxImpactService } from "./tax-impact.service";
 import { ConsolidatedPLService } from "./consolidated-pl.service";
 import { LedgerPostingService } from "./ledger-posting.service";
 import { AccountingService } from "./accounting.service";
+import { FinanceExportsService } from "./finance-exports.service";
 
 import { Permissions } from "../auth/permissions.decorator";
 import { PermissionsGuard } from "../auth/permissions.guard";
@@ -20,6 +21,7 @@ import { CreateChartOfAccountDto } from "./dto/create-chart-of-account.dto";
 import { CreateCostCenterDto } from "./dto/create-cost-center.dto";
 import { CreateFiscalPeriodDto } from "./dto/create-fiscal-period.dto";
 import { CreateJournalEntryDto } from "./dto/create-journal-entry.dto";
+import { FinanceExportQueryDto } from "./dto/finance-export-query.dto";
 
 @UseGuards(PermissionsGuard)
 @UsePipes(new ValidationPipe({ transform: true, whitelist: true, forbidNonWhitelisted: true }))
@@ -38,6 +40,7 @@ export class FinanceController {
     private readonly consolidatedPLService: ConsolidatedPLService,
     private readonly ledgerPostingService: LedgerPostingService,
     private readonly accountingService: AccountingService,
+    private readonly financeExportsService: FinanceExportsService,
   ) {}
 
   @Permissions("finance.chart_of_accounts.manage")
@@ -102,6 +105,56 @@ export class FinanceController {
     @Body() body: CreateJournalEntryDto,
   ) {
     return this.accountingService.createJournalEntry(groupId, subsidiaryId, body);
+  }
+
+  @Permissions("finance.exports.read")
+  @Get("exports/journals")
+  exportJournalEntries(
+    @Headers("x-group-id") groupId: string,
+    @Headers("x-subsidiary-id") subsidiaryId: string,
+    @Query() query: FinanceExportQueryDto,
+  ) {
+    return this.financeExportsService.exportJournalEntries(groupId, subsidiaryId, query);
+  }
+
+  @Permissions("finance.exports.read")
+  @Get("exports/invoices")
+  exportInvoices(
+    @Headers("x-group-id") groupId: string,
+    @Headers("x-subsidiary-id") subsidiaryId: string,
+    @Query() query: FinanceExportQueryDto,
+  ) {
+    return this.financeExportsService.exportInvoices(groupId, subsidiaryId, query);
+  }
+
+  @Permissions("finance.exports.read")
+  @Get("exports/credit-notes")
+  exportCreditNotes(
+    @Headers("x-group-id") groupId: string,
+    @Headers("x-subsidiary-id") subsidiaryId: string,
+    @Query() query: FinanceExportQueryDto,
+  ) {
+    return this.financeExportsService.exportCreditNotes(groupId, subsidiaryId, query);
+  }
+
+  @Permissions("finance.exports.read")
+  @Get("exports/intercompany")
+  exportIntercompany(
+    @Headers("x-group-id") groupId: string,
+    @Headers("x-subsidiary-id") subsidiaryId: string,
+    @Query() query: FinanceExportQueryDto,
+  ) {
+    return this.financeExportsService.exportIntercompanyInvoices(groupId, subsidiaryId, query);
+  }
+
+  @Permissions("finance.exports.read")
+  @Get("exports/payments")
+  exportPayments(
+    @Headers("x-group-id") groupId: string,
+    @Headers("x-subsidiary-id") subsidiaryId: string,
+    @Query() query: FinanceExportQueryDto,
+  ) {
+    return this.financeExportsService.exportPayments(groupId, subsidiaryId, query);
   }
 
   @Permissions("finance.month_close.run")

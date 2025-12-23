@@ -111,6 +111,7 @@ async function main() {
     "finance.credit_notes.manage",
     "finance.tax_impact.read",
     "finance.consolidated_pl.read",
+    "finance.exports.read",
   ];
   const compliancePermissions = [
     "compliance.policy.manage",

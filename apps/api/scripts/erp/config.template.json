@@ -1,0 +1,22 @@
+{
+  "groupId": "00000000-0000-0000-0000-000000000000",
+  "subsidiaryId": "00000000-0000-0000-0000-000000000000",
+  "format": "csv",
+  "period": "2024-06",
+  "startDate": "2024-06-01",
+  "endDate": "2024-06-30",
+  "exports": ["journals", "invoices", "credit-notes", "intercompany", "payments"],
+  "outputDir": "scripts/erp/output",
+  "sftp": {
+    "enabled": false,
+    "host": "sftp.example.com",
+    "port": 22,
+    "username": "username",
+    "password": "replace-me",
+    "privateKeyPath": "C:/path/to/private_key",
+    "remoteDir": "/incoming/holdco"
+  },
+  "schedule": {
+    "intervalMinutes": 0
+  }
+}

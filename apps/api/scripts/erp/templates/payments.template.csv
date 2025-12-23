@@ -1,0 +1,1 @@
+payment_id,invoice_id,payer_company_id,payee_company_id,payment_date,amount_paid,wht_withheld_amount,reference,notes,created_at

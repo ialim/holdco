@@ -109,6 +109,7 @@ Finance
 - `finance.credit_notes.manage`
 - `finance.tax_impact.read`
 - `finance.consolidated_pl.read`
+- `finance.exports.read`
 
 Compliance & risk
 - `compliance.policy.manage`

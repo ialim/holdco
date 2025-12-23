@@ -4,3 +4,5 @@ shared_services_module_pack/
 .env
 apps/api/.env
 apps/api/dist/
+apps/api/scripts/erp/config.json
+apps/api/scripts/erp/output/

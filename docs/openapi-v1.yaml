@@ -1912,6 +1912,129 @@ paths:
           $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
+  /v1/finance/exports/journals:
+    parameters:
+      - $ref: '#/components/parameters/GroupId'
+      - $ref: '#/components/parameters/SubsidiaryId'
+    get:
+      tags: [Finance]
+      operationId: exportJournalEntries
+      summary: Export journal entries
+      x-rbac:
+        permissions: [finance.exports.read]
+      parameters:
+        - $ref: '#/components/parameters/ExportFormat'
+        - $ref: '#/components/parameters/FiscalPeriodId'
+        - $ref: '#/components/parameters/Period'
+        - $ref: '#/components/parameters/StartDate'
+        - $ref: '#/components/parameters/EndDate'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FinanceExportResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /v1/finance/exports/invoices:
+    parameters:
+      - $ref: '#/components/parameters/GroupId'
+      - $ref: '#/components/parameters/SubsidiaryId'
+    get:
+      tags: [Finance]
+      operationId: exportInvoices
+      summary: Export invoices
+      x-rbac:
+        permissions: [finance.exports.read]
+      parameters:
+        - $ref: '#/components/parameters/ExportFormat'
+        - $ref: '#/components/parameters/Period'
+        - $ref: '#/components/parameters/InvoiceType'
+        - $ref: '#/components/parameters/StartDate'
+        - $ref: '#/components/parameters/EndDate'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FinanceExportResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /v1/finance/exports/credit-notes:
+    parameters:
+      - $ref: '#/components/parameters/GroupId'
+      - $ref: '#/components/parameters/SubsidiaryId'
+    get:
+      tags: [Finance]
+      operationId: exportCreditNotes
+      summary: Export credit notes
+      x-rbac:
+        permissions: [finance.exports.read]
+      parameters:
+        - $ref: '#/components/parameters/ExportFormat'
+        - $ref: '#/components/parameters/Period'
+        - $ref: '#/components/parameters/InvoiceType'
+        - $ref: '#/components/parameters/StartDate'
+        - $ref: '#/components/parameters/EndDate'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FinanceExportResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /v1/finance/exports/intercompany:
+    parameters:
+      - $ref: '#/components/parameters/GroupId'
+      - $ref: '#/components/parameters/SubsidiaryId'
+    get:
+      tags: [Finance]
+      operationId: exportIntercompanyInvoices
+      summary: Export intercompany invoices
+      x-rbac:
+        permissions: [finance.exports.read]
+      parameters:
+        - $ref: '#/components/parameters/ExportFormat'
+        - $ref: '#/components/parameters/Period'
+        - $ref: '#/components/parameters/StartDate'
+        - $ref: '#/components/parameters/EndDate'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FinanceExportResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /v1/finance/exports/payments:
+    parameters:
+      - $ref: '#/components/parameters/GroupId'
+      - $ref: '#/components/parameters/SubsidiaryId'
+    get:
+      tags: [Finance]
+      operationId: exportPayments
+      summary: Export payments
+      x-rbac:
+        permissions: [finance.exports.read]
+      parameters:
+        - $ref: '#/components/parameters/ExportFormat'
+        - $ref: '#/components/parameters/Period'
+        - $ref: '#/components/parameters/StartDate'
+        - $ref: '#/components/parameters/EndDate'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FinanceExportResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
   /v1/finance/month-close:
     post:
       tags: [Finance]
@@ -2964,6 +3087,37 @@ components:
       schema:
         type: string
         format: date
+    ExportFormat:
+      name: format
+      in: query
+      required: false
+      schema:
+        type: string
+        enum: [json, csv]
+      description: Response format for export payloads
+    Period:
+      name: period
+      in: query
+      required: false
+      schema:
+        type: string
+      description: Period code (e.g. 2024-01)
+    FiscalPeriodId:
+      name: fiscal_period_id
+      in: query
+      required: false
+      schema:
+        type: string
+        format: uuid
+      description: Fiscal period identifier
+    InvoiceType:
+      name: invoice_type
+      in: query
+      required: false
+      schema:
+        type: string
+        example: INTERCOMPANY
+      description: Filter by invoice type
     ProductId:
       name: product_id
       in: path
@@ -4904,6 +5058,39 @@ components:
           limit: 50
           offset: 0
           total: 1
+    FinanceExportMeta:
+      type: object
+      properties:
+        row_count:
+          type: integer
+        generated_at:
+          type: string
+          format: date-time
+    FinanceExportResponse:
+      type: object
+      properties:
+        format:
+          type: string
+          enum: [json, csv]
+        columns:
+          type: array
+          items:
+            type: string
+        data:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        content:
+          type: string
+          description: CSV payload when format=csv
+        content_type:
+          type: string
+          example: text/csv
+        file_name:
+          type: string
+        meta:
+          $ref: '#/components/schemas/FinanceExportMeta'
     CostPoolLineInput:
       type: object
       required: [category, amount]

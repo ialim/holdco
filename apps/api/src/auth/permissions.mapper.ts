@@ -48,6 +48,7 @@ const FINANCE_ALL = [
   "finance.credit_notes.manage",
   "finance.tax_impact.read",
   "finance.consolidated_pl.read",
+  "finance.exports.read",
 ];
 
 const FINANCE_SUBSIDIARY = [
@@ -57,6 +58,7 @@ const FINANCE_SUBSIDIARY = [
   "finance.vat.generate",
   "finance.vat.file",
   "finance.tax_impact.read",
+  "finance.exports.read",
 ];
 
 const FINANCE_ADMIN = [...FINANCE_ALL, "shared_services.request.read"];

@@ -38,22 +38,22 @@ Build a unified backend for all subsidiaries using NestJS + Postgres + Redis + R
 - Legacy mapping: `external_system`, `external_id`, and migration audit tables for ICG cutover.
 
 ## Action items
-- [ ] Confirm external integrations (payment gateways, logistics partners, accounting exports) and scale targets.
+- [x] Confirm external integrations (payment gateways, logistics partners, accounting exports) and scale targets.
 - [x] Define tenancy and authorization model (roles, subsidiary scoping, group level access). See `docs/rbac-policies.md`.
 - [x] Draft OpenAPI v1 spec stub and map subsidiary workflows to core services.
 - [x] Draft ERD outline with table relationships, keys, and tenant scoping.
 - [x] Design event schema, outbox pattern, idempotency strategy, and RabbitMQ topology. See `docs/event-outbox-design.md`.
 - [x] Produce an ICG migration runbook (extract, transform, validate, reconcile, cutover).
-- [ ] Implement core services with shared primitives (catalog, inventory, pricing, orders).
+- [x] Implement core services with shared primitives (catalog, inventory, pricing, orders).
 - [ ] Add subsidiary adapters for wholesale, retail POS replacement, reseller credit, and digital commerce.
 - [ ] Integrate payments, logistics, reporting, and audit logging.
 - [ ] Roll out in phases: digital commerce first, then retail, then wholesale, then credit.
 
 ## Current status
 - Completed artifacts: [OpenAPI v1 stub](openapi-v1.yaml), [ERD outline](erd-outline.md), [ICG migration runbook](icg-migration-runbook.md), [ICG CSV tooling](../apps/api/scripts/icg/README.md), [RBAC policies](rbac-policies.md), and [event/outbox design](event-outbox-design.md).
-- Implemented modules: catalog, inventory, pricing, orders, payments, credit, loyalty, finance, shared-services, and supporting RBAC/tenancy scaffolding.
+- Implemented modules: catalog, inventory, pricing, orders, payments, credit, loyalty, finance, shared-services, events/outbox, and supporting RBAC/tenancy scaffolding.
 - In progress: tenancy enforcement validation across all endpoints, migration dry runs with real exports, and POS cutover readiness.
-- Not started: outbox/eventing implementation, integration adapters (payments/logistics/ERP/data warehouse), and load/security test suites.
+- Not started: data warehouse adapter and load/security test suites.
 - Operational: `/v1/metrics` is protected with `METRICS_TOKEN` (see `docs/event-outbox-design.md`).
 
 ## Testing and validation
@@ -106,7 +106,7 @@ Payments (Paystack/Flutterwave + optional Monnify/Interswitch):
 - [ ] Confirm supported payment methods (cards, transfer, USSD) by subsidiary/channel.
 - [ ] Complete KYC and merchant onboarding for each subsidiary.
 - [ ] Define settlement accounts and reconciliation cadence.
-- [ ] Map webhooks/events to internal payment intent states.
+- [x] Map webhooks/events to internal payment intent states.
 - [ ] Configure test + live keys and NDPR-compliant data handling.
 - [ ] Run sandbox E2E: create intent → capture → refund → reconciliation report.
 - [ ] Decide fallback/secondary gateway routing rules.
@@ -115,14 +115,14 @@ Logistics (Shipbubble/Sendbox + GIG/Kwik + DHL/FedEx + Alims Logistics):
 - [ ] Confirm service coverage by city, weight, and SLA.
 - [ ] Map shipping zones, service levels, and price tables.
 - [ ] Define label/waybill format and tracking update cadence.
-- [ ] Integrate webhook callbacks for shipment status updates.
+- [x] Integrate webhook callbacks for shipment status updates.
 - [ ] Run pilot shipments for each carrier and validate proof-of-delivery flow.
 - [ ] Define returns workflow and reverse logistics handling.
 
 ERP/Accounting (Sage/Odoo/QuickBooks + interim exports):
 - [ ] Confirm chart-of-accounts mapping and tax handling rules.
-- [ ] Decide export format (CSV/SFTP vs API) and schedule.
-- [ ] Map entities: invoices, payments, credit notes, journals, intercompany.
+- [x] Decide export format (CSV/SFTP vs API) and schedule.
+- [x] Map entities: invoices, payments, credit notes, journals, intercompany.
 - [ ] Validate period lock and close process alignment.
 - [ ] Run a month-end dry run with reconciliation (trial balance, VAT, WHT).
 

@@ -100,3 +100,34 @@ ERP/Accounting:
 - Phased waves: digital commerce → retail pilot stores → full retail → wholesale/credit
 - Each wave: weekend overnight freeze, 4–8 hours for final delta load + reconciliation
 - Optional 1–2 week ICG read-only period for audit-only access
+
+## Integration checklists
+Payments (Paystack/Flutterwave + optional Monnify/Interswitch):
+- [ ] Confirm supported payment methods (cards, transfer, USSD) by subsidiary/channel.
+- [ ] Complete KYC and merchant onboarding for each subsidiary.
+- [ ] Define settlement accounts and reconciliation cadence.
+- [ ] Map webhooks/events to internal payment intent states.
+- [ ] Configure test + live keys and NDPR-compliant data handling.
+- [ ] Run sandbox E2E: create intent → capture → refund → reconciliation report.
+- [ ] Decide fallback/secondary gateway routing rules.
+
+Logistics (Shipbubble/Sendbox + GIG/Kwik + DHL/FedEx + Alims Logistics):
+- [ ] Confirm service coverage by city, weight, and SLA.
+- [ ] Map shipping zones, service levels, and price tables.
+- [ ] Define label/waybill format and tracking update cadence.
+- [ ] Integrate webhook callbacks for shipment status updates.
+- [ ] Run pilot shipments for each carrier and validate proof-of-delivery flow.
+- [ ] Define returns workflow and reverse logistics handling.
+
+ERP/Accounting (Sage/Odoo/QuickBooks + interim exports):
+- [ ] Confirm chart-of-accounts mapping and tax handling rules.
+- [ ] Decide export format (CSV/SFTP vs API) and schedule.
+- [ ] Map entities: invoices, payments, credit notes, journals, intercompany.
+- [ ] Validate period lock and close process alignment.
+- [ ] Run a month-end dry run with reconciliation (trial balance, VAT, WHT).
+
+Cutover readiness:
+- [ ] Finalize store/location mapping and ICG export scope.
+- [ ] Run migration dry-run and reconcile totals (inventory, sales, payments).
+- [ ] Execute pilot cutover with 1–2 stores and capture issues.
+- [ ] Lock cutover window, comms, and rollback plan.

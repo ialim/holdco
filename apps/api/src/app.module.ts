@@ -3,6 +3,7 @@ import { AuthModule } from "./auth/auth.module";
 import { JwtAuthMiddleware } from "./auth/jwt-auth.middleware";
 import { AdvisoryModule } from "./advisory/advisory.module";
 import { AdaptersModule } from "./adapters/adapters.module";
+import { AuditModule } from "./audit/audit.module";
 import { CatalogModule } from "./catalog/catalog.module";
 import { ComplianceModule } from "./compliance/compliance.module";
 import { CreditModule } from "./credit/credit.module";
@@ -49,6 +50,7 @@ import { TenancyModule } from "./tenancy/tenancy.module";
     ProcurementModule,
     AdvisoryModule,
     AdaptersModule,
+    AuditModule,
   ],
 })
 export class AppModule implements NestModule {

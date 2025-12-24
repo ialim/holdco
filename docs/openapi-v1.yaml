@@ -764,7 +764,7 @@ paths:
       operationId: retailCheckout
       summary: Retail POS checkout
       x-rbac:
-        permissions: [orders.write, payments.intent.create, inventory.stock.reserve, loyalty.points.issue]
+        permissions: [orders.write, payments.intent.create, payments.capture, inventory.stock.reserve, loyalty.points.issue]
       requestBody:
         required: true
         content:
@@ -792,7 +792,7 @@ paths:
       operationId: digitalCheckout
       summary: Digital commerce checkout
       x-rbac:
-        permissions: [orders.write, payments.intent.create]
+        permissions: [orders.write, payments.intent.create, payments.capture]
       requestBody:
         required: true
         content:

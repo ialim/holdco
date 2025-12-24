@@ -1,5 +1,6 @@
 import { Module } from "@nestjs/common";
 import { PrismaModule } from "../prisma/prisma.module";
+import { AuditModule } from "../audit/audit.module";
 import { LogisticsController } from "./logistics.controller";
 import { LogisticsService } from "./logistics.service";
 import { LogisticsWebhookController } from "./logistics.webhook.controller";
@@ -12,7 +13,7 @@ import { KwikGateway } from "./gateways/kwik.gateway";
 import { InternalLogisticsGateway } from "./gateways/internal-logistics.gateway";
 
 @Module({
-  imports: [PrismaModule],
+  imports: [PrismaModule, AuditModule],
   controllers: [LogisticsController, LogisticsWebhookController],
   providers: [
     LogisticsService,

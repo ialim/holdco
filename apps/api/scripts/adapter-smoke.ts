@@ -123,7 +123,7 @@ async function main() {
     });
     created.productId = product.id;
 
-    const token = sign({ sub: "adapter-smoke", permissions: ["*"] }, secret);
+    const token = sign({ sub: "00000000-0000-0000-0000-000000000000", permissions: ["*"] }, secret);
     const auth = { Authorization: `Bearer ${token}` };
     const baseUrl = buildBaseUrl();
 

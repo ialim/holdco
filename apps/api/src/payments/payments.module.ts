@@ -1,5 +1,6 @@
 import { Module } from "@nestjs/common";
 import { PrismaModule } from "../prisma/prisma.module";
+import { AuditModule } from "../audit/audit.module";
 import { PaymentsWebhookController } from "./payments.webhook.controller";
 import { PaymentsReconciliationService } from "./payments.reconciliation.service";
 import { PaymentGatewayFactory } from "./payment-gateway.factory";
@@ -11,7 +12,7 @@ import { ManualGateway } from "./gateways/manual.gateway";
 import { PaystackGateway } from "./gateways/paystack.gateway";
 
 @Module({
-  imports: [PrismaModule],
+  imports: [PrismaModule, AuditModule],
   controllers: [PaymentsController, PaymentsWebhookController],
   providers: [
     PaymentsService,

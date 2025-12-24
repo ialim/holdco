@@ -46,7 +46,7 @@ Build a unified backend for all subsidiaries using NestJS + Postgres + Redis + R
 - [x] Produce an ICG migration runbook (extract, transform, validate, reconcile, cutover).
 - [x] Implement core services with shared primitives (catalog, inventory, pricing, orders).
 - [x] Add subsidiary adapters for wholesale, retail POS replacement, reseller credit, and digital commerce.
-- [ ] Integrate payments, logistics, reporting, and audit logging.
+- [x] Integrate payments, logistics, reporting, and audit logging.
 - [ ] Roll out in phases: digital commerce first, then retail, then wholesale, then credit.
 
 ## Current status
@@ -54,6 +54,7 @@ Build a unified backend for all subsidiaries using NestJS + Postgres + Redis + R
 - Implemented modules: catalog, inventory, pricing, orders, payments, credit, loyalty, finance, shared-services, events/outbox, and supporting RBAC/tenancy scaffolding.
 - Completed: tenancy enforcement validation across all endpoints.
 - In progress: migration dry runs with real exports, and POS cutover readiness.
+- Completed: audit logging for adapter, payments, and logistics flows.
 - Completed: subsidiary adapters for wholesale, retail POS, reseller credit, and digital commerce.
 - Not started: data warehouse adapter and load/security test suites.
 - Operational: `/v1/metrics` is protected with `METRICS_TOKEN` (see `docs/event-outbox-design.md`).

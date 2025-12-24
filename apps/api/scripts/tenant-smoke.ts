@@ -142,7 +142,7 @@ async function main() {
     });
     created.invoiceId = invoice.id;
 
-    const token = sign({ sub: "tenant-smoke", permissions: ["*"] }, secret);
+    const token = sign({ sub: "00000000-0000-0000-0000-000000000000", permissions: ["*"] }, secret);
     const authHeader = { Authorization: `Bearer ${token}` };
     const baseUrl = buildBaseUrl();
     const wrongGroupId = "00000000-0000-0000-0000-000000000000";

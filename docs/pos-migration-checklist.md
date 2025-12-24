@@ -20,6 +20,7 @@ This checklist covers the rollout of the new POS that replaces the legacy ICG sy
 - [ ] Export and migrate final ICG deltas.
 - [ ] Verify POS authentication and payment gateway connectivity.
 - [ ] Prepare rollback plan and on-call schedule.
+- [ ] Run API smoke tests: `npm --prefix apps/api run tenant:smoke` and `npm --prefix apps/api run adapter:smoke` (API running + seeded DB).
 
 ## Cutover
 - [ ] Disable ICG transactions at cutover time.

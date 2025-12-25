@@ -1,11 +1,8 @@
 import { Type } from "class-transformer";
-import { IsArray, IsOptional, IsString, IsUUID, ValidateNested } from "class-validator";
+import { IsArray, IsOptional, IsString, ValidateNested } from "class-validator";
 import { FacetInputDto } from "./facet-input.dto";
 
-export class CreateVariantDto {
-  @IsUUID()
-  product_id!: string;
-
+export class UpdateVariantDto {
   @IsOptional()
   @IsString()
   size?: string;

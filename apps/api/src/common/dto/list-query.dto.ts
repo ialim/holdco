@@ -28,6 +28,10 @@ export class ListQueryDto {
   status?: string;
 
   @IsOptional()
+  @IsString()
+  facets?: string;
+
+  @IsOptional()
   @IsUUID()
   product_id?: string;
 

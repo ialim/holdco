@@ -25,12 +25,19 @@ Tables
 - supplier: id, name, contact_name, contact_phone
 - product: id, brand_id, name, sku, type, sex, concentration, status
 - variant: id, product_id, size, unit, barcode
+- facet_definition: id, key, name, scope, data_type, status
+- facet_value: id, facet_id, value, normalized_value
+- product_facet: id, product_id, facet_value_id
+- variant_facet: id, variant_id, facet_value_id
 - batch: id, product_id, code, expires_at
 - lot: id, batch_id, quantity
 
 Relationships
 - brand 1..* product
 - product 1..* variant
+- facet_definition 1..* facet_value
+- facet_value *..* product via product_facet
+- facet_value *..* variant via variant_facet
 - product 1..* batch 1..* lot
 
 ## Inventory

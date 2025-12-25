@@ -15,6 +15,12 @@ These scripts load legacy ICG CSV exports into the unified backend. Imports are 
 
 CSV templates live in `apps/api/scripts/icg/templates/`. Ensure your exports use the same headers.
 
+### Facets column format
+Products and variants support a `facets` column for dynamic attributes:
+- Format: `key=value|key=value`
+- Example: `occasion=gift|origin=France`
+- Keys are normalized to lowercase with underscores.
+
 ## Import order
 Run with `--dry-run` first to preview.
 

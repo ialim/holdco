@@ -1,2 +1,2 @@
-product_code,size,unit,barcode
-PROD-001,100,ml,6291106061234
+product_code,size,unit,barcode,facets
+PROD-001,100,ml,6291106061234,packaging=tester

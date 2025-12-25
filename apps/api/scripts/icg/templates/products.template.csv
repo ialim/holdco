@@ -1,2 +1,2 @@
-product_code,name,brand_code,sex,concentration,type,status
-PROD-001,Lumine Eau de Parfum,BRAND-001,female,EDP,single bottle,active
+product_code,name,brand_code,sex,concentration,type,status,facets
+PROD-001,Lumine Eau de Parfum,BRAND-001,female,EDP,single bottle,active,occasion=gift|origin=France

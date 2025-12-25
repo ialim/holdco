@@ -3,6 +3,7 @@ import { parseArgs } from "./lib/args";
 import { loadConfig } from "./lib/config";
 import { normalize, parseCsv } from "./lib/csv";
 import { findExternalIdMap, getExternalSystemId, upsertExternalIdMap } from "./lib/external-ids";
+import { applyProductFacets, FacetInput, parseFacetColumn } from "./lib/facets";
 
 type ProductRow = {
   product_code?: string;
@@ -13,6 +14,7 @@ type ProductRow = {
   concentration?: string;
   type?: string;
   status?: string;
+  facets?: string;
 };
 
 async function ensureBrand(params: {
@@ -85,10 +87,12 @@ async function run() {
       continue;
     }
 
+    const brandName = normalize(row.brand_name || row.brand_code);
     const status = normalize(row.status) || "active";
     const sex = normalize(row.sex) || undefined;
     const concentration = normalize(row.concentration) || undefined;
     const type = normalize(row.type) || undefined;
+    const facets = parseFacetColumn(row.facets);
     const brandId = args.dryRun
       ? undefined
       : await ensureBrand({
@@ -161,6 +165,18 @@ async function run() {
         created += 1;
       }
     }
+
+    const derivedFacets: FacetInput[] = [];
+    if (brandName) derivedFacets.push({ key: "brand", value: brandName });
+    if (concentration) derivedFacets.push({ key: "concentration", value: concentration });
+
+    await applyProductFacets({
+      prisma,
+      groupId: config.groupId,
+      productId,
+      facets,
+      derived: derivedFacets,
+    });
 
     await upsertExternalIdMap({
       prisma,

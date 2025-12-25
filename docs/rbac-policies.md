@@ -21,6 +21,8 @@ Catalog
 - `catalog.product.write`
 - `catalog.variant.read`
 - `catalog.variant.write`
+- `catalog.facet.read`
+- `catalog.facet.write`
 
 Inventory
 - `inventory.stock.read`

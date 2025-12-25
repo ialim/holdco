@@ -29,6 +29,8 @@ Build a unified backend for all subsidiaries using NestJS + Postgres + Redis + R
 ## Data model / API changes
 - Tenancy: `group_id`, `subsidiary_id` on all domain entities; `location_id` and `channel` on entities that are store/transaction scoped (orders, stock, pricing).
 - Product domain: `product`, `variant`, `brand`, `supplier`, `batch`, `lot`, `barcode`.
+- Facets: tenant-scoped `facet_definition`, `facet_value`, `product_facet`, `variant_facet` for dynamic attributes (brand, concentration, size, etc).
+- Legacy fields `brand_id`, `concentration`, and `size` are deprecated in favor of facets (backfill with `npm --prefix apps/api run facets:backfill`).
 - Inventory domain: `warehouse`, `store`, `stock_level`, `transfer`, `adjustment`, `reservation`.
 - Pricing domain: `price_list`, `price_rule`, `promotion`, `discount`, `tax_profile`.
 - Commerce domain: `cart`, `order`, `order_item`, `invoice`, `payment`, `refund`.
@@ -50,19 +52,28 @@ Build a unified backend for all subsidiaries using NestJS + Postgres + Redis + R
 - [ ] Roll out in phases: digital commerce first, then retail, then wholesale, then credit.
 
 ## Current status
-- Completed artifacts: [OpenAPI v1 stub](openapi-v1.yaml), [ERD outline](erd-outline.md), [ICG migration runbook](icg-migration-runbook.md), [ICG CSV tooling](../apps/api/scripts/icg/README.md), [RBAC policies](rbac-policies.md), and [event/outbox design](event-outbox-design.md).
+- Completed artifacts: [OpenAPI v1 stub](openapi-v1.yaml), [ERD outline](erd-outline.md), [ICG migration runbook](icg-migration-runbook.md), [ICG CSV tooling](../apps/api/scripts/icg/README.md), [RBAC policies](rbac-policies.md), [event/outbox design](event-outbox-design.md), and [security test checklist](security-test-checklist.md).
 - Implemented modules: catalog, inventory, pricing, orders, payments, credit, loyalty, finance, shared-services, events/outbox, and supporting RBAC/tenancy scaffolding.
 - Completed: tenancy enforcement validation across all endpoints.
 - In progress: migration dry runs with real exports, and POS cutover readiness.
-- Completed: audit logging for adapter, payments, and logistics flows.
+- Completed: audit logging for adapters, payments, logistics, orders, inventory, and credit flows.
 - Completed: subsidiary adapters for wholesale, retail POS, reseller credit, and digital commerce.
-- Not started: data warehouse adapter and load/security test suites.
+- Completed: load test harness and security smoke checklist.
+- Not started: data warehouse adapter.
 - Operational: `/v1/metrics` is protected with `METRICS_TOKEN` (see `docs/event-outbox-design.md`).
 
 ## Testing and validation
 - Contract tests for public API and internal service interfaces.
 - Tenant isolation smoke test: `npm --prefix apps/api run tenant:smoke` (requires API running, seeded DB, and `JWT_SECRET`; optional `API_BASE_URL`).
 - Adapter flows smoke test: `npm --prefix apps/api run adapter:smoke` (requires API running, seeded DB, and `JWT_SECRET`; optional `API_BASE_URL`).
+- Security smoke test: `npm --prefix apps/api run security:smoke` (requires API running, seeded DB, and `JWT_SECRET`; uses `METRICS_TOKEN` if set).
+- Security test checklist: `docs/security-test-checklist.md`.
+- Load test harness: `npm --prefix apps/api run load:test` (requires API running, seeded DB, and `JWT_SECRET`; optional `DURATION_SECONDS`, `CONCURRENCY`, `REQUEST_DELAY_MS`, `API_BASE_URL`).
+- Facet backfill (legacy brand/concentration/size): `npm --prefix apps/api run facets:backfill`.
+- Latest load test (defaults):
+  - Settings: `DURATION_SECONDS=15`, `CONCURRENCY=5`, `REQUEST_DELAY_MS=0`.
+  - Results: 9,065 requests, 0 failures, p50 8.8ms, p95 15.3ms, p99 21.9ms.
+  - Endpoints: health 2284 ok, orders.list 2231 ok, products.list 2287 ok, stock-levels.list 2263 ok.
 - End to end flow tests for each subsidiary scenario (wholesale, retail, credit, ecom).
 - Migration dry runs with reconciliation of product, stock, and transaction totals.
 - Load tests for peak campaigns and bulk ordering.

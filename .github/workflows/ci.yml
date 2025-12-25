@@ -30,6 +30,7 @@ jobs:
       API_BASE_URL: http://localhost:3000
       OUTBOX_PUBLISHER_ENABLED: "false"
       EVENTS_CONSUMERS_ENABLED: "false"
+      METRICS_TOKEN: ci_metrics_token
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -56,7 +57,7 @@ jobs:
       - name: Seed database
         run: npm --prefix apps/api run prisma:seed
 
-      - name: Tenant smoke test
+      - name: Smoke tests
         run: |
           set -euo pipefail
           npm --prefix apps/api run start &
@@ -65,3 +66,4 @@ jobs:
           curl --retry 10 --retry-connrefused --retry-delay 2 http://localhost:3000/v1/health
           npm --prefix apps/api run tenant:smoke
           npm --prefix apps/api run adapter:smoke
+          npm --prefix apps/api run security:smoke

@@ -40,6 +40,8 @@ async function main() {
     "catalog.product.write",
     "catalog.variant.read",
     "catalog.variant.write",
+    "catalog.facet.read",
+    "catalog.facet.write",
   ];
   const inventoryPermissions = [
     "inventory.stock.read",
@@ -240,6 +242,27 @@ async function main() {
   );
 
   const providerCompany = holdingCompany;
+
+  const defaultFacets = [
+    { key: "brand", name: "Brand", scope: "product" },
+    { key: "concentration", name: "Concentration", scope: "product" },
+    { key: "size", name: "Size", scope: "variant" },
+  ];
+
+  for (const facet of defaultFacets) {
+    await prisma.facetDefinition.upsert({
+      where: { groupId_key: { groupId: group.id, key: facet.key } },
+      update: { name: facet.name, scope: facet.scope, dataType: "text", status: "active" },
+      create: {
+        groupId: group.id,
+        key: facet.key,
+        name: facet.name,
+        scope: facet.scope,
+        dataType: "text",
+        status: "active",
+      },
+    });
+  }
 
   const chartAccounts = [
     { code: "1000", name: "Cash", type: "asset" },

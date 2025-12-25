@@ -197,6 +197,107 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '409':
           $ref: '#/components/responses/Conflict'
+  /v1/facets:
+    parameters:
+      - $ref: '#/components/parameters/GroupId'
+    get:
+      tags: [Catalog]
+      operationId: listFacetDefinitions
+      summary: List facet definitions
+      x-rbac:
+        permissions: [catalog.facet.read]
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Offset'
+        - $ref: '#/components/parameters/Query'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FacetDefinitionListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    post:
+      tags: [Catalog]
+      operationId: createFacetDefinition
+      summary: Create facet definition
+      x-rbac:
+        permissions: [catalog.facet.write]
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateFacetDefinitionRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FacetDefinition'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /v1/facets/{facet_id}/values:
+    parameters:
+      - $ref: '#/components/parameters/GroupId'
+      - $ref: '#/components/parameters/FacetId'
+    get:
+      tags: [Catalog]
+      operationId: listFacetValues
+      summary: List facet values
+      x-rbac:
+        permissions: [catalog.facet.read]
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Offset'
+        - $ref: '#/components/parameters/Query'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FacetValueListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    post:
+      tags: [Catalog]
+      operationId: createFacetValue
+      summary: Create facet value
+      x-rbac:
+        permissions: [catalog.facet.write]
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateFacetValueRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FacetValue'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
   /v1/products:
     parameters:
       - $ref: '#/components/parameters/GroupId'
@@ -213,6 +314,7 @@ paths:
         - $ref: '#/components/parameters/Offset'
         - $ref: '#/components/parameters/Query'
         - $ref: '#/components/parameters/Barcode'
+        - $ref: '#/components/parameters/Facets'
       responses:
         '200':
           description: OK
@@ -271,6 +373,33 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
+    patch:
+      tags: [Catalog]
+      operationId: updateProduct
+      summary: Update product
+      x-rbac:
+        permissions: [catalog.product.write]
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateProductRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
   /v1/variants:
     parameters:
       - $ref: '#/components/parameters/GroupId'
@@ -285,6 +414,7 @@ paths:
         - $ref: '#/components/parameters/ProductIdQuery'
         - $ref: '#/components/parameters/Limit'
         - $ref: '#/components/parameters/Offset'
+        - $ref: '#/components/parameters/Facets'
       responses:
         '200':
           description: OK
@@ -321,6 +451,38 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '409':
           $ref: '#/components/responses/Conflict'
+  /v1/variants/{variant_id}:
+    parameters:
+      - $ref: '#/components/parameters/GroupId'
+      - $ref: '#/components/parameters/SubsidiaryId'
+      - $ref: '#/components/parameters/VariantId'
+    patch:
+      tags: [Catalog]
+      operationId: updateVariant
+      summary: Update variant
+      x-rbac:
+        permissions: [catalog.variant.write]
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateVariantRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Variant'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
   /v1/stock-levels:
     parameters:
       - $ref: '#/components/parameters/GroupId'
@@ -3243,6 +3405,13 @@ components:
       required: false
       schema:
         type: string
+    Facets:
+      name: facets
+      in: query
+      required: false
+      schema:
+        type: string
+      description: Facet filters in `key=value|key=value` format.
     Barcode:
       name: barcode
       in: query
@@ -3302,6 +3471,20 @@ components:
       description: Filter by invoice type
     ProductId:
       name: product_id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    VariantId:
+      name: variant_id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    FacetId:
+      name: facet_id
       in: path
       required: true
       schema:
@@ -3562,6 +3745,123 @@ components:
             $ref: '#/components/schemas/Supplier'
         meta:
           $ref: '#/components/schemas/PageMeta'
+    FacetDefinition:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: 9d2c6c3c-2f8b-4f9a-8c5b-1fbb1a0bcd12
+        key:
+          type: string
+          example: concentration
+        name:
+          type: string
+          example: Concentration
+        scope:
+          type: string
+          enum: [product, variant]
+        data_type:
+          type: string
+          example: text
+        status:
+          type: string
+          example: active
+        created_at:
+          type: string
+          format: date-time
+          example: '2024-05-02T09:12:45Z'
+    FacetDefinitionListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/FacetDefinition'
+        meta:
+          $ref: '#/components/schemas/PageMeta'
+    FacetValue:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: 05b0b3c4-6f1d-4f8f-9cb5-b1d3f57a6c5d
+        facet_id:
+          type: string
+          format: uuid
+          example: 9d2c6c3c-2f8b-4f9a-8c5b-1fbb1a0bcd12
+        key:
+          type: string
+          example: concentration
+        name:
+          type: string
+          example: Concentration
+        value:
+          type: string
+          example: EDP
+        created_at:
+          type: string
+          format: date-time
+          example: '2024-05-02T09:12:45Z'
+    FacetValueListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/FacetValue'
+        meta:
+          $ref: '#/components/schemas/PageMeta'
+    FacetInput:
+      type: object
+      required: [key, value]
+      properties:
+        key:
+          type: string
+          example: concentration
+        value:
+          type: string
+          example: EDP
+    FacetAssignment:
+      type: object
+      properties:
+        facet_id:
+          type: string
+          format: uuid
+        key:
+          type: string
+        name:
+          type: string
+        value_id:
+          type: string
+          format: uuid
+        value:
+          type: string
+    CreateFacetDefinitionRequest:
+      type: object
+      required: [key, name]
+      properties:
+        key:
+          type: string
+          example: concentration
+        name:
+          type: string
+          example: Concentration
+        scope:
+          type: string
+          enum: [product, variant]
+          example: product
+        data_type:
+          type: string
+          example: text
+    CreateFacetValueRequest:
+      type: object
+      required: [value]
+      properties:
+        value:
+          type: string
+          example: EDP
     Product:
       type: object
       properties:
@@ -3583,6 +3883,8 @@ components:
         concentration:
           type: string
           example: EDP
+          deprecated: true
+          description: Deprecated. Prefer facets with key `concentration`.
         type:
           type: string
           example: gift set
@@ -3590,12 +3892,18 @@ components:
           type: string
           format: uuid
           example: 1b4b4698-48b7-49a2-a2dd-5b0c18a5cb74
+          deprecated: true
+          description: Deprecated. Prefer facets with key `brand`.
         status:
           $ref: '#/components/schemas/ProductStatus'
         created_at:
           type: string
           format: date-time
           example: '2024-05-02T09:12:45Z'
+        facets:
+          type: array
+          items:
+            $ref: '#/components/schemas/FacetAssignment'
     CreateProductRequest:
       type: object
       required: [sku, name]
@@ -3614,6 +3922,8 @@ components:
         concentration:
           type: string
           example: EDP
+          deprecated: true
+          description: Deprecated. Prefer facets with key `concentration`.
         type:
           type: string
           example: gift set
@@ -3621,6 +3931,44 @@ components:
           type: string
           format: uuid
           example: 1b4b4698-48b7-49a2-a2dd-5b0c18a5cb74
+          deprecated: true
+          description: Deprecated. Prefer facets with key `brand`.
+        facets:
+          type: array
+          items:
+            $ref: '#/components/schemas/FacetInput'
+    UpdateProductRequest:
+      type: object
+      properties:
+        sku:
+          type: string
+          minLength: 3
+          example: PERF-001
+        name:
+          type: string
+          minLength: 2
+          example: Lumine Eau de Parfum
+        sex:
+          type: string
+          example: female
+        concentration:
+          type: string
+          example: EDP
+          deprecated: true
+          description: Deprecated. Prefer facets with key `concentration`.
+        type:
+          type: string
+          example: gift set
+        brand_id:
+          type: string
+          format: uuid
+          example: 1b4b4698-48b7-49a2-a2dd-5b0c18a5cb74
+          deprecated: true
+          description: Deprecated. Prefer facets with key `brand`.
+        facets:
+          type: array
+          items:
+            $ref: '#/components/schemas/FacetInput'
     ProductListResponse:
       type: object
       properties:
@@ -3644,12 +3992,18 @@ components:
         size:
           type: string
           example: 100
+          deprecated: true
+          description: Deprecated. Prefer facets with key `size`.
         unit:
           type: string
           example: ml
         barcode:
           type: string
           example: '6291106061234'
+        facets:
+          type: array
+          items:
+            $ref: '#/components/schemas/FacetAssignment'
     CreateVariantRequest:
       type: object
       required: [product_id]
@@ -3661,12 +4015,36 @@ components:
         size:
           type: string
           example: 100
+          deprecated: true
+          description: Deprecated. Prefer facets with key `size`.
         unit:
           type: string
           example: ml
         barcode:
           type: string
           example: '6291106061234'
+        facets:
+          type: array
+          items:
+            $ref: '#/components/schemas/FacetInput'
+    UpdateVariantRequest:
+      type: object
+      properties:
+        size:
+          type: string
+          example: 100
+          deprecated: true
+          description: Deprecated. Prefer facets with key `size`.
+        unit:
+          type: string
+          example: ml
+        barcode:
+          type: string
+          example: '6291106061234'
+        facets:
+          type: array
+          items:
+            $ref: '#/components/schemas/FacetInput'
     VariantListResponse:
       type: object
       properties:

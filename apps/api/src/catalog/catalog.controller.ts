@@ -1,11 +1,15 @@
-import { Body, Controller, Get, Headers, Param, ParseUUIDPipe, Post, Query, UseGuards, UsePipes, ValidationPipe } from "@nestjs/common";
+import { Body, Controller, Get, Headers, Param, ParseUUIDPipe, Patch, Post, Query, UseGuards, UsePipes, ValidationPipe } from "@nestjs/common";
 import { Permissions } from "../auth/permissions.decorator";
 import { PermissionsGuard } from "../auth/permissions.guard";
 import { ListQueryDto } from "../common/dto/list-query.dto";
 import { CreateBrandDto } from "./dto/create-brand.dto";
+import { CreateFacetDefinitionDto } from "./dto/create-facet-definition.dto";
+import { CreateFacetValueDto } from "./dto/create-facet-value.dto";
 import { CreateProductDto } from "./dto/create-product.dto";
 import { CreateSupplierDto } from "./dto/create-supplier.dto";
 import { CreateVariantDto } from "./dto/create-variant.dto";
+import { UpdateProductDto } from "./dto/update-product.dto";
+import { UpdateVariantDto } from "./dto/update-variant.dto";
 import { CatalogService } from "./catalog.service";
 
 @Controller("v1")
@@ -38,6 +42,38 @@ export class CatalogController {
     return this.catalogService.createSupplier(groupId, body);
   }
 
+  @Permissions("catalog.facet.read")
+  @Get("facets")
+  listFacetDefinitions(@Headers("x-group-id") groupId: string, @Query() query: ListQueryDto) {
+    return this.catalogService.listFacetDefinitions(groupId, query);
+  }
+
+  @Permissions("catalog.facet.write")
+  @Post("facets")
+  createFacetDefinition(@Headers("x-group-id") groupId: string, @Body() body: CreateFacetDefinitionDto) {
+    return this.catalogService.createFacetDefinition(groupId, body);
+  }
+
+  @Permissions("catalog.facet.read")
+  @Get("facets/:facet_id/values")
+  listFacetValues(
+    @Headers("x-group-id") groupId: string,
+    @Param("facet_id", new ParseUUIDPipe()) facetId: string,
+    @Query() query: ListQueryDto,
+  ) {
+    return this.catalogService.listFacetValues(groupId, facetId, query);
+  }
+
+  @Permissions("catalog.facet.write")
+  @Post("facets/:facet_id/values")
+  createFacetValue(
+    @Headers("x-group-id") groupId: string,
+    @Param("facet_id", new ParseUUIDPipe()) facetId: string,
+    @Body() body: CreateFacetValueDto,
+  ) {
+    return this.catalogService.createFacetValue(groupId, facetId, body);
+  }
+
   @Permissions("catalog.product.read")
   @Get("products")
   listProducts(
@@ -68,6 +104,17 @@ export class CatalogController {
     return this.catalogService.getProduct(groupId, subsidiaryId, productId);
   }
 
+  @Permissions("catalog.product.write")
+  @Patch("products/:product_id")
+  updateProduct(
+    @Headers("x-group-id") groupId: string,
+    @Headers("x-subsidiary-id") subsidiaryId: string,
+    @Param("product_id", new ParseUUIDPipe()) productId: string,
+    @Body() body: UpdateProductDto,
+  ) {
+    return this.catalogService.updateProduct(groupId, subsidiaryId, productId, body);
+  }
+
   @Permissions("catalog.variant.read")
   @Get("variants")
   listVariants(
@@ -86,5 +133,16 @@ export class CatalogController {
     @Body() body: CreateVariantDto,
   ) {
     return this.catalogService.createVariant(groupId, subsidiaryId, body);
+  }
+
+  @Permissions("catalog.variant.write")
+  @Patch("variants/:variant_id")
+  updateVariant(
+    @Headers("x-group-id") groupId: string,
+    @Headers("x-subsidiary-id") subsidiaryId: string,
+    @Param("variant_id", new ParseUUIDPipe()) variantId: string,
+    @Body() body: UpdateVariantDto,
+  ) {
+    return this.catalogService.updateVariant(groupId, subsidiaryId, variantId, body);
   }
 }

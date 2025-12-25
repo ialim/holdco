@@ -1,17 +1,17 @@
 import { Type } from "class-transformer";
-import { IsArray, IsNotEmpty, IsOptional, IsString, IsUUID, MinLength, ValidateNested } from "class-validator";
+import { IsArray, IsOptional, IsString, IsUUID, MinLength, ValidateNested } from "class-validator";
 import { FacetInputDto } from "./facet-input.dto";
 
-export class CreateProductDto {
+export class UpdateProductDto {
+  @IsOptional()
   @IsString()
-  @IsNotEmpty()
   @MinLength(3)
-  sku!: string;
+  sku?: string;
 
+  @IsOptional()
   @IsString()
-  @IsNotEmpty()
   @MinLength(2)
-  name!: string;
+  name?: string;
 
   @IsOptional()
   @IsUUID()

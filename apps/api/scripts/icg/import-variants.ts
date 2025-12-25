@@ -3,12 +3,14 @@ import { parseArgs } from "./lib/args";
 import { loadConfig } from "./lib/config";
 import { normalize, parseCsv } from "./lib/csv";
 import { findExternalIdMap, getExternalSystemId, upsertExternalIdMap } from "./lib/external-ids";
+import { applyVariantFacets, FacetInput, parseFacetColumn } from "./lib/facets";
 
 type VariantRow = {
   product_code?: string;
   size?: string;
   unit?: string;
   barcode?: string;
+  facets?: string;
 };
 
 async function run() {
@@ -102,6 +104,19 @@ async function run() {
         created += 1;
       }
     }
+
+    const facets = parseFacetColumn(row.facets);
+    const derivedFacets: FacetInput[] = [];
+    const size = normalize(row.size);
+    if (size) derivedFacets.push({ key: "size", value: size });
+
+    await applyVariantFacets({
+      prisma,
+      groupId: config.groupId,
+      variantId,
+      facets,
+      derived: derivedFacets,
+    });
 
     await upsertExternalIdMap({
       prisma,

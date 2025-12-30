@@ -39,6 +39,11 @@ Build a unified backend for all subsidiaries using NestJS + Postgres + Redis + R
 - Logistics domain (optional): `shipment`, `carrier`, `delivery_slot`, `proof_of_delivery`.
 - Legacy mapping: `external_system`, `external_id`, and migration audit tables for ICG cutover.
 
+## Facet usage examples
+- Filter products: `GET /v1/products?facets=concentration=EDP|occasion=gift`
+- Filter variants: `GET /v1/variants?facets=size=100|packaging=tester`
+- Create/update with facets: `facets: [{ key: "concentration", value: "EDP" }, { key: "occasion", value: "gift" }]`
+
 ## Action items
 - [x] Confirm external integrations (payment gateways, logistics partners, accounting exports) and scale targets.
 - [x] Define tenancy and authorization model (roles, subsidiary scoping, group level access). See `docs/rbac-policies.md`.
@@ -147,3 +152,5 @@ Cutover readiness:
 - [ ] Run migration dry-run and reconcile totals (inventory, sales, payments).
 - [ ] Execute pilot cutover with 1–2 stores and capture issues.
 - [ ] Lock cutover window, comms, and rollback plan.
+
+

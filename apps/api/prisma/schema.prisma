@@ -295,6 +295,7 @@ model Brand {
 model Supplier {
   id           String   @id @default(uuid()) @db.Uuid
   groupId      String   @db.Uuid @map("group_id")
+  externalClientId String? @db.Uuid @unique @map("external_client_id")
   name         String
   contactName  String?  @map("contact_name")
   contactPhone String?  @map("contact_phone")
@@ -303,6 +304,7 @@ model Supplier {
   updatedAt    DateTime @default(now()) @map("updated_at")
 
   group    TenantGroup @relation(fields: [groupId], references: [id])
+  externalClient ExternalClient? @relation(fields: [externalClientId], references: [id])
   products Product[]
   importShipments ImportShipment[]
 
@@ -1068,6 +1070,7 @@ model ExternalClient {
   updatedAt DateTime @default(now()) @map("updated_at")
 
   group            TenantGroup       @relation(fields: [groupId], references: [id])
+  supplier         Supplier?
   serviceRequests  ServiceRequest[]
   purchaseOrders   PurchaseOrder[]
   advisoryEngagements AdvisoryEngagement[]

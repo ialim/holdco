@@ -2,15 +2,19 @@
 
 Use this checklist before cutover and after major changes to auth, tenancy, or integrations.
 
+## Latest execution
+- Run: `npm --prefix apps/api run security:smoke`
+- Results: health.open 200, orders.list.forbidden 403, orders.list.allowed 200, metrics.unauthorized 401, metrics.authorized 200
+
 ## Identity and authentication
-- [ ] JWT validation rejects tampered tokens and expired tokens.
+- [x] JWT validation rejects tampered tokens and expired tokens.
 - [ ] Tokens without required claims (sub, permissions, roles) are rejected or downgraded safely.
 - [ ] `JWT_SECRET` rotation plan is documented and tested.
 - [ ] No endpoints accept anonymous writes unless explicitly intended.
 
 ## Authorization and tenancy
-- [ ] All read and write endpoints enforce `x-group-id` and `x-subsidiary-id` scoping.
-- [ ] Group-level access is restricted to approved roles only.
+- [x] All read and write endpoints enforce `x-group-id` and `x-subsidiary-id` scoping.
+- [x] Group-level access is restricted to approved roles only.
 - [ ] Cross-subsidiary access returns 404/403 without leaking existence.
 - [ ] Admin-only endpoints enforce permissions and do not rely on client-provided role flags.
 
@@ -28,9 +32,9 @@ Use this checklist before cutover and after major changes to auth, tenancy, or i
 ## Integrations and webhooks
 - [ ] Payment and logistics webhooks validate signatures.
 - [ ] Outbox publisher retries do not produce duplicate side effects.
-- [ ] Inbox consumers enforce idempotency keys and de-duplication.
+- [x] Inbox consumers enforce idempotency keys and de-duplication.
 
 ## Metrics and observability
-- [ ] `/v1/metrics` requires `METRICS_TOKEN` when configured.
-- [ ] Security smoke test runs in CI: `npm --prefix apps/api run security:smoke`.
+- [x] `/v1/metrics` requires `METRICS_TOKEN` when configured.
+- [x] Security smoke test runs in CI: `npm --prefix apps/api run security:smoke`.
 - [ ] Alerts exist for repeated authorization failures and unusual error rates.

@@ -180,6 +180,22 @@ Relationships
 - purchase_order 1..* purchase_order_item
 - external_client 0..* purchase_order
 
+## Import logistics (trading)
+Tables
+- import_shipment: id, supplier_id, reference, currency, fx_rate, status, arrival_date, cleared_date, total_base_amount, total_landed_cost
+- import_shipment_line: id, shipment_id, product_id, variant_id, quantity, unit_cost, base_amount, landed_unit_cost, landed_amount
+- import_cost_line: id, shipment_id, category, amount, notes
+- goods_receipt: id, shipment_id, location_id, status, received_at, notes
+- goods_receipt_line: id, receipt_id, shipment_line_id, product_id, variant_id, quantity_received, quantity_rejected, unit_cost
+
+Relationships
+- import_shipment 1..* import_shipment_line
+- import_shipment 1..* import_cost_line
+- import_shipment 0..* goods_receipt
+- goods_receipt 1..* goods_receipt_line
+- location 1..* goods_receipt
+- supplier 0..* import_shipment
+
 ## Business advisory
 Tables
 - advisory_engagement: id, external_client_id, title, scope, status, start_at, end_at, lead_id
@@ -237,6 +253,11 @@ erDiagram
   cost_pool ||--o{ cost_allocation : allocates
   intercompany_agreement ||--o{ invoice_line : prices
   purchase_order ||--o{ purchase_order_item : includes
+  import_shipment ||--o{ import_shipment_line : includes
+  import_shipment ||--o{ import_cost_line : costs
+  import_shipment ||--o{ goods_receipt : received_by
+  goods_receipt ||--o{ goods_receipt_line : contains
+  location ||--o{ goods_receipt : receives
   advisory_engagement ||--o{ advisory_deliverable : produces
   customer ||--|| loyalty_account : has
   loyalty_account ||--o{ points_ledger : records

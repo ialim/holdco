@@ -2,6 +2,12 @@
 
 This checklist covers the rollout of the new POS that replaces the legacy ICG system.
 
+## Status update (current)
+- POS API contract and tenancy headers are defined; RBAC framework is in place.
+- ICG export tooling and migration runbook are complete; real export dry runs are in progress.
+- Store/location mapping template exists; real location mappings are still pending.
+- Pilot rollout and cutover steps have not started yet.
+
 ## Readiness
 - [ ] POS hardware inventory completed (terminals, scanners, receipt printers).
 - [ ] Store network readiness verified (latency, redundancy, offline fallback).

@@ -32,6 +32,7 @@ Build a unified backend for all subsidiaries using NestJS + Postgres + Redis + R
 - Facets: tenant-scoped `facet_definition`, `facet_value`, `product_facet`, `variant_facet` for dynamic attributes (brand, concentration, size, etc).
 - Legacy fields `brand_id`, `concentration`, and `size` are deprecated in favor of facets (backfill with `npm --prefix apps/api run facets:backfill`).
 - Inventory domain: `warehouse`, `store`, `stock_level`, `transfer`, `adjustment`, `reservation`.
+- Trading import workflow: `import_shipment`, `import_shipment_line`, `import_cost_line`, `goods_receipt`, `goods_receipt_line` with landed cost allocation.
 - Pricing domain: `price_list`, `price_rule`, `promotion`, `discount`, `tax_profile`.
 - Commerce domain: `cart`, `order`, `order_item`, `invoice`, `payment`, `refund`.
 - Credit domain: `reseller`, `credit_account`, `credit_limit`, `payment_schedule`, `repayment`.
@@ -63,6 +64,7 @@ Build a unified backend for all subsidiaries using NestJS + Postgres + Redis + R
 - In progress: migration dry runs with real exports, and POS cutover readiness.
 - Completed: audit logging for adapters, payments, logistics, orders, inventory, and credit flows.
 - Completed: subsidiary adapters for wholesale, retail POS, reseller credit, and digital commerce.
+- Completed: trading import workflow (import shipments, landed cost allocation, goods receipts) and OpenAPI coverage.
 - Completed: load test harness and security smoke checklist.
 - In progress: data warehouse export adapter (scripts/warehouse).
 - Operational: `/v1/metrics` is protected with `METRICS_TOKEN` (see `docs/event-outbox-design.md`).

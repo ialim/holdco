@@ -7,6 +7,8 @@ apps/api/dist/
 apps/api/scripts/erp/config.json
 apps/api/scripts/erp/output/
 apps/api/scripts/warehouse/output/
+apps/api/scripts/icg/output/
+Agreements/
 sales-2025.csv
 sales-tot-2025.csv
 perfumes_with_grouped_facets (1).csv

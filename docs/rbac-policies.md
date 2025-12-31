@@ -122,6 +122,7 @@ Compliance & risk
 Procurement
 - `procurement.request.manage`
 - `procurement.order.manage`
+- `procurement.imports.manage`
 
 Advisory
 - `advisory.engagement.manage`

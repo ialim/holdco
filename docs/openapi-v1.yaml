@@ -5807,22 +5807,51 @@ components:
             - recipientCompanyId: 0b6b37fb-1f2f-4e11-ae7d-3c91b0f5c5e7
               invoiceId: 4d9d76cb-3a63-4bc1-b7b7-0a6d8b06c9e2
         locked: true
-    GenerateIntercompanyInvoicesRequest:
-      type: object
-      required: [holdcoCompanyId, issueDate]
-      properties:
-        holdcoCompanyId:
-          type: string
-          format: uuid
-        issueDate:
-          type: string
-          format: date-time
-        dueDays:
-          type: integer
-      example:
-        holdcoCompanyId: 9c5a1f42-66e9-4c9a-9b2c-1e40b5e8c5a2
-        issueDate: '2024-06-30T18:00:00Z'
-        dueDays: 30
+      GenerateIntercompanyInvoicesRequest:
+        type: object
+        required: [issueDate]
+        properties:
+          providerCompanyId:
+            type: string
+            format: uuid
+            description: Provider company issuing the intercompany invoice (holdco, trading, or logistics).
+          holdcoCompanyId:
+            type: string
+            format: uuid
+            description: Legacy alias for providerCompanyId when issuing holdco invoices.
+          issueDate:
+            type: string
+            format: date-time
+          dueDays:
+            type: integer
+          charges:
+            type: array
+            items:
+              $ref: '#/components/schemas/IntercompanyChargeInput'
+        example:
+          providerCompanyId: 9c5a1f42-66e9-4c9a-9b2c-1e40b5e8c5a2
+          issueDate: '2024-06-30T18:00:00Z'
+          dueDays: 30
+          charges:
+            - recipientCompanyId: 0b6b37fb-1f2f-4e11-ae7d-3c91b0f5c5e7
+              type: PRODUCT_SUPPLY
+              baseAmount: 125000
+              description: "June wholesale supply"
+      IntercompanyChargeInput:
+        type: object
+        required: [recipientCompanyId, type, baseAmount]
+        properties:
+          recipientCompanyId:
+            type: string
+            format: uuid
+          type:
+            type: string
+            enum: [PRODUCT_SUPPLY, LOGISTICS]
+          baseAmount:
+            type: number
+            format: float
+          description:
+            type: string
     FinanceInvoice:
       type: object
       properties:
@@ -6777,7 +6806,7 @@ components:
       enum: [active, inactive]
     ChartOfAccountType:
       type: string
-      enum: [asset, liability, equity, income, expense]
+      enum: [asset, liability, equity, income, expense, cogs]
     FiscalPeriodStatus:
       type: string
       enum: [open, closed, locked]

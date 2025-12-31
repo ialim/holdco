@@ -3,11 +3,13 @@ import { PrismaService } from "../prisma/prisma.service";
 import { Decimal } from "@prisma/client/runtime/library";
 import { InvoiceType, InvoiceStatus } from "./finance.enums";
 import { assertInvoiceInGroup, requireGroupId } from "./finance-tenancy";
+import { assertPostingCodeAllowed } from "./ledger-code-rules";
 
 function dec(v: any) { return new Decimal(v); }
 function round2(d: Decimal) { return new Decimal(d.toFixed(2)); }
 
 async function getAccountId(prisma: PrismaService, companyId: string, code: string) {
+  assertPostingCodeAllowed(code);
   const acct = await prisma.ledgerAccount.findUnique({ where: { companyId_code: { companyId, code } } });
   if (!acct) throw new BadRequestException(`Ledger account ${code} missing for company ${companyId}`);
   return acct.id;

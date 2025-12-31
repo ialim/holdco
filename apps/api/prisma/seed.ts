@@ -1,4 +1,4 @@
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient, SubsidiaryRole } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
@@ -217,26 +217,27 @@ async function main() {
   }
 
   const holdingCompanyName = "Alims Group Limited";
-  const subsidiaryNames = [
-    "Alims Perfume Trading Limited",
-    "Alims Retail Stores Limited",
-    "Alims Reseller Network Limited",
-    "Alims Digital Commerce Limited",
-    "Alims Logistics & Distribution Limited",
-  ];
+  const subsidiaryRoles: Record<string, SubsidiaryRole> = {
+    "Alims Perfume Trading Limited": SubsidiaryRole.PROCUREMENT_TRADING,
+    "Alims Retail Stores Limited": SubsidiaryRole.RETAIL,
+    "Alims Reseller Network Limited": SubsidiaryRole.RESELLER,
+    "Alims Digital Commerce Limited": SubsidiaryRole.DIGITAL_COMMERCE,
+    "Alims Logistics & Distribution Limited": SubsidiaryRole.LOGISTICS,
+  };
+  const subsidiaryNames = Object.keys(subsidiaryRoles);
 
   const holdingCompany = await prisma.subsidiary.upsert({
     where: { groupId_name: { groupId: group.id, name: holdingCompanyName } },
-    update: { status: "active" },
-    create: { groupId: group.id, name: holdingCompanyName, status: "active" },
+    update: { status: "active", role: SubsidiaryRole.HOLDCO },
+    create: { groupId: group.id, name: holdingCompanyName, status: "active", role: SubsidiaryRole.HOLDCO },
   });
 
   const recipientSubsidiaries = await Promise.all(
     subsidiaryNames.map((name) =>
       prisma.subsidiary.upsert({
         where: { groupId_name: { groupId: group.id, name } },
-        update: { status: "active" },
-        create: { groupId: group.id, name, status: "active" },
+        update: { status: "active", role: subsidiaryRoles[name] },
+        create: { groupId: group.id, name, status: "active", role: subsidiaryRoles[name] },
       }),
     ),
   );
@@ -309,6 +310,10 @@ async function main() {
     { code: "REV_SALES", name: "Sales Revenue", type: "REVENUE" },
     { code: "IC_REV", name: "Intercompany Revenue", type: "REVENUE" },
     { code: "IC_EXP", name: "Intercompany Expense", type: "EXPENSE" },
+    { code: "TAX_CIT_EXP", name: "Income Tax Expense", type: "EXPENSE" },
+    { code: "TAX_CIT_PAY", name: "Income Tax Payable", type: "LIABILITY" },
+    { code: "TAX_EDU_EXP", name: "Education Tax Expense", type: "EXPENSE" },
+    { code: "TAX_EDU_PAY", name: "Education Tax Payable", type: "LIABILITY" },
   ];
 
   for (const company of [providerCompany, ...recipientSubsidiaries]) {
@@ -351,58 +356,82 @@ async function main() {
     const effectiveFrom = new Date(Date.UTC(now.getUTCFullYear(), 0, 1));
 
     for (const recipient of recipientSubsidiaries) {
-      const managementAgreement = await prisma.intercompanyAgreement.findFirst({
-        where: {
-          providerCompanyId: providerCompany.id,
-          recipientCompanyId: recipient.id,
+      const agreementSeeds = [
+        {
           type: "MANAGEMENT",
           pricingModel: "COST_PLUS",
+          markupRate: "0.1000",
+          vatApplies: true,
+          vatRate: "0.0750",
+          whtApplies: true,
+          whtRate: "0.0500",
+          whtTaxType: "SERVICES",
         },
-      });
+        {
+          type: "PRODUCT_SUPPLY",
+          pricingModel: "COST_PLUS",
+          markupRate: "0.0500",
+          vatApplies: true,
+          vatRate: "0.0750",
+          whtApplies: true,
+          whtRate: "0.0500",
+          whtTaxType: "GOODS",
+        },
+        {
+          type: "LOGISTICS",
+          pricingModel: "COST_PLUS",
+          markupRate: "0.0800",
+          vatApplies: true,
+          vatRate: "0.0750",
+          whtApplies: true,
+          whtRate: "0.0500",
+          whtTaxType: "SERVICES",
+        },
+        {
+          type: "IP_LICENSE",
+          pricingModel: "ROYALTY_PERCENT",
+          markupRate: "0.0200",
+          vatApplies: true,
+          vatRate: "0.0750",
+          whtApplies: true,
+          whtRate: "0.1000",
+          whtTaxType: "ROYALTIES",
+        },
+      ];
 
-      if (!managementAgreement) {
-        await prisma.intercompanyAgreement.create({
-          data: {
+      for (const seed of agreementSeeds) {
+        const existing = await prisma.intercompanyAgreement.findFirst({
+          where: {
             providerCompanyId: providerCompany.id,
             recipientCompanyId: recipient.id,
-            type: "MANAGEMENT",
-            pricingModel: "COST_PLUS",
-            markupRate: "0.1000",
-            vatApplies: true,
-            vatRate: "0.0750",
-            whtApplies: true,
-            whtRate: "0.0500",
-            whtTaxType: "SERVICES",
-            effectiveFrom,
+            type: seed.type,
           },
         });
-      }
 
-      const ipAgreement = await prisma.intercompanyAgreement.findFirst({
-        where: {
+        const data = {
           providerCompanyId: providerCompany.id,
           recipientCompanyId: recipient.id,
-          type: "IP_LICENSE",
-          pricingModel: "FIXED_MONTHLY",
-        },
-      });
+          type: seed.type,
+          pricingModel: seed.pricingModel,
+          markupRate: seed.markupRate ?? null,
+          fixedFeeAmount: null,
+          vatApplies: seed.vatApplies,
+          vatRate: seed.vatRate,
+          whtApplies: seed.whtApplies,
+          whtRate: seed.whtRate,
+          whtTaxType: seed.whtTaxType,
+          effectiveFrom,
+          effectiveTo: null,
+        };
 
-      if (!ipAgreement) {
-        await prisma.intercompanyAgreement.create({
-          data: {
-            providerCompanyId: providerCompany.id,
-            recipientCompanyId: recipient.id,
-            type: "IP_LICENSE",
-            pricingModel: "FIXED_MONTHLY",
-            fixedFeeAmount: "50000.00",
-            vatApplies: true,
-            vatRate: "0.0750",
-            whtApplies: true,
-            whtRate: "0.1000",
-            whtTaxType: "ROYALTIES",
-            effectiveFrom,
-          },
-        });
+        if (existing) {
+          await prisma.intercompanyAgreement.update({
+            where: { id: existing.id },
+            data,
+          });
+        } else {
+          await prisma.intercompanyAgreement.create({ data });
+        }
       }
     }
   }

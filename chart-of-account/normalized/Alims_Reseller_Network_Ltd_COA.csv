@@ -1,0 +1,68 @@
+Account Code,Account Name,Account Type
+1000,Cash / Bank,ASSET
+1010,Bank - Retail Operations,ASSET
+1020,Bank - VAT Collections,ASSET
+1100,Payment Gateway Receivables,ASSET
+1110,Accounts Receivable (AR),ASSET
+1210,Inventory - Wholesale,ASSET
+1300,Prepaid Import Costs,ASSET
+1400,Fleet & Delivery Assets,ASSET
+1500,Investment in Subsidiaries,ASSET
+1600,Intangible Assets - Brand & Software,ASSET
+2000,Accounts Payable (AP),LIABILITY
+2200,PAYE & Payroll Liabilities,LIABILITY
+2400,Accrued Import Costs,LIABILITY
+2500,Management Fee Payable - Group,LIABILITY
+2600,Logistics Charges Payable,LIABILITY
+3000,Share Capital,EQUITY
+3100,Retained Earnings,EQUITY
+3200,Current Year Profit,EQUITY
+2100,VAT Output Payable,LIABILITY
+2110,VAT Input Recoverable,ASSET
+2300,Withholding Tax (WHT) Payable,LIABILITY
+2310,Withholding Tax (WHT) Receivable/Credit,ASSET
+4000,Sales Revenue (Reporting Only),REVENUE
+4010,Wholesale Sales - VAT Inclusive,REVENUE
+4020,Sales Discounts & Rebates,REVENUE
+4100,Sales Returns,REVENUE
+4200,Online Sales Revenue,REVENUE
+4210,Platform Service Fees,REVENUE
+REV_SALES,Sales Revenue,REVENUE
+4300,Logistics Service Revenue,REVENUE
+4500,Management/Shared Services Revenue,REVENUE
+4510,Brand & IP Licensing Income,REVENUE
+4600,IP / Royalty Revenue,REVENUE
+IC_REV,Intercompany Revenue,REVENUE
+1200,Inventory,ASSET
+5000,Cost of Goods Sold (COGS),COGS
+5100,Inventory Shrinkage,COGS
+5200,Import Duties & Clearing Costs,COGS
+5300,FX Loss / Gain,COGS
+6000,Operating Expenses (General),EXPENSE
+6010,Procurement Salaries,EXPENSE
+6020,Utilities,EXPENSE
+6030,Insurance,EXPENSE
+6040,Local Delivery Expense,EXPENSE
+6050,Repairs & Maintenance,EXPENSE
+6060,Marketing,EXPENSE
+6100,Management Fees Expense,EXPENSE
+6110,Sales Commissions,EXPENSE
+6120,Store Staff Salaries,EXPENSE
+6130,POS Charges,EXPENSE
+6200,Logistics Expense,EXPENSE
+6210,Hosting & Cloud Services,EXPENSE
+6220,Digital Marketing,EXPENSE
+6300,Software / Platform Fees,EXPENSE
+6310,Vehicle Maintenance,EXPENSE
+6320,Insurance,EXPENSE
+6500,Directors Fees,EXPENSE
+6510,Group Strategy & Consulting,EXPENSE
+6520,Group Accounting & Audit,EXPENSE
+6530,Legal & Compliance,EXPENSE
+6540,IT Systems & Software,EXPENSE
+6550,Amortisation - Intangibles,EXPENSE
+IC_EXP,Intercompany Expense,EXPENSE
+TAX_CIT_EXP,Income Tax Expense,EXPENSE
+TAX_CIT_PAY,Income Tax Payable,LIABILITY
+TAX_EDU_EXP,Education Tax Expense,EXPENSE
+TAX_EDU_PAY,Education Tax Payable,LIABILITY

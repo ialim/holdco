@@ -9,7 +9,7 @@ export class CreateChartOfAccountDto {
   @IsNotEmpty()
   name!: string;
 
-  @IsIn(["asset", "liability", "equity", "income", "expense"])
+  @IsIn(["asset", "liability", "equity", "income", "expense", "cogs"])
   type!: string;
 
   @IsOptional()

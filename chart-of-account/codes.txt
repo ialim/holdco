@@ -1,0 +1,8 @@
+$ '"C:\\WINDOWS\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command '"'"'node apps/api/scripts/ledger/normalize-ledger-csvs.js'"'"
+Notice: Alims_Digital_Commerce_Ltd_COA.csv had extra codes not in standard list: 1100, 2500, 3000, 3100, 4200, 4210, 6210, 6220, 7000, 7010
+Notice: Alims_Group_Ltd_COA.csv had extra codes not in standard list: 1500, 1600, 3000, 3100, 3200, 4510, 6500, 6510, 6520, 6530, 6540, 6550, 7000, 7010
+Notice: Alims_Logistics_Distribution_Ltd_COA.csv had extra codes not in standard list: 1400, 3000, 3100, 6310, 6320, 7000, 7010
+Notice: Alims_Perfume_Trading_Ltd_COA.csv had extra codes not in standard list: 1300, 2400, 2500, 3000, 3100, 5200, 5300, 6010, 6020, 6030, 7000, 7010
+Notice: Alims_Reseller_Network_Ltd_COA.csv had extra codes not in standard list: 1210, 2500, 2600, 3000, 3100, 4010, 4020, 6110, 7000, 7010
+Notice: Alims_Retail_Stores_Ltd_COA.csv had extra codes not in standard list: 1010, 1020, 2200, 2500, 2600, 3000, 3100, 4100, 5100, 6010, 6020, 6030, 6040, 6050, 6060, 7000, 7010
+Normalized CSVs written to C:\Users\ibrah\Documents\software-engineering\holdco\chart-of-account\normalized

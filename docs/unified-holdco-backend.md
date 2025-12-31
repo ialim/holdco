@@ -64,7 +64,7 @@ Build a unified backend for all subsidiaries using NestJS + Postgres + Redis + R
 - Completed: audit logging for adapters, payments, logistics, orders, inventory, and credit flows.
 - Completed: subsidiary adapters for wholesale, retail POS, reseller credit, and digital commerce.
 - Completed: load test harness and security smoke checklist.
-- Not started: data warehouse adapter.
+- In progress: data warehouse export adapter (scripts/warehouse).
 - Operational: `/v1/metrics` is protected with `METRICS_TOKEN` (see `docs/event-outbox-design.md`).
 
 ## Testing and validation

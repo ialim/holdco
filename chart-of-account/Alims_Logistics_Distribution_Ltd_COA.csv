@@ -1,0 +1,14 @@
+Account Code,Account Name,Account Type
+1000,Bank - Logistics Operations,Asset
+1400,Fleet & Delivery Assets,Asset
+2000,Accounts Payable,Liability
+2100,VAT Payable - FIRS,Liability
+3000,Share Capital,Equity
+3100,Retained Earnings,Equity
+4300,Logistics Service Revenue,Revenue
+5000,Fuel & Vehicle Costs,COGS
+6300,Driver Salaries,Expense
+6310,Vehicle Maintenance,Expense
+6320,Insurance,Expense
+7000,Company Income Tax Provision,Expense
+7010,Education Tax Provision,Expense

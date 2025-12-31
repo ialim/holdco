@@ -1,0 +1,30 @@
+{
+  "groupId": "",
+  "subsidiaryId": "",
+  "format": "csv",
+  "startDate": "2025-01-01",
+  "endDate": "2025-01-31",
+  "exports": [
+    "orders",
+    "order-items",
+    "payment-intents",
+    "products",
+    "variants",
+    "customers",
+    "stock-levels",
+    "locations"
+  ],
+  "outputDir": "",
+  "sftp": {
+    "enabled": false,
+    "host": "",
+    "port": 22,
+    "username": "",
+    "password": "",
+    "privateKeyPath": "",
+    "remoteDir": "/"
+  },
+  "schedule": {
+    "intervalMinutes": 0
+  }
+}

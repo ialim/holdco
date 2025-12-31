@@ -1,4 +1,7 @@
 export enum LedgerAccountType {
+  ASSET = "ASSET",
+  LIABILITY = "LIABILITY",
+  EQUITY = "EQUITY",
   REVENUE = "REVENUE",
   COGS = "COGS",
   EXPENSE = "EXPENSE",
@@ -29,12 +32,20 @@ export enum TaxType {
   ROYALTIES = "ROYALTIES",
 }
 
+export enum TaxProvisionType {
+  INCOME_TAX = "INCOME_TAX",
+  EDUCATION_TAX = "EDUCATION_TAX",
+}
+
 export enum AgreementType {
   MANAGEMENT = "MANAGEMENT",
+  PRODUCT_SUPPLY = "PRODUCT_SUPPLY",
+  LOGISTICS = "LOGISTICS",
   IP_LICENSE = "IP_LICENSE",
 }
 
 export enum PricingModel {
   COST_PLUS = "COST_PLUS",
   FIXED_MONTHLY = "FIXED_MONTHLY",
+  ROYALTY_PERCENT = "ROYALTY_PERCENT",
 }

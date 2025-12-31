@@ -1,6 +1,7 @@
-import { Body, Controller, Get, Headers, Param, Post, Query, UseGuards, UsePipes, ValidationPipe } from "@nestjs/common";
+import { Body, Controller, Get, Headers, Param, Patch, Post, Query, UseGuards, UsePipes, ValidationPipe } from "@nestjs/common";
 import { CostPoolService } from "./cost-pool.service";
 import { IntercompanyInvoicingService } from "./intercompany-invoicing.service";
+import { IntercompanyAgreementsService } from "./intercompany-agreements.service";
 import { PaymentsService } from "./payments.service";
 import { TaxService } from "./tax.service";
 import { PeriodLockService } from "./period-lock.service";
@@ -22,6 +23,10 @@ import { CreateCostCenterDto } from "./dto/create-cost-center.dto";
 import { CreateFiscalPeriodDto } from "./dto/create-fiscal-period.dto";
 import { CreateJournalEntryDto } from "./dto/create-journal-entry.dto";
 import { FinanceExportQueryDto } from "./dto/finance-export-query.dto";
+import { CreateIntercompanyAgreementDto } from "./dto/create-intercompany-agreement.dto";
+import { UpdateIntercompanyAgreementDto } from "./dto/update-intercompany-agreement.dto";
+import { TaxProvisionQueryDto } from "./dto/tax-provision-query.dto";
+import { FileTaxProvisionDto } from "./dto/file-tax-provision.dto";
 
 @UseGuards(PermissionsGuard)
 @UsePipes(new ValidationPipe({ transform: true, whitelist: true, forbidNonWhitelisted: true }))
@@ -30,6 +35,7 @@ export class FinanceController {
   constructor(
     private readonly costPoolService: CostPoolService,
     private readonly invoicingService: IntercompanyInvoicingService,
+    private readonly intercompanyAgreementsService: IntercompanyAgreementsService,
     private readonly paymentsService: PaymentsService,
     private readonly taxService: TaxService,
     private readonly periodLockService: PeriodLockService,
@@ -184,15 +190,64 @@ export class FinanceController {
     return this.costPoolService.allocateCostPool(groupId, id);
   }
 
+  @Permissions("finance.intercompany.agreements.manage")
+  @Post("intercompany-agreements")
+  createIntercompanyAgreement(
+    @Headers("x-group-id") groupId: string,
+    @Body() body: CreateIntercompanyAgreementDto,
+  ) {
+    return this.intercompanyAgreementsService.createAgreement(groupId, {
+      providerCompanyId: body.provider_company_id,
+      recipientCompanyId: body.recipient_company_id,
+      type: body.type,
+      pricingModel: body.pricing_model,
+      markupRate: body.markup_rate,
+      fixedFeeAmount: body.fixed_fee_amount,
+      vatApplies: body.vat_applies ?? false,
+      vatRate: body.vat_rate,
+      whtApplies: body.wht_applies ?? false,
+      whtRate: body.wht_rate,
+      whtTaxType: body.wht_tax_type ?? null,
+      effectiveFrom: new Date(body.effective_from),
+      effectiveTo: body.effective_to ? new Date(body.effective_to) : null,
+    });
+  }
+
+  @Permissions("finance.intercompany.agreements.manage")
+  @Patch("intercompany-agreements/:id")
+  updateIntercompanyAgreement(
+    @Headers("x-group-id") groupId: string,
+    @Param("id") id: string,
+    @Body() body: UpdateIntercompanyAgreementDto,
+  ) {
+    return this.intercompanyAgreementsService.updateAgreement(groupId, id, {
+      providerCompanyId: body.provider_company_id,
+      recipientCompanyId: body.recipient_company_id,
+      type: body.type,
+      pricingModel: body.pricing_model,
+      markupRate: body.markup_rate,
+      fixedFeeAmount: body.fixed_fee_amount,
+      vatApplies: body.vat_applies,
+      vatRate: body.vat_rate,
+      whtApplies: body.wht_applies,
+      whtRate: body.wht_rate,
+      whtTaxType: body.wht_tax_type,
+      effectiveFrom: body.effective_from ? new Date(body.effective_from) : undefined,
+      effectiveTo: body.effective_to ? new Date(body.effective_to) : undefined,
+    });
+  }
+
   @Permissions("finance.intercompany.generate")
   @Post("intercompany/:period/generate")
   generate(@Headers("x-group-id") groupId: string, @Param("period") period: string, @Body() body: any) {
+    const providerCompanyId = body.providerCompanyId ?? body.holdcoCompanyId;
     return this.invoicingService.generateIntercompanyInvoices({
       groupId,
-      holdcoCompanyId: body.holdcoCompanyId,
+      holdcoCompanyId: providerCompanyId,
       period,
       issueDate: new Date(body.issueDate),
       dueDays: body.dueDays ?? 30,
+      charges: body.charges,
     });
   }
 
@@ -251,6 +306,23 @@ export class FinanceController {
     return this.taxService.generateVatReturn({ groupId, companyId, period });
   }
 
+  @Permissions("finance.tax_provisions.generate")
+  @Get("tax-provisions/:companyId/:period")
+  taxProvisions(
+    @Headers("x-group-id") groupId: string,
+    @Param("companyId") companyId: string,
+    @Param("period") period: string,
+    @Query() query: TaxProvisionQueryDto,
+  ) {
+    return this.taxService.generateTaxProvisions({
+      groupId,
+      companyId,
+      period,
+      incomeTaxRate: query.income_tax_rate,
+      educationTaxRate: query.education_tax_rate,
+    });
+  }
+
   @Permissions("finance.vat.file")
   @Post("vat/file")
   fileVat(@Headers("x-group-id") groupId: string, @Body() body: any) {
@@ -259,6 +331,19 @@ export class FinanceController {
       companyId: body.companyId,
       period: body.period,
       paymentRef: body.paymentRef,
+    });
+  }
+
+  @Permissions("finance.tax_provisions.file")
+  @Post("tax-provisions/file")
+  fileTaxProvision(@Headers("x-group-id") groupId: string, @Body() body: FileTaxProvisionDto) {
+    return this.taxService.fileTaxProvision({
+      groupId,
+      companyId: body.company_id,
+      period: body.period,
+      taxType: body.tax_type,
+      paymentRef: body.payment_ref,
+      paidAt: body.paid_at ? new Date(body.paid_at) : undefined,
     });
   }
 

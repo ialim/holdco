@@ -1,0 +1,19 @@
+Account Code,Account Name,Account Type
+1000,Bank - Group Operations,Asset
+1500,Investment in Subsidiaries,Asset
+1600,Intangible Assets - Brand & Software,Asset
+2000,Accrued Expenses,Liability
+2300,Withholding Tax Payable,Liability
+3000,Share Capital,Equity
+3100,Retained Earnings,Equity
+3200,Current Year Profit,Equity
+4500,Management Fee Income,Revenue
+4510,Brand & IP Licensing Income,Revenue
+6500,Directors Fees,Expense
+6510,Group Strategy & Consulting,Expense
+6520,Group Accounting & Audit,Expense
+6530,Legal & Compliance,Expense
+6540,IT Systems & Software,Expense
+6550,Amortisation - Intangibles,Expense
+7000,Company Income Tax Provision,Expense
+7010,Education Tax Provision,Expense

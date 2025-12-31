@@ -3154,12 +3154,12 @@ paths:
                 $ref: '#/components/schemas/PurchaseOrderListResponse'
         '401':
           $ref: '#/components/responses/Unauthorized'
-    post:
-      tags: [Procurement]
-      operationId: createPurchaseOrder
-      summary: Create purchase order
-      x-rbac:
-        permissions: [procurement.order.manage]
+      post:
+        tags: [Procurement]
+        operationId: createPurchaseOrder
+        summary: Create purchase order
+        x-rbac:
+          permissions: [procurement.order.manage]
       parameters:
         - $ref: '#/components/parameters/IdempotencyKey'
       requestBody:
@@ -3175,6 +3175,146 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PurchaseOrder'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+          '401':
+            $ref: '#/components/responses/Unauthorized'
+  /v1/procurement/import-shipments:
+    parameters:
+      - $ref: '#/components/parameters/GroupId'
+      - $ref: '#/components/parameters/SubsidiaryId'
+    get:
+      tags: [Procurement]
+      operationId: listImportShipments
+      summary: List import shipments
+      x-rbac:
+        permissions: [procurement.imports.manage]
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Offset'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ImportShipmentListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    post:
+      tags: [Procurement]
+      operationId: createImportShipment
+      summary: Create import shipment
+      x-rbac:
+        permissions: [procurement.imports.manage]
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateImportShipmentRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ImportShipment'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /v1/procurement/import-shipments/{id}/costs:
+    parameters:
+      - $ref: '#/components/parameters/GroupId'
+      - $ref: '#/components/parameters/SubsidiaryId'
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    post:
+      tags: [Procurement]
+      operationId: addImportShipmentCosts
+      summary: Add import shipment costs
+      x-rbac:
+        permissions: [procurement.imports.manage]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddImportCostsRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ImportShipment'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /v1/procurement/import-shipments/{id}/finalize:
+    parameters:
+      - $ref: '#/components/parameters/GroupId'
+      - $ref: '#/components/parameters/SubsidiaryId'
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    post:
+      tags: [Procurement]
+      operationId: finalizeImportShipment
+      summary: Finalize import shipment landed cost
+      x-rbac:
+        permissions: [procurement.imports.manage]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ImportShipment'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /v1/procurement/import-shipments/{id}/receive:
+    parameters:
+      - $ref: '#/components/parameters/GroupId'
+      - $ref: '#/components/parameters/SubsidiaryId'
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    post:
+      tags: [Procurement]
+      operationId: receiveImportShipment
+      summary: Receive import shipment into warehouse
+      x-rbac:
+        permissions: [procurement.imports.manage]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReceiveImportShipmentRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GoodsReceipt'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -6561,6 +6701,216 @@ components:
             $ref: '#/components/schemas/PurchaseOrder'
         meta:
           $ref: '#/components/schemas/PageMeta'
+    ImportShipmentLineInput:
+      type: object
+      required: [product_id, quantity, unit_cost]
+      properties:
+        product_id:
+          type: string
+          format: uuid
+        variant_id:
+          type: string
+          format: uuid
+        quantity:
+          type: integer
+        unit_cost:
+          type: number
+          format: float
+    ImportCostInput:
+      type: object
+      required: [category, amount]
+      properties:
+        category:
+          type: string
+        amount:
+          type: number
+          format: float
+        notes:
+          type: string
+    CreateImportShipmentRequest:
+      type: object
+      required: [reference, currency, fx_rate, lines]
+      properties:
+        reference:
+          type: string
+        supplier_id:
+          type: string
+          format: uuid
+        currency:
+          type: string
+        fx_rate:
+          type: number
+          format: float
+        arrival_date:
+          type: string
+          format: date
+        lines:
+          type: array
+          items:
+            $ref: '#/components/schemas/ImportShipmentLineInput'
+    AddImportCostsRequest:
+      type: object
+      required: [costs]
+      properties:
+        costs:
+          type: array
+          items:
+            $ref: '#/components/schemas/ImportCostInput'
+    ReceiveImportShipmentLineInput:
+      type: object
+      required: [product_id, quantity_received]
+      properties:
+        product_id:
+          type: string
+          format: uuid
+        variant_id:
+          type: string
+          format: uuid
+        quantity_received:
+          type: integer
+        quantity_rejected:
+          type: integer
+    ReceiveImportShipmentRequest:
+      type: object
+      required: [location_id, lines]
+      properties:
+        location_id:
+          type: string
+          format: uuid
+        received_at:
+          type: string
+          format: date-time
+        notes:
+          type: string
+        lines:
+          type: array
+          items:
+            $ref: '#/components/schemas/ReceiveImportShipmentLineInput'
+    ImportShipmentLine:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        product_id:
+          type: string
+          format: uuid
+        variant_id:
+          type: string
+          format: uuid
+        quantity:
+          type: integer
+        unit_cost:
+          type: number
+          format: float
+        base_amount:
+          type: number
+          format: float
+        landed_unit_cost:
+          type: number
+          format: float
+        landed_amount:
+          type: number
+          format: float
+    ImportCostLine:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        category:
+          type: string
+        amount:
+          type: number
+          format: float
+        notes:
+          type: string
+    ImportShipment:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        reference:
+          type: string
+        supplier_id:
+          type: string
+          format: uuid
+        currency:
+          type: string
+        fx_rate:
+          type: number
+          format: float
+        status:
+          $ref: '#/components/schemas/ImportShipmentStatus'
+        arrival_date:
+          type: string
+          format: date
+        cleared_date:
+          type: string
+          format: date
+        total_base_amount:
+          type: number
+          format: float
+        total_landed_cost:
+          type: number
+          format: float
+        lines:
+          type: array
+          items:
+            $ref: '#/components/schemas/ImportShipmentLine'
+        costs:
+          type: array
+          items:
+            $ref: '#/components/schemas/ImportCostLine'
+    ImportShipmentListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/ImportShipment'
+        meta:
+          $ref: '#/components/schemas/PageMeta'
+    GoodsReceiptLine:
+      type: object
+      properties:
+        product_id:
+          type: string
+          format: uuid
+        variant_id:
+          type: string
+          format: uuid
+        quantity_received:
+          type: integer
+        quantity_rejected:
+          type: integer
+        unit_cost:
+          type: number
+          format: float
+    GoodsReceipt:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        shipment_id:
+          type: string
+          format: uuid
+        location_id:
+          type: string
+          format: uuid
+        status:
+          $ref: '#/components/schemas/GoodsReceiptStatus'
+        received_at:
+          type: string
+          format: date-time
+        notes:
+          type: string
+        lines:
+          type: array
+          items:
+            $ref: '#/components/schemas/GoodsReceiptLine'
     AdvisoryEngagement:
       type: object
       properties:
@@ -6846,6 +7196,12 @@ components:
     PurchaseOrderStatus:
       type: string
       enum: [draft, issued, partially_received, received, cancelled]
+    ImportShipmentStatus:
+      type: string
+      enum: [draft, cleared, received]
+    GoodsReceiptStatus:
+      type: string
+      enum: [pending, accepted, rejected, partial]
     AdvisoryEngagementStatus:
       type: string
       enum: [active, on_hold, completed, cancelled]

@@ -25,7 +25,11 @@ const COMPLIANCE_ALL = [
   "compliance.risk.manage",
 ];
 
-const PROCUREMENT_ALL = ["procurement.request.manage", "procurement.order.manage"];
+const PROCUREMENT_ALL = [
+  "procurement.request.manage",
+  "procurement.order.manage",
+  "procurement.imports.manage",
+];
 
 const ADVISORY_ALL = ["advisory.engagement.manage", "advisory.deliverable.manage"];
 

@@ -1,8 +1,13 @@
-import { BadRequestException, Injectable } from "@nestjs/common";
+import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
+import { Prisma, SubsidiaryRole } from "@prisma/client";
+import { Decimal } from "@prisma/client/runtime/library";
 import { ListQueryDto } from "../common/dto/list-query.dto";
 import { PrismaService } from "../prisma/prisma.service";
+import { AddImportCostsDto } from "./dto/add-import-costs.dto";
+import { CreateImportShipmentDto } from "./dto/create-import-shipment.dto";
 import { CreatePurchaseRequestDto } from "./dto/create-purchase-request.dto";
 import { CreatePurchaseOrderDto } from "./dto/create-purchase-order.dto";
+import { ReceiveImportShipmentDto } from "./dto/receive-import-shipment.dto";
 
 @Injectable()
 export class ProcurementService {
@@ -160,6 +165,7 @@ export class ProcurementService {
       throw new BadRequestException("X-Group-Id header is required");
     if (!subsidiaryId)
       throw new BadRequestException("X-Subsidiary-Id header is required");
+    await this.assertTradingSubsidiary(groupId, subsidiaryId);
 
     const items = body.items.map((item) => {
       const totalPrice = item.total_price ?? item.unit_price * item.quantity;
@@ -212,12 +218,442 @@ export class ProcurementService {
     };
   }
 
+  async listImportShipments(groupId: string, subsidiaryId: string, query: ListQueryDto) {
+    if (!groupId) throw new BadRequestException("X-Group-Id header is required");
+    if (!subsidiaryId) throw new BadRequestException("X-Subsidiary-Id header is required");
+    await this.assertTradingSubsidiary(groupId, subsidiaryId);
+
+    const where = {
+      groupId,
+      subsidiaryId,
+      ...(query.status ? { status: query.status } : {}),
+      ...(query.q ? { reference: { contains: query.q, mode: Prisma.QueryMode.insensitive } } : {}),
+    };
+
+    const [total, shipments] = await this.prisma.$transaction([
+      this.prisma.importShipment.count({ where }),
+      this.prisma.importShipment.findMany({
+        where,
+        orderBy: { createdAt: "desc" },
+        skip: query.offset ?? 0,
+        take: query.limit ?? 50,
+        include: { lines: true, costLines: true },
+      }),
+    ]);
+
+    return {
+      data: shipments.map((shipment: any) => ({
+        id: shipment.id,
+        reference: shipment.reference,
+        supplier_id: shipment.supplierId ?? undefined,
+        currency: shipment.currency,
+        fx_rate: Number(shipment.fxRate),
+        status: shipment.status,
+        arrival_date: this.formatDate(shipment.arrivalDate),
+        cleared_date: this.formatDate(shipment.clearedDate),
+        total_base_amount: Number(shipment.totalBaseAmount),
+        total_landed_cost: Number(shipment.totalLandedCost),
+        lines: shipment.lines.map((line: any) => ({
+          id: line.id,
+          product_id: line.productId,
+          variant_id: line.variantId ?? undefined,
+          quantity: line.quantity,
+          unit_cost: Number(line.unitCost),
+          base_amount: Number(line.baseAmount),
+          landed_unit_cost: line.landedUnitCost !== null ? Number(line.landedUnitCost) : undefined,
+          landed_amount: line.landedAmount !== null ? Number(line.landedAmount) : undefined,
+        })),
+        costs: shipment.costLines.map((cost: any) => ({
+          id: cost.id,
+          category: cost.category,
+          amount: Number(cost.amount),
+          notes: cost.notes ?? undefined,
+        })),
+      })),
+      meta: this.buildMeta(query, total),
+    };
+  }
+
+  async createImportShipment(groupId: string, subsidiaryId: string, body: CreateImportShipmentDto) {
+    if (!groupId) throw new BadRequestException("X-Group-Id header is required");
+    if (!subsidiaryId) throw new BadRequestException("X-Subsidiary-Id header is required");
+    await this.assertTradingSubsidiary(groupId, subsidiaryId);
+
+    if (body.fx_rate <= 0) throw new BadRequestException("FX rate must be greater than 0");
+
+    const fxRate = new Decimal(body.fx_rate);
+    const lines = body.lines.map((line) => {
+      if (line.quantity <= 0) throw new BadRequestException("Quantity must be greater than 0");
+      const unitCost = new Decimal(line.unit_cost);
+      if (unitCost.lessThan(0)) throw new BadRequestException("Unit cost must be 0 or greater");
+      const baseAmount = unitCost.mul(line.quantity);
+      return {
+        productId: line.product_id,
+        variantId: line.variant_id,
+        quantity: line.quantity,
+        unitCost,
+        baseAmount,
+      };
+    });
+
+    const baseTotal = lines.reduce((sum, line) => sum.plus(line.baseAmount), new Decimal(0));
+    const totalBaseAmount = baseTotal.mul(fxRate);
+
+    const existing = await this.prisma.importShipment.findFirst({
+      where: { subsidiaryId, reference: body.reference },
+      select: { id: true, status: true },
+    });
+    if (existing && existing.status !== "draft") {
+      throw new BadRequestException("Only draft import shipments can be updated");
+    }
+
+    const shipment = await this.prisma.importShipment.upsert({
+      where: { subsidiaryId_reference: { subsidiaryId, reference: body.reference } },
+      update: {
+        supplierId: body.supplier_id,
+        currency: body.currency,
+        fxRate,
+        arrivalDate: body.arrival_date ? new Date(body.arrival_date) : undefined,
+        totalBaseAmount,
+        totalLandedCost: totalBaseAmount,
+        lines: { deleteMany: {}, create: lines },
+      },
+      create: {
+        groupId,
+        subsidiaryId,
+        supplierId: body.supplier_id,
+        reference: body.reference,
+        currency: body.currency,
+        fxRate,
+        arrivalDate: body.arrival_date ? new Date(body.arrival_date) : undefined,
+        totalBaseAmount,
+        totalLandedCost: totalBaseAmount,
+        lines: { create: lines },
+      },
+      include: { lines: true, costLines: true },
+    });
+
+    return {
+      id: shipment.id,
+      reference: shipment.reference,
+      supplier_id: shipment.supplierId ?? undefined,
+      currency: shipment.currency,
+      fx_rate: Number(shipment.fxRate),
+      status: shipment.status,
+      arrival_date: this.formatDate(shipment.arrivalDate),
+      total_base_amount: Number(shipment.totalBaseAmount),
+      total_landed_cost: Number(shipment.totalLandedCost),
+      lines: shipment.lines.map((line: any) => ({
+        id: line.id,
+        product_id: line.productId,
+        variant_id: line.variantId ?? undefined,
+        quantity: line.quantity,
+        unit_cost: Number(line.unitCost),
+        base_amount: Number(line.baseAmount),
+      })),
+      costs: shipment.costLines.map((cost: any) => ({
+        id: cost.id,
+        category: cost.category,
+        amount: Number(cost.amount),
+        notes: cost.notes ?? undefined,
+      })),
+    };
+  }
+
+  async addImportCosts(groupId: string, subsidiaryId: string, id: string, body: AddImportCostsDto) {
+    if (!groupId) throw new BadRequestException("X-Group-Id header is required");
+    if (!subsidiaryId) throw new BadRequestException("X-Subsidiary-Id header is required");
+    if (!id) throw new BadRequestException("Shipment id is required");
+    await this.assertTradingSubsidiary(groupId, subsidiaryId);
+
+    const shipment = await this.prisma.importShipment.findFirst({
+      where: { id, groupId, subsidiaryId },
+      include: { costLines: true },
+    });
+    if (!shipment) throw new NotFoundException("Import shipment not found");
+    if (shipment.status === "received") throw new BadRequestException("Cannot add costs to a received shipment");
+
+    await this.prisma.importCostLine.createMany({
+      data: body.costs.map((cost) => ({
+        shipmentId: shipment.id,
+        category: cost.category,
+        amount: new Decimal(cost.amount),
+        notes: cost.notes,
+      })),
+    });
+
+    const updated = await this.prisma.importShipment.findUnique({
+      where: { id: shipment.id },
+      include: { lines: true, costLines: true },
+    });
+
+    return {
+      id: updated!.id,
+      reference: updated!.reference,
+      status: updated!.status,
+      total_base_amount: Number(updated!.totalBaseAmount),
+      total_landed_cost: Number(updated!.totalLandedCost),
+      costs: updated!.costLines.map((cost: any) => ({
+        id: cost.id,
+        category: cost.category,
+        amount: Number(cost.amount),
+        notes: cost.notes ?? undefined,
+      })),
+    };
+  }
+
+  async finalizeImportShipment(groupId: string, subsidiaryId: string, id: string) {
+    if (!groupId) throw new BadRequestException("X-Group-Id header is required");
+    if (!subsidiaryId) throw new BadRequestException("X-Subsidiary-Id header is required");
+    if (!id) throw new BadRequestException("Shipment id is required");
+    await this.assertTradingSubsidiary(groupId, subsidiaryId);
+
+    const shipment = await this.prisma.importShipment.findFirst({
+      where: { id, groupId, subsidiaryId },
+      include: { lines: true, costLines: true },
+    });
+    if (!shipment) throw new NotFoundException("Import shipment not found");
+    if (!shipment.lines.length) throw new BadRequestException("Import shipment has no lines");
+
+    const baseTotal = shipment.lines.reduce((sum, line) => sum.plus(line.baseAmount), new Decimal(0));
+    const baseTotalLocal = baseTotal.mul(shipment.fxRate);
+    const extraCosts = shipment.costLines.reduce((sum, cost) => sum.plus(cost.amount), new Decimal(0));
+    const totalLanded = baseTotalLocal.plus(extraCosts);
+
+    const updates = shipment.lines.map((line) => {
+      const baseLocal = new Decimal(line.baseAmount).mul(shipment.fxRate);
+      const allocation = baseTotalLocal.equals(0)
+        ? new Decimal(0)
+        : extraCosts.mul(baseLocal.div(baseTotalLocal));
+      const landedAmount = baseLocal.plus(allocation);
+      const landedUnitCost = landedAmount.div(line.quantity);
+      return {
+        id: line.id,
+        landedAmount,
+        landedUnitCost,
+      };
+    });
+
+    const updated = await this.prisma.$transaction(async (tx) => {
+      for (const update of updates) {
+        await tx.importShipmentLine.update({
+          where: { id: update.id },
+          data: {
+            landedAmount: update.landedAmount,
+            landedUnitCost: update.landedUnitCost,
+          },
+        });
+      }
+
+      return tx.importShipment.update({
+        where: { id: shipment.id },
+        data: {
+          status: "cleared",
+          clearedDate: new Date(),
+          totalBaseAmount: baseTotalLocal,
+          totalLandedCost: totalLanded,
+        },
+        include: { lines: true, costLines: true },
+      });
+    });
+
+    return {
+      id: updated.id,
+      reference: updated.reference,
+      status: updated.status,
+      total_base_amount: Number(updated.totalBaseAmount),
+      total_landed_cost: Number(updated.totalLandedCost),
+      lines: updated.lines.map((line: any) => ({
+        id: line.id,
+        product_id: line.productId,
+        variant_id: line.variantId ?? undefined,
+        quantity: line.quantity,
+        unit_cost: Number(line.unitCost),
+        base_amount: Number(line.baseAmount),
+        landed_unit_cost: line.landedUnitCost !== null ? Number(line.landedUnitCost) : undefined,
+        landed_amount: line.landedAmount !== null ? Number(line.landedAmount) : undefined,
+      })),
+    };
+  }
+
+  async receiveImportShipment(
+    groupId: string,
+    subsidiaryId: string,
+    id: string,
+    body: ReceiveImportShipmentDto,
+  ) {
+    if (!groupId) throw new BadRequestException("X-Group-Id header is required");
+    if (!subsidiaryId) throw new BadRequestException("X-Subsidiary-Id header is required");
+    if (!id) throw new BadRequestException("Shipment id is required");
+    await this.assertTradingSubsidiary(groupId, subsidiaryId);
+
+    const shipment = await this.prisma.importShipment.findFirst({
+      where: { id, groupId, subsidiaryId },
+      include: { lines: true },
+    });
+    if (!shipment) throw new NotFoundException("Import shipment not found");
+    if (shipment.status === "received") throw new BadRequestException("Shipment already received");
+
+    const existingReceipt = await this.prisma.goodsReceipt.findFirst({
+      where: { shipmentId: shipment.id },
+      select: { id: true },
+    });
+    if (existingReceipt) throw new BadRequestException("Shipment already has a receipt");
+
+    const location = await this.prisma.location.findFirst({
+      where: { id: body.location_id, groupId, subsidiaryId },
+      select: { id: true },
+    });
+    if (!location) throw new BadRequestException("Location not found for subsidiary");
+
+    const lineKey = (productId: string, variantId: string | null) =>
+      `${productId}:${variantId ?? "none"}`;
+    const shipmentLines = new Map(
+      shipment.lines.map((line) => [lineKey(line.productId, line.variantId ?? null), line]),
+    );
+
+    let totalReceived = 0;
+    let totalRejected = 0;
+
+    for (const line of body.lines) {
+      const key = lineKey(line.product_id, line.variant_id ?? null);
+      const shipmentLine = shipmentLines.get(key);
+      if (!shipmentLine) {
+        throw new BadRequestException("Receipt line does not match shipment line");
+      }
+      const received = line.quantity_received ?? 0;
+      const rejected = line.quantity_rejected ?? 0;
+      if (received + rejected !== shipmentLine.quantity) {
+        throw new BadRequestException("Receipt quantities must match shipment quantities");
+      }
+      totalReceived += received;
+      totalRejected += rejected;
+    }
+
+    if (totalReceived <= 0 && totalRejected <= 0) {
+      throw new BadRequestException("Receipt quantities must be greater than 0");
+    }
+
+    const receiptStatus =
+      totalReceived > 0 && totalRejected > 0 ? "partial" : totalReceived > 0 ? "accepted" : "rejected";
+
+    const receivedAt = body.received_at ? new Date(body.received_at) : new Date();
+
+    const receipt = await this.prisma.$transaction(async (tx) => {
+      const createdReceipt = await tx.goodsReceipt.create({
+        data: {
+          groupId,
+          subsidiaryId,
+          shipmentId: shipment.id,
+          locationId: body.location_id,
+          status: receiptStatus,
+          receivedAt,
+          notes: body.notes,
+          lines: {
+            create: body.lines.map((line) => {
+              const shipmentLine = shipmentLines.get(lineKey(line.product_id, line.variant_id ?? null));
+              return {
+                shipmentLineId: shipmentLine?.id,
+                productId: line.product_id,
+                variantId: line.variant_id,
+                quantityReceived: line.quantity_received,
+                quantityRejected: line.quantity_rejected ?? 0,
+                unitCost: shipmentLine?.landedUnitCost ?? shipmentLine?.unitCost.mul(shipment.fxRate),
+              };
+            }),
+          },
+        },
+        include: { lines: true },
+      });
+
+      for (const line of body.lines) {
+        if (line.quantity_received <= 0) continue;
+        const variantKey = line.variant_id ?? null;
+        const existingLevel = await tx.stockLevel.findFirst({
+          where: {
+            groupId,
+            subsidiaryId,
+            locationId: body.location_id,
+            productId: line.product_id,
+            variantId: variantKey,
+          },
+        });
+
+        await tx.stockAdjustment.create({
+          data: {
+            groupId,
+            subsidiaryId,
+            locationId: body.location_id,
+            productId: line.product_id,
+            variantId: line.variant_id,
+            quantity: line.quantity_received,
+            reason: "import_receipt",
+          },
+        });
+
+        if (existingLevel) {
+          await tx.stockLevel.update({
+            where: { id: existingLevel.id },
+            data: { onHand: { increment: line.quantity_received } },
+          });
+        } else {
+          await tx.stockLevel.create({
+            data: {
+              groupId,
+              subsidiaryId,
+              locationId: body.location_id,
+              productId: line.product_id,
+              variantId: line.variant_id,
+              onHand: line.quantity_received,
+              reserved: 0,
+            },
+          });
+        }
+      }
+
+      await tx.importShipment.update({
+        where: { id: shipment.id },
+        data: { status: "received" },
+      });
+
+      return createdReceipt;
+    });
+
+    return {
+      id: receipt.id,
+      shipment_id: receipt.shipmentId ?? undefined,
+      location_id: receipt.locationId,
+      status: receipt.status,
+      received_at: receipt.receivedAt.toISOString(),
+      notes: receipt.notes ?? undefined,
+      lines: receipt.lines.map((line: any) => ({
+        product_id: line.productId,
+        variant_id: line.variantId ?? undefined,
+        quantity_received: line.quantityReceived,
+        quantity_rejected: line.quantityRejected,
+        unit_cost: line.unitCost !== null ? Number(line.unitCost) : undefined,
+      })),
+    };
+  }
+
   private buildMeta(query: ListQueryDto, total: number) {
     return {
       limit: query.limit ?? 50,
       offset: query.offset ?? 0,
       total,
     };
+  }
+
+  private async assertTradingSubsidiary(groupId: string, subsidiaryId: string) {
+    const subsidiary = await this.prisma.subsidiary.findFirst({
+      where: { id: subsidiaryId, groupId },
+      select: { id: true, role: true },
+    });
+    if (!subsidiary) throw new BadRequestException("Subsidiary not found");
+    if (subsidiary.role !== SubsidiaryRole.PROCUREMENT_TRADING) {
+      throw new BadRequestException("Only the procurement/trading subsidiary can perform this action");
+    }
+    return subsidiary;
   }
 
   private formatDate(value: Date | null) {

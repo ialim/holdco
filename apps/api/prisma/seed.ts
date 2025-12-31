@@ -121,7 +121,11 @@ async function main() {
     "compliance.audit.manage",
     "compliance.risk.manage",
   ];
-  const procurementPermissions = ["procurement.request.manage", "procurement.order.manage"];
+  const procurementPermissions = [
+    "procurement.request.manage",
+    "procurement.order.manage",
+    "procurement.imports.manage",
+  ];
   const advisoryPermissions = ["advisory.engagement.manage", "advisory.deliverable.manage"];
   const rbacPermissions = ["rbac.roles.manage", "rbac.permissions.read"];
 

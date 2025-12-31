@@ -47,6 +47,8 @@ model TenantGroup {
   promotions   Promotion[]
   customers    Customer[]
   resellers    Reseller[]
+  importShipments ImportShipment[]
+  goodsReceipts  GoodsReceipt[]
   carts        Cart[]
   orders       Order[]
   paymentIntents PaymentIntent[]
@@ -120,6 +122,8 @@ model Subsidiary {
   loyaltyAccounts LoyaltyAccount[]
   pointsLedger PointsLedger[]
   campaigns    Campaign[]
+  importShipments ImportShipment[]
+  goodsReceipts  GoodsReceipt[]
   shipments    Shipment[]
   deliverySlots DeliverySlot[]
   proofsOfDelivery ProofOfDelivery[]
@@ -181,6 +185,7 @@ model Location {
   stockAdjustments StockAdjustment[]
   stockReservations StockReservation[]
   orders     Order[]
+  goodsReceipts GoodsReceipt[]
   stockTransfersFrom StockTransfer[] @relation("StockTransferFromLocation")
   stockTransfersTo   StockTransfer[] @relation("StockTransferToLocation")
 
@@ -299,6 +304,7 @@ model Supplier {
 
   group    TenantGroup @relation(fields: [groupId], references: [id])
   products Product[]
+  importShipments ImportShipment[]
 
   @@unique([groupId, name])
   @@map("suppliers")
@@ -332,6 +338,8 @@ model Product {
   priceRules PriceRule[]
   cartItems  CartItem[]
   orderItems OrderItem[]
+  importShipmentLines ImportShipmentLine[]
+  goodsReceiptLines GoodsReceiptLine[]
   facets     ProductFacet[]
 
   @@unique([groupId, sku])
@@ -359,6 +367,8 @@ model Variant {
   priceRules PriceRule[]
   cartItems  CartItem[]
   orderItems OrderItem[]
+  importShipmentLines ImportShipmentLine[]
+  goodsReceiptLines GoodsReceiptLine[]
   facets     VariantFacet[]
 
   @@unique([groupId, barcode])
@@ -1436,6 +1446,107 @@ model PurchaseOrderItem {
   purchaseOrder PurchaseOrder @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
 
   @@map("purchase_order_items")
+}
+
+model ImportShipment {
+  id               String   @id @default(uuid()) @db.Uuid
+  groupId          String   @db.Uuid @map("group_id")
+  subsidiaryId     String   @db.Uuid @map("subsidiary_id")
+  supplierId       String?  @db.Uuid @map("supplier_id")
+  reference        String
+  currency         String
+  fxRate           Decimal  @db.Decimal(12, 6) @map("fx_rate")
+  status           String   @default("draft")
+  arrivalDate      DateTime? @map("arrival_date")
+  clearedDate      DateTime? @map("cleared_date")
+  totalBaseAmount  Decimal  @db.Decimal(12, 2) @map("total_base_amount")
+  totalLandedCost  Decimal  @db.Decimal(12, 2) @map("total_landed_cost")
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @default(now()) @map("updated_at")
+
+  group       TenantGroup @relation(fields: [groupId], references: [id])
+  subsidiary  Subsidiary  @relation(fields: [subsidiaryId], references: [id])
+  supplier    Supplier?   @relation(fields: [supplierId], references: [id])
+  lines       ImportShipmentLine[]
+  costLines   ImportCostLine[]
+  receipts    GoodsReceipt[]
+
+  @@unique([subsidiaryId, reference])
+  @@map("import_shipments")
+}
+
+model ImportShipmentLine {
+  id             String   @id @default(uuid()) @db.Uuid
+  shipmentId     String   @db.Uuid @map("shipment_id")
+  productId      String   @db.Uuid @map("product_id")
+  variantId      String?  @db.Uuid @map("variant_id")
+  quantity       Int
+  unitCost       Decimal  @db.Decimal(12, 4) @map("unit_cost")
+  baseAmount     Decimal  @db.Decimal(12, 2) @map("base_amount")
+  landedUnitCost Decimal? @db.Decimal(12, 4) @map("landed_unit_cost")
+  landedAmount   Decimal? @db.Decimal(12, 2) @map("landed_amount")
+
+  shipment ImportShipment @relation(fields: [shipmentId], references: [id], onDelete: Cascade)
+  product  Product        @relation(fields: [productId], references: [id])
+  variant  Variant?       @relation(fields: [variantId], references: [id])
+  receiptLines GoodsReceiptLine[]
+
+  @@index([shipmentId])
+  @@map("import_shipment_lines")
+}
+
+model ImportCostLine {
+  id         String   @id @default(uuid()) @db.Uuid
+  shipmentId String   @db.Uuid @map("shipment_id")
+  category   String
+  amount     Decimal  @db.Decimal(12, 2)
+  notes      String?
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  shipment ImportShipment @relation(fields: [shipmentId], references: [id], onDelete: Cascade)
+
+  @@index([shipmentId])
+  @@map("import_cost_lines")
+}
+
+model GoodsReceipt {
+  id           String   @id @default(uuid()) @db.Uuid
+  groupId      String   @db.Uuid @map("group_id")
+  subsidiaryId String   @db.Uuid @map("subsidiary_id")
+  shipmentId   String?  @db.Uuid @map("shipment_id")
+  locationId   String   @db.Uuid @map("location_id")
+  status       String   @default("pending")
+  receivedAt   DateTime @map("received_at")
+  notes        String?
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  group      TenantGroup    @relation(fields: [groupId], references: [id])
+  subsidiary Subsidiary     @relation(fields: [subsidiaryId], references: [id])
+  shipment   ImportShipment? @relation(fields: [shipmentId], references: [id])
+  location   Location       @relation(fields: [locationId], references: [id])
+  lines      GoodsReceiptLine[]
+
+  @@index([shipmentId])
+  @@map("goods_receipts")
+}
+
+model GoodsReceiptLine {
+  id               String   @id @default(uuid()) @db.Uuid
+  receiptId        String   @db.Uuid @map("receipt_id")
+  shipmentLineId   String?  @db.Uuid @map("shipment_line_id")
+  productId        String   @db.Uuid @map("product_id")
+  variantId        String?  @db.Uuid @map("variant_id")
+  quantityReceived Int      @map("quantity_received")
+  quantityRejected Int      @default(0) @map("quantity_rejected")
+  unitCost         Decimal? @db.Decimal(12, 4) @map("unit_cost")
+
+  receipt      GoodsReceipt       @relation(fields: [receiptId], references: [id], onDelete: Cascade)
+  shipmentLine ImportShipmentLine? @relation(fields: [shipmentLineId], references: [id])
+  product      Product            @relation(fields: [productId], references: [id])
+  variant      Variant?           @relation(fields: [variantId], references: [id])
+
+  @@index([receiptId])
+  @@map("goods_receipt_lines")
 }
 
 model AdvisoryEngagement {

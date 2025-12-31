@@ -1065,6 +1065,12 @@ model ExternalClient {
   type      String
   email     String?
   phone     String?
+  creditLimit     Decimal? @db.Decimal(12, 2) @map("credit_limit")
+  creditCurrency  String?  @map("credit_currency")
+  paymentTermDays Int?     @map("payment_term_days")
+  negotiationNotes String? @map("negotiation_notes")
+  lastNegotiatedAt DateTime? @map("last_negotiated_at")
+  lastNegotiatedBy String? @map("last_negotiated_by")
   status    String   @default("active")
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @default(now()) @map("updated_at")

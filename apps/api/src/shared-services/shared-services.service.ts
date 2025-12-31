@@ -52,6 +52,12 @@ export class SharedServicesService {
         type: body.type,
         email: body.email,
         phone: body.phone,
+        creditLimit: body.credit_limit,
+        creditCurrency: body.credit_currency,
+        paymentTermDays: body.payment_term_days,
+        negotiationNotes: body.negotiation_notes,
+        lastNegotiatedAt: body.last_negotiated_at ? new Date(body.last_negotiated_at) : undefined,
+        lastNegotiatedBy: body.last_negotiated_by,
         status: ThirdPartyStatus.ACTIVE,
       },
     });
@@ -403,13 +409,32 @@ export class SharedServicesService {
     });
   }
 
-  private mapThirdParty(party: { id: string; name: string; type: string; email: string | null; phone: string | null; status: string }) {
+  private mapThirdParty(party: {
+    id: string;
+    name: string;
+    type: string;
+    email: string | null;
+    phone: string | null;
+    status: string;
+    creditLimit: Prisma.Decimal | null;
+    creditCurrency: string | null;
+    paymentTermDays: number | null;
+    negotiationNotes: string | null;
+    lastNegotiatedAt: Date | null;
+    lastNegotiatedBy: string | null;
+  }) {
     return {
       id: party.id,
       name: party.name,
       type: party.type,
       email: party.email ?? undefined,
       phone: party.phone ?? undefined,
+      credit_limit: party.creditLimit !== null ? Number(party.creditLimit) : undefined,
+      credit_currency: party.creditCurrency ?? undefined,
+      payment_term_days: party.paymentTermDays ?? undefined,
+      negotiation_notes: party.negotiationNotes ?? undefined,
+      last_negotiated_at: party.lastNegotiatedAt ? party.lastNegotiatedAt.toISOString() : undefined,
+      last_negotiated_by: party.lastNegotiatedBy ?? undefined,
       status: party.status,
     };
   }

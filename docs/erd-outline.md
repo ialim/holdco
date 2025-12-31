@@ -106,7 +106,7 @@ Relationships
 
 ## Shared services (holding company)
 Tables
-- external_client: id, name, type (client, vendor, partner), email, phone, status
+- external_client: id, name, type (client, vendor, partner), email, phone, credit_limit, credit_currency, payment_term_days, negotiation_notes, last_negotiated_at, last_negotiated_by, status
 - service_request: id, subsidiary_id, external_client_id, category, title, status, priority, assigned_to, approved_by, approved_at, rejected_by, rejected_at, reason, due_at
 - service_task: id, service_request_id, title, status, assigned_to, due_at
 

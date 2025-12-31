@@ -5144,6 +5144,20 @@ components:
           format: email
         phone:
           type: string
+        credit_limit:
+          type: number
+          format: float
+        credit_currency:
+          type: string
+        payment_term_days:
+          type: integer
+        negotiation_notes:
+          type: string
+        last_negotiated_at:
+          type: string
+          format: date-time
+        last_negotiated_by:
+          type: string
         status:
           $ref: '#/components/schemas/ThirdPartyStatus'
     CreateThirdPartyRequest:
@@ -5158,6 +5172,20 @@ components:
           type: string
           format: email
         phone:
+          type: string
+        credit_limit:
+          type: number
+          format: float
+        credit_currency:
+          type: string
+        payment_term_days:
+          type: integer
+        negotiation_notes:
+          type: string
+        last_negotiated_at:
+          type: string
+          format: date-time
+        last_negotiated_by:
           type: string
     ThirdPartyListResponse:
       type: object

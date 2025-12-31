@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Headers, Param, ParseUUIDPipe, Post, Query, Req, UseGuards, UsePipes, ValidationPipe } from "@nestjs/common";
+import { Body, Controller, Get, Headers, Param, ParseUUIDPipe, Patch, Post, Query, Req, UseGuards, UsePipes, ValidationPipe } from "@nestjs/common";
 import { Request } from "express";
 import { Permissions } from "../auth/permissions.decorator";
 import { PermissionsGuard } from "../auth/permissions.guard";
@@ -7,6 +7,7 @@ import { CreateThirdPartyDto } from "./dto/create-third-party.dto";
 import { ListQueryDto } from "./dto/list-query.dto";
 import { ServiceRequestActionDto } from "./dto/service-request-action.dto";
 import { ServiceRequestAssignDto } from "./dto/service-request-assign.dto";
+import { UpdateThirdPartyDto } from "./dto/update-third-party.dto";
 import { SharedServicesService } from "./shared-services.service";
 
 @Controller("v1")
@@ -25,6 +26,16 @@ export class SharedServicesController {
   @Post("third-parties")
   createThirdParty(@Headers("x-group-id") groupId: string, @Body() body: CreateThirdPartyDto) {
     return this.sharedServicesService.createThirdParty(groupId, body);
+  }
+
+  @Permissions("shared_services.third_party.write")
+  @Patch("third-parties/:third_party_id")
+  updateThirdParty(
+    @Headers("x-group-id") groupId: string,
+    @Param("third_party_id", new ParseUUIDPipe()) thirdPartyId: string,
+    @Body() body: UpdateThirdPartyDto,
+  ) {
+    return this.sharedServicesService.updateThirdParty(groupId, thirdPartyId, body);
   }
 
   @Permissions("shared_services.request.read")

@@ -2,6 +2,7 @@ import { BadRequestException, ConflictException, Injectable, NotFoundException }
 import { Prisma } from "@prisma/client";
 import { CreateServiceRequestDto } from "./dto/create-service-request.dto";
 import { CreateThirdPartyDto } from "./dto/create-third-party.dto";
+import { UpdateThirdPartyDto } from "./dto/update-third-party.dto";
 import { ListQueryDto } from "./dto/list-query.dto";
 import { ServiceRequestActionDto } from "./dto/service-request-action.dto";
 import { ServiceRequestAssignDto } from "./dto/service-request-assign.dto";
@@ -63,6 +64,37 @@ export class SharedServicesService {
     });
 
     return this.mapThirdParty(thirdParty);
+  }
+
+  async updateThirdParty(groupId: string, thirdPartyId: string, body: UpdateThirdPartyDto) {
+    if (!groupId) throw new BadRequestException("X-Group-Id header is required");
+
+    const existing = await this.prisma.externalClient.findFirst({
+      where: { id: thirdPartyId, groupId },
+    });
+    if (!existing) throw new NotFoundException("Third-party not found");
+
+    const data: Prisma.ExternalClientUpdateInput = {};
+    if (body.name !== undefined) data.name = body.name;
+    if (body.type !== undefined) data.type = body.type;
+    if (body.email !== undefined) data.email = body.email;
+    if (body.phone !== undefined) data.phone = body.phone;
+    if (body.credit_limit !== undefined) data.creditLimit = body.credit_limit;
+    if (body.credit_currency !== undefined) data.creditCurrency = body.credit_currency;
+    if (body.payment_term_days !== undefined) data.paymentTermDays = body.payment_term_days;
+    if (body.negotiation_notes !== undefined) data.negotiationNotes = body.negotiation_notes;
+    if (body.last_negotiated_at !== undefined) {
+      data.lastNegotiatedAt = body.last_negotiated_at ? new Date(body.last_negotiated_at) : null;
+    }
+    if (body.last_negotiated_by !== undefined) data.lastNegotiatedBy = body.last_negotiated_by;
+    if (body.status !== undefined) data.status = body.status;
+
+    const updated = await this.prisma.externalClient.update({
+      where: { id: existing.id },
+      data,
+    });
+
+    return this.mapThirdParty(updated);
   }
 
   async listServiceRequests(groupId: string, subsidiaryId: string, query: ListQueryDto) {

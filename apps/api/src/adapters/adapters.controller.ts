@@ -1,10 +1,12 @@
 import {
   Body,
   Controller,
+  Get,
   Headers,
   Param,
   ParseUUIDPipe,
   Post,
+  Query,
   Req,
   UseGuards,
   UsePipes,
@@ -19,6 +21,10 @@ import { AuditService } from "../audit/audit.service";
 import { AdaptersService } from "./adapters.service";
 import { AdapterCheckoutDto } from "./dto/adapter-checkout.dto";
 import { ResellerOnboardDto } from "./dto/reseller-onboard.dto";
+import { ListQueryDto } from "../common/dto/list-query.dto";
+import { AddImportCostsDto } from "../procurement/dto/add-import-costs.dto";
+import { CreateImportShipmentDto } from "../procurement/dto/create-import-shipment.dto";
+import { ReceiveImportShipmentDto } from "../procurement/dto/receive-import-shipment.dto";
 
 @UseGuards(PermissionsGuard)
 @UsePipes(new ValidationPipe({ transform: true, whitelist: true, forbidNonWhitelisted: true }))
@@ -187,5 +193,118 @@ export class AdaptersController {
       },
     });
     return repayment;
+  }
+
+  @Permissions("procurement.imports.manage")
+  @Get("trading/import-shipments")
+  listTradingImportShipments(
+    @Headers("x-group-id") groupId: string,
+    @Headers("x-subsidiary-id") subsidiaryId: string,
+    @Query() query: ListQueryDto,
+  ) {
+    return this.adaptersService.listTradingImportShipments({ groupId, subsidiaryId, query });
+  }
+
+  @Permissions("procurement.imports.manage")
+  @Post("trading/import-shipments")
+  async createTradingImportShipment(
+    @Headers("x-group-id") groupId: string,
+    @Headers("x-subsidiary-id") subsidiaryId: string,
+    @Body() body: CreateImportShipmentDto,
+    @Req() req: Request,
+  ) {
+    const shipment = await this.adaptersService.createTradingImportShipment({ groupId, subsidiaryId, body });
+    const actorId = ((req as any).user?.sub ?? (req as any).user?.id ?? (req as any).user?.userId) as string | undefined;
+    await this.auditService.record({
+      groupId,
+      subsidiaryId,
+      actorId,
+      action: "adapter.trading.import_shipment.create",
+      entityType: "import_shipment",
+      entityId: shipment.id,
+      payload: {
+        reference: shipment.reference,
+        status: shipment.status,
+        total_landed_cost: shipment.total_landed_cost,
+      },
+    });
+    return shipment;
+  }
+
+  @Permissions("procurement.imports.manage")
+  @Post("trading/import-shipments/:shipment_id/costs")
+  async addTradingImportCosts(
+    @Headers("x-group-id") groupId: string,
+    @Headers("x-subsidiary-id") subsidiaryId: string,
+    @Param("shipment_id", new ParseUUIDPipe()) shipmentId: string,
+    @Body() body: AddImportCostsDto,
+    @Req() req: Request,
+  ) {
+    const shipment = await this.adaptersService.addTradingImportCosts({ groupId, subsidiaryId, shipmentId, body });
+    const actorId = ((req as any).user?.sub ?? (req as any).user?.id ?? (req as any).user?.userId) as string | undefined;
+    await this.auditService.record({
+      groupId,
+      subsidiaryId,
+      actorId,
+      action: "adapter.trading.import_shipment.costs",
+      entityType: "import_shipment",
+      entityId: shipment.id,
+      payload: {
+        costs_count: Array.isArray(body.costs) ? body.costs.length : 0,
+        total_landed_cost: shipment.total_landed_cost,
+      },
+    });
+    return shipment;
+  }
+
+  @Permissions("procurement.imports.manage")
+  @Post("trading/import-shipments/:shipment_id/finalize")
+  async finalizeTradingImportShipment(
+    @Headers("x-group-id") groupId: string,
+    @Headers("x-subsidiary-id") subsidiaryId: string,
+    @Param("shipment_id", new ParseUUIDPipe()) shipmentId: string,
+    @Req() req: Request,
+  ) {
+    const shipment = await this.adaptersService.finalizeTradingImportShipment({ groupId, subsidiaryId, shipmentId });
+    const actorId = ((req as any).user?.sub ?? (req as any).user?.id ?? (req as any).user?.userId) as string | undefined;
+    await this.auditService.record({
+      groupId,
+      subsidiaryId,
+      actorId,
+      action: "adapter.trading.import_shipment.finalize",
+      entityType: "import_shipment",
+      entityId: shipment.id,
+      payload: {
+        status: shipment.status,
+        total_landed_cost: shipment.total_landed_cost,
+      },
+    });
+    return shipment;
+  }
+
+  @Permissions("procurement.imports.manage")
+  @Post("trading/import-shipments/:shipment_id/receive")
+  async receiveTradingImportShipment(
+    @Headers("x-group-id") groupId: string,
+    @Headers("x-subsidiary-id") subsidiaryId: string,
+    @Param("shipment_id", new ParseUUIDPipe()) shipmentId: string,
+    @Body() body: ReceiveImportShipmentDto,
+    @Req() req: Request,
+  ) {
+    const receipt = await this.adaptersService.receiveTradingImportShipment({ groupId, subsidiaryId, shipmentId, body });
+    const actorId = ((req as any).user?.sub ?? (req as any).user?.id ?? (req as any).user?.userId) as string | undefined;
+    await this.auditService.record({
+      groupId,
+      subsidiaryId,
+      actorId,
+      action: "adapter.trading.import_shipment.receive",
+      entityType: "goods_receipt",
+      entityId: receipt.id,
+      payload: {
+        shipment_id: receipt.shipment_id,
+        status: receipt.status,
+      },
+    });
+    return receipt;
   }
 }

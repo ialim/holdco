@@ -1026,6 +1026,134 @@ paths:
           $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
+  /v1/adapters/trading/import-shipments:
+    parameters:
+      - $ref: '#/components/parameters/GroupId'
+      - $ref: '#/components/parameters/SubsidiaryId'
+    get:
+      tags: [Adapters]
+      operationId: listTradingImportShipments
+      summary: List trading import shipments
+      x-rbac:
+        permissions: [procurement.imports.manage]
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Offset'
+        - $ref: '#/components/parameters/Query'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ImportShipmentListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    post:
+      tags: [Adapters]
+      operationId: createTradingImportShipment
+      summary: Create trading import shipment
+      x-rbac:
+        permissions: [procurement.imports.manage]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateImportShipmentRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ImportShipment'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /v1/adapters/trading/import-shipments/{shipment_id}/costs:
+    parameters:
+      - $ref: '#/components/parameters/GroupId'
+      - $ref: '#/components/parameters/SubsidiaryId'
+      - $ref: '#/components/parameters/ImportShipmentId'
+    post:
+      tags: [Adapters]
+      operationId: addTradingImportShipmentCosts
+      summary: Add landed costs to trading import shipment
+      x-rbac:
+        permissions: [procurement.imports.manage]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddImportCostsRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ImportShipment'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /v1/adapters/trading/import-shipments/{shipment_id}/finalize:
+    parameters:
+      - $ref: '#/components/parameters/GroupId'
+      - $ref: '#/components/parameters/SubsidiaryId'
+      - $ref: '#/components/parameters/ImportShipmentId'
+    post:
+      tags: [Adapters]
+      operationId: finalizeTradingImportShipment
+      summary: Finalize trading import shipment landed costs
+      x-rbac:
+        permissions: [procurement.imports.manage]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ImportShipment'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /v1/adapters/trading/import-shipments/{shipment_id}/receive:
+    parameters:
+      - $ref: '#/components/parameters/GroupId'
+      - $ref: '#/components/parameters/SubsidiaryId'
+      - $ref: '#/components/parameters/ImportShipmentId'
+    post:
+      tags: [Adapters]
+      operationId: receiveTradingImportShipment
+      summary: Receive trading import shipment into stock
+      x-rbac:
+        permissions: [procurement.imports.manage]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReceiveImportShipmentRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GoodsReceipt'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
   /v1/payments/intents:
     parameters:
       - $ref: '#/components/parameters/GroupId'
@@ -1622,6 +1750,35 @@ paths:
           $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
+  /v1/third-parties/{third_party_id}:
+    parameters:
+      - $ref: '#/components/parameters/GroupId'
+      - $ref: '#/components/parameters/ThirdPartyId'
+    patch:
+      tags: [SharedServices]
+      operationId: updateThirdParty
+      summary: Update third-party client or vendor
+      x-rbac:
+        permissions: [shared_services.third_party.write]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateThirdPartyRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ThirdParty'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
   /v1/shared-services/requests:
     parameters:
       - $ref: '#/components/parameters/GroupId'
@@ -3485,6 +3642,22 @@ components:
         type: string
         format: uuid
       description: Subsidiary identifier
+    ImportShipmentId:
+      name: shipment_id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+      description: Import shipment identifier
+    ThirdPartyId:
+      name: third_party_id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+      description: Third-party identifier
     LocationId:
       name: X-Location-Id
       in: header
@@ -5187,6 +5360,34 @@ components:
           format: date-time
         last_negotiated_by:
           type: string
+    UpdateThirdPartyRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        type:
+          $ref: '#/components/schemas/ThirdPartyType'
+        email:
+          type: string
+          format: email
+        phone:
+          type: string
+        credit_limit:
+          type: number
+          format: float
+        credit_currency:
+          type: string
+        payment_term_days:
+          type: integer
+        negotiation_notes:
+          type: string
+        last_negotiated_at:
+          type: string
+          format: date-time
+        last_negotiated_by:
+          type: string
+        status:
+          $ref: '#/components/schemas/ThirdPartyStatus'
     ThirdPartyListResponse:
       type: object
       properties:

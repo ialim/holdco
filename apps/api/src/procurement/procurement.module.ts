@@ -7,5 +7,6 @@ import { ProcurementService } from "./procurement.service";
   imports: [PrismaModule],
   controllers: [ProcurementController],
   providers: [ProcurementService],
+  exports: [ProcurementService],
 })
 export class ProcurementModule {}

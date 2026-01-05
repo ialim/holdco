@@ -33,3 +33,4 @@ Notes:
 - Shared services uses DTO validation aligned with docs/openapi-v1.yaml.
 - Auth should populate `req.user.permissions` (array of strings); the JWT middleware maps roles to permissions when only `roles` are present.
 - Set `JWT_SECRET` so the JWT middleware can verify tokens.
+- Use `AUTH_DEV_LOGIN_ENABLED=true` to enable the dev-only `/v1/auth/login` endpoint locally.

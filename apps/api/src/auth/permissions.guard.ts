@@ -17,12 +17,18 @@ export class PermissionsGuard implements CanActivate {
       req.user = {};
     }
 
-    let userPermissions: string[] = Array.isArray(req.user.permissions) ? req.user.permissions : [];
+    const permissionSet = new Set<string>(
+      Array.isArray(req.user.permissions) ? req.user.permissions : [],
+    );
 
-    if (!userPermissions.length && Array.isArray(req.user.roles) && req.user.roles.length) {
-      userPermissions = mapRolesToPermissions(req.user.roles);
-      req.user.permissions = userPermissions;
+    if (Array.isArray(req.user.roles) && req.user.roles.length) {
+      for (const permission of mapRolesToPermissions(req.user.roles)) {
+        permissionSet.add(permission);
+      }
     }
+
+    const userPermissions = Array.from(permissionSet);
+    req.user.permissions = userPermissions;
 
     if (!required?.length) return true;
 

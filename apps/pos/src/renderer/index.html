@@ -1,0 +1,221 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>HoldCo POS</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div id="app">
+      <header class="app-header">
+        <div>
+          <p class="kicker">HoldCo POS</p>
+          <h1>Retail Console</h1>
+          <p class="sub">Offline-first device and shift management.</p>
+        </div>
+        <div class="header-actions">
+          <span id="apiStatus" class="status-pill">Offline</span>
+          <button id="checkHealth" class="ghost">Check API</button>
+          <button id="flushQueue" class="primary">Flush Queue</button>
+        </div>
+      </header>
+
+      <section class="grid">
+        <div class="card wizard">
+          <div class="card-header">
+            <h2>Setup Wizard</h2>
+            <button id="wizardRefresh" class="ghost">Refresh</button>
+          </div>
+          <div class="wizard-steps">
+            <div class="wizard-step">
+              <div>
+                <h4>1. Config loaded</h4>
+                <p>API, group, subsidiary, location, and device set.</p>
+              </div>
+              <span id="wizardConfigStatus" class="status-pill">Pending</span>
+            </div>
+            <div class="wizard-step">
+              <div>
+                <h4>2. Device provisioned</h4>
+                <p>Provision devices in Admin-Ops before trading.</p>
+              </div>
+              <span id="wizardDeviceStatus" class="status-pill">Pending</span>
+            </div>
+            <div class="wizard-step">
+              <div>
+                <h4>3. Cashier sign-in</h4>
+                <p>Cashier JWT used for audit attribution.</p>
+              </div>
+              <span id="wizardCashierStatus" class="status-pill">Pending</span>
+            </div>
+            <div class="wizard-step">
+              <div>
+                <h4>4. Shift open</h4>
+                <p>Shift must be open to start trading.</p>
+              </div>
+              <span id="wizardShiftStatus" class="status-pill">Pending</span>
+            </div>
+          </div>
+          <div class="actions">
+            <button id="wizardOpenShift" class="ghost">Open Shift</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <h2>Configuration</h2>
+            <button id="reloadConfig" class="ghost">Reload</button>
+          </div>
+          <div id="configStatus" class="helper"></div>
+          <div class="config-grid">
+            <div>
+              <label>API Base</label>
+              <div id="configApi" class="mono"></div>
+            </div>
+            <div>
+              <label>Group</label>
+              <div id="configGroup" class="mono"></div>
+            </div>
+            <div>
+              <label>Subsidiary</label>
+              <div id="configSubsidiary" class="mono"></div>
+            </div>
+            <div>
+              <label>Location</label>
+              <div id="configLocation" class="mono"></div>
+            </div>
+            <div>
+              <label>Channel</label>
+              <div id="configChannel" class="mono"></div>
+            </div>
+            <div>
+              <label>Device ID</label>
+              <div id="configDevice" class="mono"></div>
+            </div>
+          </div>
+          <pre id="configRaw"></pre>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <h2>Location</h2>
+            <button id="reloadLocations" class="ghost">Reload</button>
+          </div>
+          <div class="form-row">
+            <label for="locationSelect">Select location</label>
+            <select id="locationSelect"></select>
+          </div>
+          <div class="helper">Locations load from <span class="mono">/locations</span>.</div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <h2>Cashier</h2>
+            <div class="header-actions">
+              <span id="cashierStatus" class="status-pill">Signed out</span>
+              <button id="cashierLogout" class="ghost">Sign out</button>
+            </div>
+          </div>
+          <form id="cashierLoginForm" class="stack">
+            <div class="form-row">
+              <label for="cashierEmployeeNo">Employee No</label>
+              <input id="cashierEmployeeNo" type="text" placeholder="EMP-001" required />
+            </div>
+            <div class="form-row">
+              <label for="cashierPin">PIN</label>
+              <input id="cashierPin" type="password" inputmode="numeric" required />
+            </div>
+            <button type="submit" class="primary">Sign in</button>
+          </form>
+          <div id="cashierInfo" class="info-panel"></div>
+          <div class="helper">Cashier JWT is passed via <span class="mono">X-Cashier-Token</span>.</div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <h2>Device</h2>
+            <button id="refreshDevice" class="ghost">Refresh</button>
+          </div>
+          <div class="helper">Provision devices in Admin-Ops.</div>
+          <div id="deviceInfo" class="info-panel"></div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <h2>Shift</h2>
+            <button id="refreshShift" class="ghost">Refresh</button>
+          </div>
+          <div id="shiftInfo" class="info-panel"></div>
+          <form id="openShiftForm" class="stack">
+            <div class="form-row">
+              <label for="openingFloat">Opening float</label>
+              <input id="openingFloat" type="number" min="0" step="0.01" />
+            </div>
+            <div class="form-row">
+              <label for="openNotes">Notes</label>
+              <input id="openNotes" type="text" />
+            </div>
+            <button type="submit" class="primary">Start Shift</button>
+          </form>
+          <form id="closeShiftForm" class="stack">
+            <div class="form-row">
+              <label for="closingFloat">Closing float</label>
+              <input id="closingFloat" type="number" min="0" step="0.01" />
+            </div>
+            <div class="form-row">
+              <label for="closeNotes">Notes</label>
+              <input id="closeNotes" type="text" />
+            </div>
+            <button type="submit" class="danger">Close Shift</button>
+          </form>
+        </div>
+
+        <div class="card checkout">
+          <div class="card-header">
+            <h2>Checkout</h2>
+            <button id="searchProducts" class="ghost">Search</button>
+          </div>
+          <div class="form-row">
+            <label for="productSearch">Product search</label>
+            <input id="productSearch" type="text" placeholder="Search by name or SKU" />
+          </div>
+          <div id="productResults" class="list"></div>
+
+          <div class="divider"></div>
+
+          <h3>Cart</h3>
+          <div id="cartItems" class="cart"></div>
+          <div class="cart-summary">
+            <div>Items: <span id="cartCount">0</span></div>
+            <div>Total: <span id="cartTotal">0.00</span></div>
+          </div>
+          <div class="form-row">
+            <label for="orderCurrency">Currency</label>
+            <input id="orderCurrency" type="text" maxlength="3" value="NGN" />
+          </div>
+          <div class="form-row">
+            <label for="orderNotes">Notes</label>
+            <input id="orderNotes" type="text" />
+          </div>
+          <div class="actions">
+            <button id="submitOrder" class="primary">Submit Order</button>
+            <button id="clearCart" class="ghost">Clear Cart</button>
+          </div>
+          <div id="orderStatus" class="helper"></div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <h2>Offline Queue</h2>
+            <button id="refreshQueue" class="ghost">Refresh</button>
+          </div>
+          <div id="queueSummary" class="helper"></div>
+          <pre id="queueOutput"></pre>
+        </div>
+      </section>
+    </div>
+
+    <div id="toast" class="toast"></div>
+    <script src="app.js"></script>
+  </body>
+</html>

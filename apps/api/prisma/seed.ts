@@ -1,4 +1,5 @@
 import { PrismaClient, SubsidiaryRole } from "@prisma/client";
+import { randomBytes, scryptSync } from "crypto";
 
 const prisma = new PrismaClient();
 
@@ -16,6 +17,12 @@ function endOfMonthUtc(date: Date) {
   return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth() + 1, 0));
 }
 
+function hashPin(pin: string) {
+  const salt = randomBytes(16).toString("hex");
+  const derived = scryptSync(pin, salt, 64);
+  return `scrypt$${salt}$${derived.toString("hex")}`;
+}
+
 async function main() {
   const existingGroup = await prisma.tenantGroup.findFirst({
     orderBy: { createdAt: "asc" },
@@ -30,7 +37,7 @@ async function main() {
         data: { name: "Alims Group Limited" },
       });
 
-  const tenancyPermissions = ["tenancy.read", "tenancy.users.read"];
+  const tenancyPermissions = ["tenancy.read", "tenancy.users.read", "tenancy.locations.read"];
   const catalogPermissions = [
     "catalog.brand.read",
     "catalog.brand.write",
@@ -58,6 +65,16 @@ async function main() {
     "pricing.promotion.write",
   ];
   const ordersPermissions = ["orders.read", "orders.write", "orders.cancel", "orders.fulfill"];
+  const posPermissions = [
+    "pos.devices.read",
+    "pos.devices.manage",
+    "pos.cashiers.manage",
+    "pos.shifts.read",
+    "pos.shifts.manage",
+    "tenancy.locations.read",
+    "catalog.product.read",
+    "catalog.variant.read",
+  ];
   const paymentsPermissions = ["payments.intent.create", "payments.capture", "payments.refund", "payments.reconcile", "payments.config.manage"];
   const creditPermissions = [
     "credit.reseller.read",
@@ -125,6 +142,7 @@ async function main() {
     "procurement.request.manage",
     "procurement.order.manage",
     "procurement.imports.manage",
+    "tenancy.locations.read",
   ];
   const advisoryPermissions = ["advisory.engagement.manage", "advisory.deliverable.manage"];
   const rbacPermissions = ["rbac.roles.manage", "rbac.permissions.read"];
@@ -135,6 +153,7 @@ async function main() {
     ...inventoryPermissions,
     ...pricingPermissions,
     ...ordersPermissions,
+    ...posPermissions,
     ...paymentsPermissions,
     ...creditPermissions,
     ...loyaltyPermissions,
@@ -168,7 +187,23 @@ async function main() {
     { name: "Shared Services Agent", scope: "group", permissions: ["shared_services.request.read", "shared_services.request.create", "shared_services.request.start", "shared_services.request.complete"] },
     { name: "Subsidiary Requester", scope: "subsidiary", permissions: ["shared_services.request.read", "shared_services.request.create"] },
     { name: "Wholesale Operator", scope: "subsidiary", permissions: ["orders.read", "orders.write", "orders.fulfill"] },
-    { name: "Retail POS Operator", scope: "subsidiary", permissions: ["orders.write", "payments.intent.create", "payments.capture", "inventory.stock.reserve", "loyalty.points.issue"] },
+    {
+      name: "Retail POS Operator",
+      scope: "subsidiary",
+      permissions: [
+        "catalog.product.read",
+        "catalog.variant.read",
+        "orders.write",
+        "payments.intent.create",
+        "payments.capture",
+        "inventory.stock.reserve",
+        "loyalty.points.issue",
+        "pos.shifts.read",
+        "pos.shifts.manage",
+        "tenancy.locations.read",
+      ],
+    },
+    { name: "POS Manager", scope: "subsidiary", permissions: [...posPermissions] },
     { name: "Digital Commerce Operator", scope: "subsidiary", permissions: ["orders.write", "payments.intent.create", "payments.capture"] },
     { name: "Reseller Credit Manager", scope: "subsidiary", permissions: ["credit.reseller.read", "credit.reseller.write", "credit.account.read", "credit.account.write", "credit.limit.write", "credit.repayment.write"] },
     { name: "Finance Admin", scope: "group", permissions: [...financePermissions, "shared_services.request.read"] },
@@ -245,6 +280,8 @@ async function main() {
       }),
     ),
   );
+
+  const retailSubsidiary = recipientSubsidiaries.find((subsidiary) => subsidiary.name === "Alims Retail Stores Limited");
 
   const providerCompany = holdingCompany;
 
@@ -436,6 +473,106 @@ async function main() {
         } else {
           await prisma.intercompanyAgreement.create({ data });
         }
+      }
+    }
+  }
+
+  if (retailSubsidiary) {
+    const cashierEmail = "retail.cashier@alims.com";
+    const cashierPin = "1234";
+    const cashierUser = await prisma.user.upsert({
+      where: { groupId_email: { groupId: group.id, email: cashierEmail } },
+      update: { name: "Retail Cashier", status: "active", posPinHash: hashPin(cashierPin) },
+      create: {
+        groupId: group.id,
+        email: cashierEmail,
+        name: "Retail Cashier",
+        status: "active",
+        posPinHash: hashPin(cashierPin),
+      },
+    });
+
+    await prisma.employee.upsert({
+      where: { groupId_employeeNo: { groupId: group.id, employeeNo: "RET-001" } },
+      update: {
+        subsidiaryId: retailSubsidiary.id,
+        userId: cashierUser.id,
+        status: "active",
+      },
+      create: {
+        groupId: group.id,
+        subsidiaryId: retailSubsidiary.id,
+        userId: cashierUser.id,
+        employeeNo: "RET-001",
+        status: "active",
+        hiredAt: new Date(),
+      },
+    });
+
+    const posRole = await prisma.role.findFirst({
+      where: { groupId: group.id, name: "Retail POS Operator" },
+    });
+    if (posRole) {
+      const existingUserRole = await prisma.userRole.findFirst({
+        where: { userId: cashierUser.id, roleId: posRole.id, subsidiaryId: retailSubsidiary.id },
+      });
+      if (!existingUserRole) {
+        await prisma.userRole.create({
+          data: {
+            userId: cashierUser.id,
+            roleId: posRole.id,
+            subsidiaryId: retailSubsidiary.id,
+          },
+        });
+      }
+    }
+
+    const managerEmail = "retail.manager@alims.com";
+    const managerPin = "2468";
+    const managerUser = await prisma.user.upsert({
+      where: { groupId_email: { groupId: group.id, email: managerEmail } },
+      update: { name: "Retail POS Manager", status: "active", posPinHash: hashPin(managerPin) },
+      create: {
+        groupId: group.id,
+        email: managerEmail,
+        name: "Retail POS Manager",
+        status: "active",
+        posPinHash: hashPin(managerPin),
+      },
+    });
+
+    await prisma.employee.upsert({
+      where: { groupId_employeeNo: { groupId: group.id, employeeNo: "MGR-001" } },
+      update: {
+        subsidiaryId: retailSubsidiary.id,
+        userId: managerUser.id,
+        status: "active",
+      },
+      create: {
+        groupId: group.id,
+        subsidiaryId: retailSubsidiary.id,
+        userId: managerUser.id,
+        employeeNo: "MGR-001",
+        status: "active",
+        hiredAt: new Date(),
+      },
+    });
+
+    const managerRole = await prisma.role.findFirst({
+      where: { groupId: group.id, name: "POS Manager" },
+    });
+    if (managerRole) {
+      const existingManagerRole = await prisma.userRole.findFirst({
+        where: { userId: managerUser.id, roleId: managerRole.id, subsidiaryId: retailSubsidiary.id },
+      });
+      if (!existingManagerRole) {
+        await prisma.userRole.create({
+          data: {
+            userId: managerUser.id,
+            roleId: managerRole.id,
+            subsidiaryId: retailSubsidiary.id,
+          },
+        });
       }
     }
   }

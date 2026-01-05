@@ -12,6 +12,7 @@ import { Request } from "express";
 import { Permissions } from "../auth/permissions.decorator";
 import { PermissionsGuard } from "../auth/permissions.guard";
 import { ListQueryDto } from "./dto/list-query.dto";
+import { ListLocationsDto } from "./dto/list-locations.dto";
 import { TenancyService } from "./tenancy.service";
 
 @Controller("v1")
@@ -41,5 +42,14 @@ export class TenancyController {
       limit: query.limit ?? 50,
       offset: query.offset ?? 0,
     });
+  }
+
+  @Permissions("tenancy.locations.read")
+  @Get("locations")
+  listLocations(
+    @Headers("x-group-id") groupId: string,
+    @Query() query: ListLocationsDto,
+  ) {
+    return this.tenancyService.listLocations(groupId, query);
   }
 }

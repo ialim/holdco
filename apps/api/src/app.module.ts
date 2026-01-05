@@ -17,6 +17,7 @@ import { LogisticsModule } from "./logistics/logistics.module";
 import { LoyaltyModule } from "./loyalty/loyalty.module";
 import { OrdersModule } from "./orders/orders.module";
 import { PaymentsModule } from "./payments/payments.module";
+import { PosModule } from "./pos/pos.module";
 import { PricingModule } from "./pricing/pricing.module";
 import { PrismaModule } from "./prisma/prisma.module";
 import { ProcurementModule } from "./procurement/procurement.module";
@@ -41,6 +42,7 @@ import { TenancyModule } from "./tenancy/tenancy.module";
     PricingModule,
     OrdersModule,
     PaymentsModule,
+    PosModule,
     CreditModule,
     LoyaltyModule,
     LogisticsModule,

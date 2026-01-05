@@ -1,0 +1,11 @@
+{
+  "apiBaseUrl": "http://localhost:3000/v1",
+  "jwt": "",
+  "groupId": "",
+  "subsidiaryId": "",
+  "locationId": "",
+  "channel": "retail",
+  "deviceId": "pos-001",
+  "cashierToken": null,
+  "cashierUser": null
+}

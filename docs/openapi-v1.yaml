@@ -17,6 +17,7 @@ tags:
   - name: Inventory
   - name: Pricing
   - name: Orders
+  - name: POS
   - name: Payments
   - name: Credit
   - name: Loyalty
@@ -95,6 +96,39 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/UserListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /v1/locations:
+    parameters:
+      - $ref: '#/components/parameters/GroupId'
+    get:
+      tags: [Tenancy]
+      operationId: listLocations
+      summary: List locations
+      x-rbac:
+        permissions: [tenancy.locations.read]
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Offset'
+        - $ref: '#/components/parameters/Query'
+        - name: subsidiary_id
+          in: query
+          required: false
+          schema:
+            type: string
+            format: uuid
+        - name: type
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LocationListResponse'
         '401':
           $ref: '#/components/responses/Unauthorized'
   /v1/brands:
@@ -3414,6 +3448,305 @@ paths:
             $ref: '#/components/responses/Unauthorized'
           '404':
             $ref: '#/components/responses/NotFound'
+    /v1/pos/devices:
+      parameters:
+        - $ref: '#/components/parameters/GroupId'
+      get:
+        tags: [POS]
+        operationId: listPosDevices
+        summary: List POS devices
+        x-rbac:
+          permissions: [pos.devices.read]
+        parameters:
+          - $ref: '#/components/parameters/Limit'
+          - $ref: '#/components/parameters/Offset'
+          - $ref: '#/components/parameters/Query'
+          - $ref: '#/components/parameters/Status'
+          - $ref: '#/components/parameters/SubsidiaryIdQuery'
+          - name: location_id
+            in: query
+            required: false
+            schema:
+              type: string
+              format: uuid
+          - name: device_id
+            in: query
+            required: false
+            schema:
+              type: string
+        responses:
+          '200':
+            description: OK
+            content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/PosDeviceListResponse'
+          '401':
+            $ref: '#/components/responses/Unauthorized'
+      post:
+        tags: [POS]
+        operationId: upsertPosDevice
+        summary: Register or update POS device
+        x-rbac:
+          permissions: [pos.devices.manage]
+        parameters:
+          - $ref: '#/components/parameters/SubsidiaryId'
+        requestBody:
+          required: true
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreatePosDeviceRequest'
+        responses:
+          '201':
+            description: Created
+            content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/PosDevice'
+          '400':
+            $ref: '#/components/responses/BadRequest'
+          '401':
+            $ref: '#/components/responses/Unauthorized'
+    /v1/pos/devices/{device_id}:
+      parameters:
+        - $ref: '#/components/parameters/GroupId'
+        - name: device_id
+          in: path
+          required: true
+          schema:
+            type: string
+      patch:
+        tags: [POS]
+        operationId: updatePosDevice
+        summary: Update POS device
+        x-rbac:
+          permissions: [pos.devices.manage]
+        requestBody:
+          required: true
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UpdatePosDeviceRequest'
+        responses:
+          '200':
+            description: OK
+            content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/PosDevice'
+          '400':
+            $ref: '#/components/responses/BadRequest'
+          '401':
+            $ref: '#/components/responses/Unauthorized'
+          '404':
+            $ref: '#/components/responses/NotFound'
+    /v1/pos/cashiers/login:
+      parameters:
+        - $ref: '#/components/parameters/GroupId'
+        - $ref: '#/components/parameters/SubsidiaryId'
+      post:
+        tags: [POS]
+        operationId: loginPosCashier
+        summary: Cashier login (employee no + PIN)
+        x-rbac:
+          permissions: [pos.shifts.manage]
+        requestBody:
+          required: true
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PosCashierLoginRequest'
+        responses:
+          '200':
+            description: OK
+            content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/PosCashierLoginResponse'
+          '400':
+            $ref: '#/components/responses/BadRequest'
+          '401':
+            $ref: '#/components/responses/Unauthorized'
+    /v1/pos/cashiers/{user_id}/pin:
+      parameters:
+        - $ref: '#/components/parameters/GroupId'
+        - $ref: '#/components/parameters/SubsidiaryId'
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      patch:
+        tags: [POS]
+        operationId: setPosCashierPin
+        summary: Set cashier PIN
+        x-rbac:
+          permissions: [pos.cashiers.manage]
+        requestBody:
+          required: true
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PosCashierPinRequest'
+        responses:
+          '200':
+            description: OK
+            content:
+              application/json:
+                schema:
+                  type: object
+                  properties:
+                    id:
+                      type: string
+                      format: uuid
+                    status:
+                      type: string
+          '400':
+            $ref: '#/components/responses/BadRequest'
+          '401':
+            $ref: '#/components/responses/Unauthorized'
+          '404':
+            $ref: '#/components/responses/NotFound'
+    /v1/pos/shifts:
+      parameters:
+        - $ref: '#/components/parameters/GroupId'
+      get:
+        tags: [POS]
+        operationId: listPosShifts
+        summary: List POS shifts
+        x-rbac:
+          permissions: [pos.shifts.read]
+        parameters:
+          - $ref: '#/components/parameters/Limit'
+          - $ref: '#/components/parameters/Offset'
+          - $ref: '#/components/parameters/Status'
+          - $ref: '#/components/parameters/StartDate'
+          - $ref: '#/components/parameters/EndDate'
+          - $ref: '#/components/parameters/SubsidiaryIdQuery'
+          - name: location_id
+            in: query
+            required: false
+            schema:
+              type: string
+              format: uuid
+          - name: device_id
+            in: query
+            required: false
+            schema:
+              type: string
+          - name: opened_by_id
+            in: query
+            required: false
+            schema:
+              type: string
+              format: uuid
+          - name: closed_by_id
+            in: query
+            required: false
+            schema:
+              type: string
+              format: uuid
+        responses:
+          '200':
+            description: OK
+            content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/PosShiftListResponse'
+          '401':
+            $ref: '#/components/responses/Unauthorized'
+      post:
+        tags: [POS]
+        operationId: startPosShift
+        summary: Start POS shift
+        x-rbac:
+          permissions: [pos.shifts.manage]
+        parameters:
+          - $ref: '#/components/parameters/SubsidiaryId'
+          - $ref: '#/components/parameters/LocationId'
+        requestBody:
+          required: true
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StartPosShiftRequest'
+        responses:
+          '201':
+            description: Created
+            content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/PosShift'
+          '400':
+            $ref: '#/components/responses/BadRequest'
+          '401':
+            $ref: '#/components/responses/Unauthorized'
+          '404':
+            $ref: '#/components/responses/NotFound'
+    /v1/pos/shifts/{shift_id}:
+      parameters:
+        - $ref: '#/components/parameters/GroupId'
+        - $ref: '#/components/parameters/SubsidiaryId'
+        - name: shift_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      get:
+        tags: [POS]
+        operationId: getPosShift
+        summary: Get POS shift
+        x-rbac:
+          permissions: [pos.shifts.read]
+        responses:
+          '200':
+            description: OK
+            content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/PosShift'
+          '401':
+            $ref: '#/components/responses/Unauthorized'
+          '404':
+            $ref: '#/components/responses/NotFound'
+    /v1/pos/shifts/{shift_id}/close:
+      parameters:
+        - $ref: '#/components/parameters/GroupId'
+        - $ref: '#/components/parameters/SubsidiaryId'
+        - name: shift_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      post:
+        tags: [POS]
+        operationId: closePosShift
+        summary: Close POS shift
+        x-rbac:
+          permissions: [pos.shifts.manage]
+        requestBody:
+          required: true
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClosePosShiftRequest'
+        responses:
+          '200':
+            description: OK
+            content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/PosShift'
+          '400':
+            $ref: '#/components/responses/BadRequest'
+          '401':
+            $ref: '#/components/responses/Unauthorized'
+          '404':
+            $ref: '#/components/responses/NotFound'
   /v1/procurement/import-shipments:
     parameters:
       - $ref: '#/components/parameters/GroupId'
@@ -4095,6 +4428,55 @@ components:
           example: HoldCo Retail Nigeria
         status:
           $ref: '#/components/schemas/SubsidiaryStatus'
+    Location:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: 7d2b0c62-6c07-4c3e-8f08-60a2b2b0b004
+        group_id:
+          type: string
+          format: uuid
+        subsidiary_id:
+          type: string
+          format: uuid
+        type:
+          type: string
+          example: retail_store
+        name:
+          type: string
+          example: Retail Main
+        address_line1:
+          type: string
+          example: 12 Marina Road
+        address_line2:
+          type: string
+          example: Floor 2
+        city:
+          type: string
+          example: Lagos
+        state:
+          type: string
+          example: Lagos
+        country:
+          type: string
+          example: NG
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    LocationListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Location'
+        meta:
+          $ref: '#/components/schemas/PageMeta'
     Brand:
       type: object
       properties:
@@ -4968,39 +5350,39 @@ components:
             $ref: '#/components/schemas/Order'
         meta:
           $ref: '#/components/schemas/PageMeta'
-      CreatePaymentIntentRequest:
-        type: object
-        required: [order_id, amount, currency]
-        properties:
-          order_id:
-            type: string
-            format: uuid
-            example: 92e0c74b-0e9a-4eb3-9719-3f1af70f2d22
-          amount:
-            type: number
-            format: float
-            minimum: 0
-            example: 25000
-          currency:
-            type: string
-            minLength: 3
-            maxLength: 3
-            pattern: '^[A-Z]{3}$'
-            example: NGN
-          provider:
-            type: string
-            example: paystack
-          capture_method:
-            type: string
-            example: automatic
-          payment_method:
-            type: string
-            enum: [card, transfer, ussd]
-            example: card
-          customer_email:
-            type: string
-            format: email
-            example: customer@example.com
+    CreatePaymentIntentRequest:
+      type: object
+      required: [order_id, amount, currency]
+      properties:
+        order_id:
+          type: string
+          format: uuid
+          example: 92e0c74b-0e9a-4eb3-9719-3f1af70f2d22
+        amount:
+          type: number
+          format: float
+          minimum: 0
+          example: 25000
+        currency:
+          type: string
+          minLength: 3
+          maxLength: 3
+          pattern: '^[A-Z]{3}$'
+          example: NGN
+        provider:
+          type: string
+          example: paystack
+        capture_method:
+          type: string
+          example: automatic
+        payment_method:
+          type: string
+          enum: [card, transfer, ussd]
+          example: card
+        customer_email:
+          type: string
+          format: email
+          example: customer@example.com
     PaymentIntent:
       type: object
       properties:
@@ -5180,7 +5562,224 @@ components:
           format: date-time
         kyc_notes:
           type: string
-      RefundRequest:
+    PosDevice:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        group_id:
+          type: string
+          format: uuid
+        subsidiary_id:
+          type: string
+          format: uuid
+        location_id:
+          type: string
+          format: uuid
+        device_id:
+          type: string
+          example: POS-001
+        name:
+          type: string
+        status:
+          type: string
+          example: active
+        metadata:
+          type: object
+          additionalProperties: true
+        last_seen_at:
+          type: string
+          format: date-time
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    PosDeviceListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/PosDevice'
+        meta:
+          type: object
+          properties:
+            limit:
+              type: integer
+            offset:
+              type: integer
+            total:
+              type: integer
+    CreatePosDeviceRequest:
+      type: object
+      required: [device_id, location_id]
+      properties:
+        device_id:
+          type: string
+        location_id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        status:
+          type: string
+          enum: [active, inactive, retired]
+        metadata:
+          type: object
+          additionalProperties: true
+    UpdatePosDeviceRequest:
+      type: object
+      properties:
+        location_id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        status:
+          type: string
+          enum: [active, inactive, retired]
+        metadata:
+          type: object
+          additionalProperties: true
+    PosCashierLoginRequest:
+      type: object
+      required: [employee_no, pin]
+      properties:
+        employee_no:
+          type: string
+          example: "EMP-001"
+        pin:
+          type: string
+          example: "1234"
+    PosCashierLoginResponse:
+      type: object
+      properties:
+        access_token:
+          type: string
+        expires_in:
+          type: integer
+        user:
+          type: object
+          properties:
+            id:
+              type: string
+              format: uuid
+            email:
+              type: string
+              format: email
+            name:
+              type: string
+            roles:
+              type: array
+              items:
+                type: string
+            permissions:
+              type: array
+              items:
+                type: string
+    PosCashierPinRequest:
+      type: object
+      required: [pin]
+      properties:
+        pin:
+          type: string
+          example: "1234"
+    PosShift:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        group_id:
+          type: string
+          format: uuid
+        subsidiary_id:
+          type: string
+          format: uuid
+        location_id:
+          type: string
+          format: uuid
+        pos_device_id:
+          type: string
+          format: uuid
+        device_id:
+          type: string
+        device_name:
+          type: string
+        status:
+          type: string
+          enum: [open, closed]
+        opened_at:
+          type: string
+          format: date-time
+        closed_at:
+          type: string
+          format: date-time
+        opening_float:
+          type: number
+          format: float
+        closing_float:
+          type: number
+          format: float
+        notes:
+          type: string
+        opened_by_id:
+          type: string
+          format: uuid
+        closed_by_id:
+          type: string
+          format: uuid
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    PosShiftListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/PosShift'
+        meta:
+          type: object
+          properties:
+            limit:
+              type: integer
+            offset:
+              type: integer
+            total:
+              type: integer
+    StartPosShiftRequest:
+      type: object
+      required: [device_id]
+      properties:
+        device_id:
+          type: string
+        opened_by_id:
+          type: string
+          format: uuid
+        opening_float:
+          type: number
+          format: float
+        notes:
+          type: string
+    ClosePosShiftRequest:
+      type: object
+      properties:
+        closed_by_id:
+          type: string
+          format: uuid
+        closing_float:
+          type: number
+          format: float
+        notes:
+          type: string
+    RefundRequest:
       type: object
       required: [payment_id, amount]
       properties:

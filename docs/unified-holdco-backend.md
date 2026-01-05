@@ -60,12 +60,15 @@ Build a unified backend for all subsidiaries using NestJS + Postgres + Redis + R
 ## Current status
 - Completed artifacts: [OpenAPI v1 stub](openapi-v1.yaml), [ERD outline](erd-outline.md), [ICG migration runbook](icg-migration-runbook.md), [ICG CSV tooling](../apps/api/scripts/icg/README.md), [RBAC policies](rbac-policies.md), [event/outbox design](event-outbox-design.md), and [security test checklist](security-test-checklist.md).
 - KYC tracker: [payment onboarding tracker](payment-kyc-tracker.md).
+- UI plan: [ui-implementation-plan.md](ui-implementation-plan.md).
+- UI setup: [Retool Admin/Ops](retool-admin-ops.md) and [POS offline architecture](pos-offline-architecture.md).
 - Implemented modules: catalog, inventory, pricing, orders, payments, credit, loyalty, finance, shared-services, events/outbox, and supporting RBAC/tenancy scaffolding.
 - Completed: tenancy enforcement validation across all endpoints.
 - In progress: migration dry runs with real exports, and POS cutover readiness.
 - Completed: audit logging for adapters, payments, logistics, orders, inventory, and credit flows.
 - Completed: subsidiary adapters for wholesale, retail POS, reseller credit, and digital commerce.
 - Completed: trading import workflow (import shipments, landed cost allocation, goods receipts) and OpenAPI coverage.
+- Completed: POS device provisioning and shift session endpoints for retail terminals.
 - Completed: load test harness and security smoke checklist.
 - In progress: data warehouse export adapter (scripts/warehouse).
 - Operational: `/v1/metrics` is protected with `METRICS_TOKEN` (see `docs/event-outbox-design.md`).

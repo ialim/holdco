@@ -11,6 +11,8 @@ const SHARED_SERVICES_ALL = [
   "shared_services.request.cancel",
 ];
 
+const TENANCY_LOCATIONS_READ = "tenancy.locations.read";
+
 const HR_ALL = [
   "hr.department.manage",
   "hr.position.manage",
@@ -29,6 +31,31 @@ const PROCUREMENT_ALL = [
   "procurement.request.manage",
   "procurement.order.manage",
   "procurement.imports.manage",
+  TENANCY_LOCATIONS_READ,
+];
+
+const POS_ALL = [
+  "catalog.product.read",
+  "catalog.variant.read",
+  "pos.devices.read",
+  "pos.devices.manage",
+  "pos.cashiers.manage",
+  "pos.shifts.read",
+  "pos.shifts.manage",
+  TENANCY_LOCATIONS_READ,
+];
+
+const POS_OPERATOR = [
+  "catalog.product.read",
+  "catalog.variant.read",
+  "pos.shifts.read",
+  "pos.shifts.manage",
+  TENANCY_LOCATIONS_READ,
+  "orders.write",
+  "payments.intent.create",
+  "payments.capture",
+  "inventory.stock.reserve",
+  "loyalty.points.issue",
 ];
 
 const ADVISORY_ALL = ["advisory.engagement.manage", "advisory.deliverable.manage"];
@@ -85,6 +112,8 @@ const ROLE_PERMISSION_MAP: Record<string, string[]> = {
     "shared_services.request.start",
     "shared_services.request.complete",
   ],
+  POS_MANAGER: POS_ALL,
+  RETAIL_POS_OPERATOR: POS_OPERATOR,
   SUBSIDIARY_REQUESTER: ["shared_services.request.read", "shared_services.request.create"],
   HR_MANAGER: [...HR_ALL, "shared_services.request.read"],
   COMPLIANCE_OFFICER: [

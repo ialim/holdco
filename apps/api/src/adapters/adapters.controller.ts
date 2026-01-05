@@ -26,6 +26,11 @@ import { AddImportCostsDto } from "../procurement/dto/add-import-costs.dto";
 import { CreateImportShipmentDto } from "../procurement/dto/create-import-shipment.dto";
 import { ReceiveImportShipmentDto } from "../procurement/dto/receive-import-shipment.dto";
 
+const resolveActorId = (req: Request) =>
+  ((req as any).cashier?.sub ?? (req as any).user?.sub ?? (req as any).user?.id ?? (req as any).user?.userId) as
+    | string
+    | undefined;
+
 @UseGuards(PermissionsGuard)
 @UsePipes(new ValidationPipe({ transform: true, whitelist: true, forbidNonWhitelisted: true }))
 @Controller("v1/adapters")
@@ -45,7 +50,7 @@ export class AdaptersController {
     @Req() req: Request,
   ) {
     const order = await this.adaptersService.createWholesaleOrder({ groupId, subsidiaryId, locationId, body });
-    const actorId = ((req as any).user?.sub ?? (req as any).user?.id ?? (req as any).user?.userId) as string | undefined;
+    const actorId = resolveActorId(req);
     await this.auditService.record({
       groupId,
       subsidiaryId,
@@ -72,7 +77,7 @@ export class AdaptersController {
     @Req() req: Request,
   ) {
     const order = await this.adaptersService.fulfillWholesaleOrder({ groupId, subsidiaryId, orderId });
-    const actorId = ((req as any).user?.sub ?? (req as any).user?.id ?? (req as any).user?.userId) as string | undefined;
+    const actorId = resolveActorId(req);
     await this.auditService.record({
       groupId,
       subsidiaryId,
@@ -95,7 +100,7 @@ export class AdaptersController {
     @Req() req: Request,
   ) {
     const result = await this.adaptersService.retailCheckout({ groupId, subsidiaryId, locationId, body });
-    const actorId = ((req as any).user?.sub ?? (req as any).user?.id ?? (req as any).user?.userId) as string | undefined;
+    const actorId = resolveActorId(req);
     await this.auditService.record({
       groupId,
       subsidiaryId,
@@ -125,7 +130,7 @@ export class AdaptersController {
     @Req() req: Request,
   ) {
     const result = await this.adaptersService.digitalCheckout({ groupId, subsidiaryId, locationId, body });
-    const actorId = ((req as any).user?.sub ?? (req as any).user?.id ?? (req as any).user?.userId) as string | undefined;
+    const actorId = resolveActorId(req);
     await this.auditService.record({
       groupId,
       subsidiaryId,
@@ -153,7 +158,7 @@ export class AdaptersController {
     @Req() req: Request,
   ) {
     const result = await this.adaptersService.onboardReseller({ groupId, subsidiaryId, body });
-    const actorId = ((req as any).user?.sub ?? (req as any).user?.id ?? (req as any).user?.userId) as string | undefined;
+    const actorId = resolveActorId(req);
     await this.auditService.record({
       groupId,
       subsidiaryId,
@@ -179,7 +184,7 @@ export class AdaptersController {
     @Req() req: Request,
   ) {
     const repayment = await this.adaptersService.recordResellerRepayment({ groupId, subsidiaryId, body });
-    const actorId = ((req as any).user?.sub ?? (req as any).user?.id ?? (req as any).user?.userId) as string | undefined;
+    const actorId = resolveActorId(req);
     await this.auditService.record({
       groupId,
       subsidiaryId,
@@ -214,7 +219,7 @@ export class AdaptersController {
     @Req() req: Request,
   ) {
     const shipment = await this.adaptersService.createTradingImportShipment({ groupId, subsidiaryId, body });
-    const actorId = ((req as any).user?.sub ?? (req as any).user?.id ?? (req as any).user?.userId) as string | undefined;
+    const actorId = resolveActorId(req);
     await this.auditService.record({
       groupId,
       subsidiaryId,
@@ -241,7 +246,7 @@ export class AdaptersController {
     @Req() req: Request,
   ) {
     const shipment = await this.adaptersService.addTradingImportCosts({ groupId, subsidiaryId, shipmentId, body });
-    const actorId = ((req as any).user?.sub ?? (req as any).user?.id ?? (req as any).user?.userId) as string | undefined;
+    const actorId = resolveActorId(req);
     await this.auditService.record({
       groupId,
       subsidiaryId,
@@ -266,7 +271,7 @@ export class AdaptersController {
     @Req() req: Request,
   ) {
     const shipment = await this.adaptersService.finalizeTradingImportShipment({ groupId, subsidiaryId, shipmentId });
-    const actorId = ((req as any).user?.sub ?? (req as any).user?.id ?? (req as any).user?.userId) as string | undefined;
+    const actorId = resolveActorId(req);
     await this.auditService.record({
       groupId,
       subsidiaryId,
@@ -292,7 +297,7 @@ export class AdaptersController {
     @Req() req: Request,
   ) {
     const receipt = await this.adaptersService.receiveTradingImportShipment({ groupId, subsidiaryId, shipmentId, body });
-    const actorId = ((req as any).user?.sub ?? (req as any).user?.id ?? (req as any).user?.userId) as string | undefined;
+    const actorId = resolveActorId(req);
     await this.auditService.record({
       groupId,
       subsidiaryId,

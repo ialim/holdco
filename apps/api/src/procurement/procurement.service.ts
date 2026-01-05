@@ -282,8 +282,14 @@ export class ProcurementService {
     if (body.fx_rate <= 0) throw new BadRequestException("FX rate must be greater than 0");
 
     const fxRate = new Decimal(body.fx_rate);
+    const lineKeys = new Set<string>();
     const lines = body.lines.map((line) => {
       if (line.quantity <= 0) throw new BadRequestException("Quantity must be greater than 0");
+      const key = `${line.product_id}:${line.variant_id ?? "none"}`;
+      if (lineKeys.has(key)) {
+        throw new BadRequestException("Duplicate shipment line for product/variant");
+      }
+      lineKeys.add(key);
       const unitCost = new Decimal(line.unit_cost);
       if (unitCost.lessThan(0)) throw new BadRequestException("Unit cost must be 0 or greater");
       const baseAmount = unitCost.mul(line.quantity);
@@ -386,14 +392,23 @@ export class ProcurementService {
       where: { id: shipment.id },
       include: { lines: true, costLines: true },
     });
+    if (!updated) throw new NotFoundException("Import shipment not found");
+
+    const extraCosts = updated.costLines.reduce((sum, cost) => sum.plus(cost.amount), new Decimal(0));
+    const totalLandedCost = new Decimal(updated.totalBaseAmount).plus(extraCosts);
+    const recalculated = await this.prisma.importShipment.update({
+      where: { id: updated.id },
+      data: { totalLandedCost },
+      include: { costLines: true },
+    });
 
     return {
-      id: updated!.id,
-      reference: updated!.reference,
-      status: updated!.status,
-      total_base_amount: Number(updated!.totalBaseAmount),
-      total_landed_cost: Number(updated!.totalLandedCost),
-      costs: updated!.costLines.map((cost: any) => ({
+      id: recalculated.id,
+      reference: recalculated.reference,
+      status: recalculated.status,
+      total_base_amount: Number(updated.totalBaseAmount),
+      total_landed_cost: Number(recalculated.totalLandedCost),
+      costs: recalculated.costLines.map((cost: any) => ({
         id: cost.id,
         category: cost.category,
         amount: Number(cost.amount),
@@ -413,6 +428,7 @@ export class ProcurementService {
       include: { lines: true, costLines: true },
     });
     if (!shipment) throw new NotFoundException("Import shipment not found");
+    if (shipment.status === "received") throw new BadRequestException("Cannot finalize a received shipment");
     if (!shipment.lines.length) throw new BadRequestException("Import shipment has no lines");
 
     const baseTotal = shipment.lines.reduce((sum, line) => sum.plus(line.baseAmount), new Decimal(0));
@@ -508,9 +524,14 @@ export class ProcurementService {
 
     const lineKey = (productId: string, variantId: string | null) =>
       `${productId}:${variantId ?? "none"}`;
-    const shipmentLines = new Map(
-      shipment.lines.map((line) => [lineKey(line.productId, line.variantId ?? null), line]),
-    );
+    const shipmentLines = new Map<string, typeof shipment.lines[number]>();
+    for (const line of shipment.lines) {
+      const key = lineKey(line.productId, line.variantId ?? null);
+      if (shipmentLines.has(key)) {
+        throw new BadRequestException("Shipment has duplicate lines for product/variant");
+      }
+      shipmentLines.set(key, line);
+    }
 
     let totalReceived = 0;
     let totalRejected = 0;

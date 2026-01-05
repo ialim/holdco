@@ -8,6 +8,9 @@ apps/api/scripts/erp/config.json
 apps/api/scripts/erp/output/
 apps/api/scripts/warehouse/output/
 apps/api/scripts/icg/output/
+.logs/
+.vscode/
+apps/api/scripts/warehouse/config.json
 Agreements/
 sales-2025.csv
 sales-tot-2025.csv

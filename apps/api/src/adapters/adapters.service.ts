@@ -125,49 +125,73 @@ export class AdaptersService {
       params.body.order,
     );
 
-    const reserveStock = params.body.reserve_stock ?? params.channel === "retail";
-    const reservations = reserveStock
-      ? await this.reserveStock(params.groupId, params.subsidiaryId, params.locationId, order)
-      : [];
-
+    let reservations: any[] = [];
     let paymentIntent: any;
     let capturedPayment: any;
-    if (params.body.payment) {
-      const amount = params.body.payment.amount ?? order.total_amount;
-      const currency = params.body.payment.currency ?? order.currency;
-      paymentIntent = await this.paymentsService.createPaymentIntent(params.groupId, params.subsidiaryId, {
-        order_id: order.id,
-        amount,
-        currency,
-        provider: params.body.payment.provider,
-        capture_method: params.body.payment.capture_method,
-      });
-
-      if (params.body.capture_payment) {
-        capturedPayment = await this.paymentsService.capturePaymentIntent(
-          params.groupId,
-          params.subsidiaryId,
-          paymentIntent.id,
-        );
-      }
-    }
-
     let loyalty: any;
-    if (params.body.loyalty) {
-      loyalty = await this.loyaltyService.issuePoints(params.groupId, params.subsidiaryId, {
-        customer_id: params.body.loyalty.customer_id,
-        points: params.body.loyalty.points,
-        reason: params.body.loyalty.reason,
-      });
-    }
 
-    return {
-      order,
-      reservations,
-      payment_intent: paymentIntent,
-      captured_payment: capturedPayment,
-      loyalty,
-    };
+    try {
+      const reserveStock = params.body.reserve_stock ?? params.channel === "retail";
+      reservations = reserveStock
+        ? await this.reserveStock(params.groupId, params.subsidiaryId, params.locationId, order)
+        : [];
+
+      if (params.body.payment) {
+        const amount = params.body.payment.amount ?? order.total_amount;
+        const currency = params.body.payment.currency ?? order.currency;
+        paymentIntent = await this.paymentsService.createPaymentIntent(params.groupId, params.subsidiaryId, {
+          order_id: order.id,
+          amount,
+          currency,
+          provider: params.body.payment.provider,
+          capture_method: params.body.payment.capture_method,
+        });
+
+        if (params.body.capture_payment) {
+          capturedPayment = await this.paymentsService.capturePaymentIntent(
+            params.groupId,
+            params.subsidiaryId,
+            paymentIntent.id,
+          );
+        }
+      }
+
+      if (params.body.loyalty) {
+        loyalty = await this.loyaltyService.issuePoints(params.groupId, params.subsidiaryId, {
+          customer_id: params.body.loyalty.customer_id,
+          points: params.body.loyalty.points,
+          reason: params.body.loyalty.reason,
+        });
+      }
+
+      return {
+        order,
+        reservations,
+        payment_intent: paymentIntent,
+        captured_payment: capturedPayment,
+        loyalty,
+      };
+    } catch (error) {
+      if (reservations.length) {
+        try {
+          await this.inventoryService.releaseStockReservations(
+            params.groupId,
+            params.subsidiaryId,
+            reservations.map((reservation) => reservation.id),
+          );
+        } catch {
+          // ignore cleanup errors to preserve original failure
+        }
+      }
+
+      try {
+        await this.ordersService.cancelOrder(params.groupId, params.subsidiaryId, order.id);
+      } catch {
+        // ignore cleanup errors to preserve original failure
+      }
+
+      throw error;
+    }
   }
 
   private async reserveStock(

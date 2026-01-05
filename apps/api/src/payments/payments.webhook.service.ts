@@ -20,10 +20,11 @@ export class PaymentsWebhookService {
   }) {
     const gateway = this.gatewayFactory.get(params.provider);
 
-    if (gateway.verifyWebhook) {
-      const ok = gateway.verifyWebhook(this.buildVerifyParams(params.headers, params.rawBody));
-      if (!ok) throw new UnauthorizedException("Invalid webhook signature");
+    if (!gateway.verifyWebhook) {
+      throw new UnauthorizedException("Webhook signature verification is required");
     }
+    const ok = gateway.verifyWebhook(this.buildVerifyParams(params.headers, params.rawBody));
+    if (!ok) throw new UnauthorizedException("Invalid webhook signature");
 
     if (!gateway.parseWebhook) {
       throw new BadRequestException("Unsupported webhook provider");

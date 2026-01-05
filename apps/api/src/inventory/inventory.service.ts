@@ -210,6 +210,46 @@ export class InventoryService {
     };
   }
 
+  async releaseStockReservations(groupId: string, subsidiaryId: string, reservationIds: string[]) {
+    if (!groupId) throw new BadRequestException("X-Group-Id header is required");
+    if (!subsidiaryId) throw new BadRequestException("X-Subsidiary-Id header is required");
+    if (!reservationIds.length) return;
+
+    await this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+      const reservations = await tx.stockReservation.findMany({
+        where: { id: { in: reservationIds }, groupId, subsidiaryId },
+      });
+
+      for (const reservation of reservations) {
+        if (reservation.status !== "active") continue;
+
+        const variantKey = reservation.variantId ?? null;
+        const existingLevel = await tx.stockLevel.findFirst({
+          where: {
+            groupId,
+            subsidiaryId,
+            locationId: reservation.locationId,
+            productId: reservation.productId,
+            variantId: variantKey,
+          },
+        });
+
+        if (existingLevel) {
+          const nextReserved = Math.max(0, existingLevel.reserved - reservation.quantity);
+          await tx.stockLevel.update({
+            where: { id: existingLevel.id },
+            data: { reserved: nextReserved },
+          });
+        }
+
+        await tx.stockReservation.update({
+          where: { id: reservation.id },
+          data: { status: "released" },
+        });
+      }
+    });
+  }
+
   private buildMeta(query: ListQueryDto, total: number) {
     return {
       limit: query.limit ?? 50,

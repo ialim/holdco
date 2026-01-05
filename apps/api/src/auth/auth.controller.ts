@@ -1,4 +1,4 @@
-import { BadRequestException, Body, Controller, Post, UsePipes, ValidationPipe } from "@nestjs/common";
+import { BadRequestException, Body, Controller, Post, UnauthorizedException, UsePipes, ValidationPipe } from "@nestjs/common";
 import { sign } from "jsonwebtoken";
 import { randomUUID } from "crypto";
 
@@ -7,6 +7,11 @@ import { randomUUID } from "crypto";
 export class AuthController {
   @Post("login")
   login(@Body() body: any) {
+    const loginEnabled = (process.env.AUTH_DEV_LOGIN_ENABLED ?? "").toLowerCase() === "true";
+    if (!loginEnabled) {
+      throw new UnauthorizedException("Dev login is disabled");
+    }
+
     const secret = process.env.JWT_SECRET;
     if (!secret) {
       throw new BadRequestException("JWT_SECRET is not configured");

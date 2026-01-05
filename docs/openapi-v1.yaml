@@ -4856,31 +4856,39 @@ components:
             $ref: '#/components/schemas/Order'
         meta:
           $ref: '#/components/schemas/PageMeta'
-    CreatePaymentIntentRequest:
-      type: object
-      required: [order_id, amount, currency]
-      properties:
-        order_id:
-          type: string
-          format: uuid
-          example: 92e0c74b-0e9a-4eb3-9719-3f1af70f2d22
-        amount:
-          type: number
-          format: float
-          minimum: 0
-          example: 25000
-        currency:
-          type: string
-          minLength: 3
-          maxLength: 3
-          pattern: '^[A-Z]{3}$'
-          example: NGN
-        provider:
-          type: string
-          example: paystack
-        capture_method:
-          type: string
-          example: automatic
+      CreatePaymentIntentRequest:
+        type: object
+        required: [order_id, amount, currency]
+        properties:
+          order_id:
+            type: string
+            format: uuid
+            example: 92e0c74b-0e9a-4eb3-9719-3f1af70f2d22
+          amount:
+            type: number
+            format: float
+            minimum: 0
+            example: 25000
+          currency:
+            type: string
+            minLength: 3
+            maxLength: 3
+            pattern: '^[A-Z]{3}$'
+            example: NGN
+          provider:
+            type: string
+            example: paystack
+          capture_method:
+            type: string
+            example: automatic
+          payment_method:
+            type: string
+            enum: [card, transfer, ussd]
+            example: card
+          customer_email:
+            type: string
+            format: email
+            example: customer@example.com
     PaymentIntent:
       type: object
       properties:
@@ -7288,6 +7296,12 @@ components:
           type: string
         capture_method:
           type: string
+        payment_method:
+          type: string
+          enum: [card, transfer, ussd]
+        customer_email:
+          type: string
+          format: email
     AdapterLoyaltyRequest:
       type: object
       required: [customer_id, points]

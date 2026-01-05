@@ -1,5 +1,7 @@
-import { IsNotEmpty, IsOptional, IsString, IsUUID, Matches, Min } from "class-validator";
+import { IsEmail, IsIn, IsNotEmpty, IsOptional, IsString, IsUUID, Matches, Min } from "class-validator";
 import { Type } from "class-transformer";
+
+const PAYMENT_METHODS = ["card", "transfer", "ussd"] as const;
 
 export class CreatePaymentIntentDto {
   @IsUUID()
@@ -20,4 +22,12 @@ export class CreatePaymentIntentDto {
   @IsOptional()
   @IsString()
   capture_method?: string;
+
+  @IsOptional()
+  @IsIn(PAYMENT_METHODS)
+  payment_method?: (typeof PAYMENT_METHODS)[number];
+
+  @IsOptional()
+  @IsEmail()
+  customer_email?: string;
 }

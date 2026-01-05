@@ -4,6 +4,7 @@ import { PrismaService } from "../prisma/prisma.service";
 import { CreatePaymentIntentDto } from "./dto/create-payment-intent.dto";
 import { CreateRefundDto } from "./dto/create-refund.dto";
 import { PaymentGatewayFactory } from "./payment-gateway.factory";
+import { PaymentIntentCreateResult } from "./gateways/payment-gateway";
 
 @Injectable()
 export class PaymentsService {
@@ -12,19 +13,79 @@ export class PaymentsService {
     private readonly gatewayFactory: PaymentGatewayFactory,
   ) {}
 
+  private readonly channelMethods: Record<string, string[]> = {
+    retail: ["card", "transfer", "ussd"],
+    digital: ["card", "transfer", "ussd"],
+    wholesale: ["transfer"],
+    credit: ["transfer"],
+  };
+
   async createPaymentIntent(groupId: string, subsidiaryId: string, body: CreatePaymentIntentDto) {
     if (!groupId) throw new BadRequestException("X-Group-Id header is required");
     if (!subsidiaryId) throw new BadRequestException("X-Subsidiary-Id header is required");
 
-    const provider = body.provider ?? this.gatewayFactory.defaultProvider();
-    const gateway = this.gatewayFactory.get(provider);
-    const reference = `pi_${randomUUID()}`;
-    const gatewayResult = await gateway.createPaymentIntent({
-      amount: body.amount,
-      currency: body.currency,
-      reference,
-      orderId: body.order_id,
+    const order = await this.prisma.order.findFirst({
+      where: { id: body.order_id, groupId, subsidiaryId },
+      include: { customer: true },
     });
+    if (!order) throw new NotFoundException("Order not found");
+
+    const channel = (order.channel ?? "retail").toLowerCase();
+    const allowedMethods = this.channelMethods[channel] ?? this.channelMethods.retail;
+
+    if (body.payment_method && !allowedMethods.includes(body.payment_method)) {
+      throw new BadRequestException("Payment method is not supported for this channel");
+    }
+
+    const customerEmail = body.customer_email ?? order.customer?.email ?? undefined;
+    if (!customerEmail) {
+      throw new BadRequestException("Customer email is required to initialize payment");
+    }
+
+    const provider = (body.provider ?? this.gatewayFactory.defaultProvider()).toLowerCase();
+    if (body.provider && !this.gatewayFactory.hasProvider(provider)) {
+      throw new BadRequestException("Unsupported payment provider");
+    }
+
+    const fallbackProvider = this.gatewayFactory.fallbackEnabled() ? this.gatewayFactory.fallbackProvider() : undefined;
+    const providerChain = [provider];
+    if (fallbackProvider && fallbackProvider !== provider && this.gatewayFactory.hasProvider(fallbackProvider)) {
+      providerChain.push(fallbackProvider);
+    }
+
+    const reference = `pi_${randomUUID()}`;
+    let gatewayResult: PaymentIntentCreateResult | undefined;
+    let selectedProvider = provider;
+    let lastError: unknown;
+
+    for (const candidate of providerChain) {
+      const gateway = this.gatewayFactory.get(candidate);
+      try {
+        gatewayResult = await gateway.createPaymentIntent({
+          amount: body.amount,
+          currency: body.currency,
+          reference,
+          orderId: body.order_id,
+          customerEmail,
+          channel,
+          paymentMethod: body.payment_method,
+          allowedMethods,
+          metadata: {
+            order_no: order.orderNo,
+            channel,
+          },
+        });
+        selectedProvider = gateway.name;
+        break;
+      } catch (error) {
+        lastError = error;
+      }
+    }
+
+    if (!gatewayResult) {
+      const message = lastError instanceof Error ? lastError.message : "Payment initialization failed";
+      throw new BadRequestException(message);
+    }
     const status = gatewayResult.status ?? (body.capture_method === "manual" ? "requires_capture" : "requires_capture");
 
     const intent = await this.prisma.paymentIntent.create({
@@ -35,7 +96,7 @@ export class PaymentsService {
         amount: body.amount,
         currency: body.currency,
         status,
-        provider: gateway.name,
+        provider: selectedProvider,
         reference: gatewayResult.reference ?? reference,
       },
     });

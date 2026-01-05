@@ -3,6 +3,12 @@ export type PaymentIntentCreateParams = {
   currency: string;
   reference: string;
   orderId: string;
+  customerEmail?: string;
+  channel?: string;
+  paymentMethod?: string;
+  allowedMethods?: string[];
+  metadata?: Record<string, string | number | boolean | null | undefined>;
+  redirectUrl?: string;
 };
 
 export type PaymentIntentCreateResult = {

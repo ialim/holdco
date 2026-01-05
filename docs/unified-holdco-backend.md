@@ -126,13 +126,14 @@ ERP/Accounting:
 
 ## Integration checklists
 Payments (Paystack/Flutterwave + optional Monnify/Interswitch):
-- [ ] Confirm supported payment methods (cards, transfer, USSD) by subsidiary/channel.
+- [x] Confirm supported payment methods (cards, transfer, USSD) by subsidiary/channel (channel-based enforcement).
 - [ ] Complete KYC and merchant onboarding for each subsidiary.
 - [ ] Define settlement accounts and reconciliation cadence.
-- [x] Map webhooks/events to internal payment intent states.
-- [ ] Configure test + live keys and NDPR-compliant data handling.
+- [x] Map webhooks/events to internal payment intent states (Paystack/Flutterwave parsers + status updates).
+- [ ] Configure test + live keys and NDPR-compliant data handling (env vars documented; secrets still required).
 - [ ] Run sandbox E2E: create intent → capture → refund → reconciliation report.
-- [ ] Decide fallback/secondary gateway routing rules.
+- [x] Decide fallback/secondary gateway routing rules (env-configurable fallback provider).
+- [x] Implement Monnify/Interswitch gateway adapters if required (stubs).
 
 Logistics (Shipbubble/Sendbox + GIG/Kwik + DHL/FedEx + Alims Logistics):
 - [ ] Confirm service coverage by city, weight, and SLA.

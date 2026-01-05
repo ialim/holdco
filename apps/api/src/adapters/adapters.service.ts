@@ -145,6 +145,8 @@ export class AdaptersService {
           currency,
           provider: params.body.payment.provider,
           capture_method: params.body.payment.capture_method,
+          payment_method: params.body.payment.payment_method,
+          customer_email: params.body.payment.customer_email,
         });
 
         if (params.body.capture_payment) {

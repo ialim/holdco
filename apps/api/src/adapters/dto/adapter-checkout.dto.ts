@@ -1,6 +1,8 @@
 import { Type } from "class-transformer";
-import { IsBoolean, IsOptional, IsString, IsUUID, Matches, Min, ValidateNested } from "class-validator";
+import { IsBoolean, IsEmail, IsIn, IsOptional, IsString, IsUUID, Matches, Min, ValidateNested } from "class-validator";
 import { CreateOrderDto } from "../../orders/dto/create-order.dto";
+
+const PAYMENT_METHODS = ["card", "transfer", "ussd"] as const;
 
 class AdapterPaymentDto {
   @IsOptional()
@@ -20,6 +22,14 @@ class AdapterPaymentDto {
   @IsOptional()
   @IsString()
   capture_method?: string;
+
+  @IsOptional()
+  @IsIn(PAYMENT_METHODS)
+  payment_method?: (typeof PAYMENT_METHODS)[number];
+
+  @IsOptional()
+  @IsEmail()
+  customer_email?: string;
 }
 
 class AdapterLoyaltyDto {

@@ -3337,6 +3337,83 @@ paths:
           $ref: '#/components/responses/BadRequest'
           '401':
             $ref: '#/components/responses/Unauthorized'
+    /v1/payments/providers:
+      parameters:
+        - $ref: '#/components/parameters/GroupId'
+      get:
+        tags: [Payments]
+        operationId: listPaymentProviderConfigs
+        summary: List payment provider configs
+        x-rbac:
+          permissions: [payments.config.manage]
+        parameters:
+          - $ref: '#/components/parameters/Limit'
+          - $ref: '#/components/parameters/Offset'
+          - $ref: '#/components/parameters/SubsidiaryIdQuery'
+          - $ref: '#/components/parameters/PaymentProviderQuery'
+          - $ref: '#/components/parameters/PaymentProviderEnvironment'
+          - $ref: '#/components/parameters/PaymentProviderStatus'
+        responses:
+          '200':
+            description: OK
+            content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/PaymentProviderConfigList'
+          '401':
+            $ref: '#/components/responses/Unauthorized'
+      post:
+        tags: [Payments]
+        operationId: upsertPaymentProviderConfig
+        summary: Upsert payment provider config
+        x-rbac:
+          permissions: [payments.config.manage]
+        requestBody:
+          required: true
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreatePaymentProviderConfigRequest'
+        responses:
+          '201':
+            description: Created
+            content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/PaymentProviderConfig'
+          '400':
+            $ref: '#/components/responses/BadRequest'
+          '401':
+            $ref: '#/components/responses/Unauthorized'
+    /v1/payments/providers/{config_id}:
+      parameters:
+        - $ref: '#/components/parameters/GroupId'
+        - $ref: '#/components/parameters/PaymentProviderConfigId'
+      patch:
+        tags: [Payments]
+        operationId: updatePaymentProviderConfig
+        summary: Update payment provider config
+        x-rbac:
+          permissions: [payments.config.manage]
+        requestBody:
+          required: true
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UpdatePaymentProviderConfigRequest'
+        responses:
+          '200':
+            description: OK
+            content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/PaymentProviderConfig'
+          '400':
+            $ref: '#/components/responses/BadRequest'
+          '401':
+            $ref: '#/components/responses/Unauthorized'
+          '404':
+            $ref: '#/components/responses/NotFound'
   /v1/procurement/import-shipments:
     parameters:
       - $ref: '#/components/parameters/GroupId'
@@ -3635,14 +3712,21 @@ components:
         type: string
         format: uuid
       description: Tenant group identifier
-    SubsidiaryId:
-      name: X-Subsidiary-Id
-      in: header
-      required: true
-      schema:
-        type: string
-        format: uuid
-      description: Subsidiary identifier
+      SubsidiaryId:
+        name: X-Subsidiary-Id
+        in: header
+        required: true
+        schema:
+          type: string
+          format: uuid
+        description: Subsidiary identifier
+      SubsidiaryIdQuery:
+        name: subsidiary_id
+        in: query
+        required: false
+        schema:
+          type: string
+          format: uuid
     ImportShipmentId:
       name: shipment_id
       in: path
@@ -3811,13 +3895,41 @@ components:
       schema:
         type: string
         format: uuid
-    PaymentId:
-      name: payment_id
-      in: path
-      required: true
-      schema:
-        type: string
-        format: uuid
+      PaymentId:
+        name: payment_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      PaymentProviderConfigId:
+        name: config_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      PaymentProviderQuery:
+        name: provider
+        in: query
+        required: false
+        schema:
+          type: string
+          enum: [paystack, flutterwave, monnify, interswitch]
+      PaymentProviderEnvironment:
+        name: environment
+        in: query
+        required: false
+        schema:
+          type: string
+          enum: [test, live]
+      PaymentProviderStatus:
+        name: status
+        in: query
+        required: false
+        schema:
+          type: string
+          enum: [draft, submitted, approved, rejected]
     ShipmentId:
       name: shipment_id
       in: path
@@ -4922,7 +5034,153 @@ components:
         checkout_url:
           type: string
           example: https://checkout.paystack.com/PSK-892133
-    RefundRequest:
+    PaymentProviderConfig:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        subsidiary_id:
+          type: string
+          format: uuid
+        provider:
+          type: string
+          enum: [paystack, flutterwave, monnify, interswitch]
+        environment:
+          type: string
+          enum: [test, live]
+        status:
+          type: string
+          enum: [draft, submitted, approved, rejected]
+        settlement_account_name:
+          type: string
+        settlement_account_number:
+          type: string
+        settlement_bank_name:
+          type: string
+        settlement_bank_code:
+          type: string
+        settlement_currency:
+          type: string
+          pattern: '^[A-Z]{3}$'
+        contact_name:
+          type: string
+        contact_email:
+          type: string
+          format: email
+        contact_phone:
+          type: string
+        provider_merchant_id:
+          type: string
+        kyc_submitted_at:
+          type: string
+          format: date-time
+        kyc_approved_at:
+          type: string
+          format: date-time
+        kyc_notes:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    PaymentProviderConfigList:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/PaymentProviderConfig'
+        meta:
+          type: object
+          properties:
+            limit:
+              type: integer
+            offset:
+              type: integer
+            total:
+              type: integer
+    CreatePaymentProviderConfigRequest:
+      type: object
+      required: [subsidiary_id, provider]
+      properties:
+        subsidiary_id:
+          type: string
+          format: uuid
+        provider:
+          type: string
+          enum: [paystack, flutterwave, monnify, interswitch]
+        environment:
+          type: string
+          enum: [test, live]
+        status:
+          type: string
+          enum: [draft, submitted, approved, rejected]
+        settlement_account_name:
+          type: string
+        settlement_account_number:
+          type: string
+        settlement_bank_name:
+          type: string
+        settlement_bank_code:
+          type: string
+        settlement_currency:
+          type: string
+          pattern: '^[A-Z]{3}$'
+        contact_name:
+          type: string
+        contact_email:
+          type: string
+          format: email
+        contact_phone:
+          type: string
+        provider_merchant_id:
+          type: string
+        kyc_submitted_at:
+          type: string
+          format: date-time
+        kyc_approved_at:
+          type: string
+          format: date-time
+        kyc_notes:
+          type: string
+    UpdatePaymentProviderConfigRequest:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [draft, submitted, approved, rejected]
+        settlement_account_name:
+          type: string
+        settlement_account_number:
+          type: string
+        settlement_bank_name:
+          type: string
+        settlement_bank_code:
+          type: string
+        settlement_currency:
+          type: string
+          pattern: '^[A-Z]{3}$'
+        contact_name:
+          type: string
+        contact_email:
+          type: string
+          format: email
+        contact_phone:
+          type: string
+        provider_merchant_id:
+          type: string
+        kyc_submitted_at:
+          type: string
+          format: date-time
+        kyc_approved_at:
+          type: string
+          format: date-time
+        kyc_notes:
+          type: string
+      RefundRequest:
       type: object
       required: [payment_id, amount]
       properties:

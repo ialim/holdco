@@ -49,6 +49,7 @@ Payments
 - `payments.capture`
 - `payments.refund`
 - `payments.reconcile`
+- `payments.config.manage`
 
 Credit & collections
 - `credit.reseller.read`

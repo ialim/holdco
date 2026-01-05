@@ -50,10 +50,11 @@ model TenantGroup {
   importShipments ImportShipment[]
   goodsReceipts  GoodsReceipt[]
   carts        Cart[]
-  orders       Order[]
-  paymentIntents PaymentIntent[]
-  refunds      Refund[]
-  returnRecords ReturnRecord[]
+    orders       Order[]
+    paymentIntents PaymentIntent[]
+    refunds      Refund[]
+    paymentProviderConfigs PaymentProviderConfig[]
+    returnRecords ReturnRecord[]
   creditAccounts CreditAccount[]
   paymentSchedules PaymentSchedule[]
   repayments   Repayment[]
@@ -112,10 +113,11 @@ model Subsidiary {
   customers    Customer[]
   resellers    Reseller[]
   carts        Cart[]
-  orders       Order[]
-  paymentIntents PaymentIntent[]
-  refunds      Refund[]
-  returnRecords ReturnRecord[]
+    orders       Order[]
+    paymentIntents PaymentIntent[]
+    refunds      Refund[]
+    paymentProviderConfigs PaymentProviderConfig[]
+    returnRecords ReturnRecord[]
   creditAccounts CreditAccount[]
   paymentSchedules PaymentSchedule[]
   repayments   Repayment[]
@@ -793,6 +795,36 @@ model PaymentIntent {
 
   @@index([orderId])
   @@map("payment_intents")
+}
+
+model PaymentProviderConfig {
+  id                     String   @id @default(uuid()) @db.Uuid
+  groupId                String   @db.Uuid @map("group_id")
+  subsidiaryId           String   @db.Uuid @map("subsidiary_id")
+  provider               String
+  environment            String   @default("test")
+  status                 String   @default("draft")
+  settlementAccountName  String?  @map("settlement_account_name")
+  settlementAccountNumber String? @map("settlement_account_number")
+  settlementBankName     String?  @map("settlement_bank_name")
+  settlementBankCode     String?  @map("settlement_bank_code")
+  settlementCurrency     String?  @map("settlement_currency")
+  contactName            String?  @map("contact_name")
+  contactEmail           String?  @map("contact_email")
+  contactPhone           String?  @map("contact_phone")
+  providerMerchantId     String?  @map("provider_merchant_id")
+  kycSubmittedAt         DateTime? @map("kyc_submitted_at")
+  kycApprovedAt          DateTime? @map("kyc_approved_at")
+  kycNotes               String?  @map("kyc_notes")
+  createdAt              DateTime @default(now()) @map("created_at")
+  updatedAt              DateTime @default(now()) @map("updated_at")
+
+  group      TenantGroup @relation(fields: [groupId], references: [id])
+  subsidiary Subsidiary  @relation(fields: [subsidiaryId], references: [id])
+
+  @@unique([subsidiaryId, provider, environment])
+  @@index([groupId])
+  @@map("payment_provider_configs")
 }
 
 model Refund {

@@ -56,6 +56,7 @@ const FINANCE_ALL = [
   "finance.tax_impact.read",
   "finance.consolidated_pl.read",
   "finance.exports.read",
+  "payments.config.manage",
 ];
 
 const FINANCE_SUBSIDIARY = [

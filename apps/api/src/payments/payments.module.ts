@@ -7,6 +7,8 @@ import { PaymentGatewayFactory } from "./payment-gateway.factory";
 import { PaymentsController } from "./payments.controller";
 import { PaymentsService } from "./payments.service";
 import { PaymentsWebhookService } from "./payments.webhook.service";
+import { PaymentsProviderConfigController } from "./payments-provider-config.controller";
+import { PaymentProviderConfigService } from "./payment-provider-config.service";
 import { FlutterwaveGateway } from "./gateways/flutterwave.gateway";
 import { InterswitchGateway } from "./gateways/interswitch.gateway";
 import { ManualGateway } from "./gateways/manual.gateway";
@@ -15,11 +17,12 @@ import { PaystackGateway } from "./gateways/paystack.gateway";
 
 @Module({
   imports: [PrismaModule, AuditModule],
-  controllers: [PaymentsController, PaymentsWebhookController],
+  controllers: [PaymentsController, PaymentsWebhookController, PaymentsProviderConfigController],
   providers: [
     PaymentsService,
     PaymentsWebhookService,
     PaymentsReconciliationService,
+    PaymentProviderConfigService,
     PaymentGatewayFactory,
     PaystackGateway,
     FlutterwaveGateway,

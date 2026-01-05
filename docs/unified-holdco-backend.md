@@ -59,6 +59,7 @@ Build a unified backend for all subsidiaries using NestJS + Postgres + Redis + R
 
 ## Current status
 - Completed artifacts: [OpenAPI v1 stub](openapi-v1.yaml), [ERD outline](erd-outline.md), [ICG migration runbook](icg-migration-runbook.md), [ICG CSV tooling](../apps/api/scripts/icg/README.md), [RBAC policies](rbac-policies.md), [event/outbox design](event-outbox-design.md), and [security test checklist](security-test-checklist.md).
+- KYC tracker: [payment onboarding tracker](payment-kyc-tracker.md).
 - Implemented modules: catalog, inventory, pricing, orders, payments, credit, loyalty, finance, shared-services, events/outbox, and supporting RBAC/tenancy scaffolding.
 - Completed: tenancy enforcement validation across all endpoints.
 - In progress: migration dry runs with real exports, and POS cutover readiness.
@@ -127,7 +128,7 @@ ERP/Accounting:
 ## Integration checklists
 Payments (Paystack/Flutterwave + optional Monnify/Interswitch):
 - [x] Confirm supported payment methods (cards, transfer, USSD) by subsidiary/channel (channel-based enforcement).
-- [ ] Complete KYC and merchant onboarding for each subsidiary.
+- [ ] Complete KYC and merchant onboarding for each subsidiary (track in `docs/payment-kyc-tracker.md`; configs via `/v1/payments/providers`).
 - [ ] Define settlement accounts and reconciliation cadence.
 - [x] Map webhooks/events to internal payment intent states (Paystack/Flutterwave parsers + status updates).
 - [ ] Configure test + live keys and NDPR-compliant data handling (env vars documented; secrets still required).

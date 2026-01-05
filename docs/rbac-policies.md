@@ -11,6 +11,7 @@ This document defines role-based access control (RBAC) policies for the unified 
 Tenancy
 - `tenancy.read`
 - `tenancy.users.read`
+- `tenancy.locations.read`
 
 Catalog
 - `catalog.brand.read`
@@ -43,6 +44,13 @@ Orders
 - `orders.write`
 - `orders.cancel`
 - `orders.fulfill`
+
+POS
+- `pos.devices.read`
+- `pos.devices.manage`
+- `pos.cashiers.manage`
+- `pos.shifts.read`
+- `pos.shifts.manage`
 
 Payments
 - `payments.intent.create`
@@ -139,6 +147,8 @@ RBAC administration
 - Shared Services Agent: shared services read/create/start/complete for assigned requests.
 - Subsidiary Requester: shared_services.request.create/read for their subsidiary only.
 - Finance Admin: finance permissions; view shared-services requests in financial categories.
+- POS Manager: manage POS devices, cashier PINs, and shift sessions for assigned subsidiaries.
+- Retail POS Operator: open/close POS shifts and run checkout flows.
 - HR Manager: HR permissions; view shared-services requests in HR categories.
 - Compliance Officer: compliance permissions; approve compliance/risk requests.
 - Procurement Manager: procurement permissions; approve procurement-related requests.
@@ -159,6 +169,21 @@ RBAC administration
 - Start: `POST /v1/shared-services/requests/{service_request_id}/start` -> `shared_services.request.start`
 - Complete: `POST /v1/shared-services/requests/{service_request_id}/complete` -> `shared_services.request.complete`
 - Cancel: `POST /v1/shared-services/requests/{service_request_id}/cancel` -> `shared_services.request.cancel`
+
+## Endpoint mapping (tenancy)
+- List subsidiaries: `GET /v1/tenants` -> `tenancy.read`
+- List users: `GET /v1/users` -> `tenancy.users.read`
+- List locations: `GET /v1/locations` -> `tenancy.locations.read`
+
+## Endpoint mapping (POS)
+- Provision device: `POST /v1/pos/devices` -> `pos.devices.manage`
+- Update device: `PATCH /v1/pos/devices/{device_id}` -> `pos.devices.manage`
+- List devices: `GET /v1/pos/devices` -> `pos.devices.read`
+- Set cashier PIN: `PATCH /v1/pos/cashiers/{user_id}/pin` -> `pos.cashiers.manage`
+- Start shift: `POST /v1/pos/shifts` -> `pos.shifts.manage`
+- Close shift: `POST /v1/pos/shifts/{shift_id}/close` -> `pos.shifts.manage`
+- List/get shifts: `GET /v1/pos/shifts` and `GET /v1/pos/shifts/{shift_id}` -> `pos.shifts.read`
+- Device provisioning is restricted to Admin-Ops (`X-Channel` must not be `retail`).
 
 ## Endpoint mapping (RBAC)
 - List roles: `GET /v1/roles` -> `rbac.roles.manage`

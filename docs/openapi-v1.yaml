@@ -1040,6 +1040,7 @@ paths:
         - $ref: '#/components/parameters/Limit'
         - $ref: '#/components/parameters/Offset'
         - $ref: '#/components/parameters/Query'
+        - $ref: '#/components/parameters/Status'
       responses:
         '200':
           description: OK

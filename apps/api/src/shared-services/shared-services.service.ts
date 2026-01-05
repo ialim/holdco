@@ -45,6 +45,9 @@ export class SharedServicesService {
 
   async createThirdParty(groupId: string, body: CreateThirdPartyDto) {
     if (!groupId) throw new BadRequestException("X-Group-Id header is required");
+    if (body.credit_limit !== undefined && !body.credit_currency) {
+      throw new BadRequestException("Credit currency is required when credit limit is provided");
+    }
 
     const thirdParty = await this.prisma.externalClient.create({
       data: {
@@ -68,11 +71,28 @@ export class SharedServicesService {
 
   async updateThirdParty(groupId: string, thirdPartyId: string, body: UpdateThirdPartyDto) {
     if (!groupId) throw new BadRequestException("X-Group-Id header is required");
+    const hasUpdates = [
+      body.name,
+      body.type,
+      body.email,
+      body.phone,
+      body.credit_limit,
+      body.credit_currency,
+      body.payment_term_days,
+      body.negotiation_notes,
+      body.last_negotiated_at,
+      body.last_negotiated_by,
+      body.status,
+    ].some((value) => value !== undefined);
+    if (!hasUpdates) throw new BadRequestException("No updates provided");
 
     const existing = await this.prisma.externalClient.findFirst({
       where: { id: thirdPartyId, groupId },
     });
     if (!existing) throw new NotFoundException("Third-party not found");
+    if (body.credit_limit !== undefined && !(body.credit_currency ?? existing.creditCurrency)) {
+      throw new BadRequestException("Credit currency is required when credit limit is provided");
+    }
 
     const data: Prisma.ExternalClientUpdateInput = {};
     if (body.name !== undefined) data.name = body.name;

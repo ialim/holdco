@@ -58,7 +58,7 @@ async function main() {
     "pricing.promotion.write",
   ];
   const ordersPermissions = ["orders.read", "orders.write", "orders.cancel", "orders.fulfill"];
-  const paymentsPermissions = ["payments.intent.create", "payments.capture", "payments.refund", "payments.reconcile"];
+  const paymentsPermissions = ["payments.intent.create", "payments.capture", "payments.refund", "payments.reconcile", "payments.config.manage"];
   const creditPermissions = [
     "credit.reseller.read",
     "credit.reseller.write",
@@ -437,6 +437,29 @@ async function main() {
           await prisma.intercompanyAgreement.create({ data });
         }
       }
+    }
+  }
+
+  const paymentProviders = ["paystack", "flutterwave"];
+  for (const subsidiary of recipientSubsidiaries) {
+    for (const provider of paymentProviders) {
+      await prisma.paymentProviderConfig.upsert({
+        where: {
+          subsidiaryId_provider_environment: {
+            subsidiaryId: subsidiary.id,
+            provider,
+            environment: "test",
+          },
+        },
+        update: { status: "draft" },
+        create: {
+          groupId: group.id,
+          subsidiaryId: subsidiary.id,
+          provider,
+          environment: "test",
+          status: "draft",
+        },
+      });
     }
   }
 }

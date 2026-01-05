@@ -5,11 +5,13 @@ Use this checklist before cutover and after major changes to auth, tenancy, or i
 ## Latest execution
 - Run: `npm --prefix apps/api run security:smoke`
 - Results: health.open 200, orders.list.forbidden 403, orders.list.allowed 200, metrics.unauthorized 401, metrics.authorized 200
+- JWT claim checks: missing permissions -> 403, missing sub -> 401
+- JWT rotation test: primary + previous secrets accepted, missing sub rejected (`jwt-auth.middleware.spec.ts`)
 
 ## Identity and authentication
 - [x] JWT validation rejects tampered tokens and expired tokens.
-- [ ] Tokens without required claims (sub, permissions, roles) are rejected or downgraded safely.
-- [ ] `JWT_SECRET` rotation plan is documented and tested.
+- [x] Tokens without required claims (sub, permissions, roles) are rejected or downgraded safely.
+- [x] `JWT_SECRET` rotation plan is documented and tested. See `docs/jwt-rotation-plan.md`.
 - [ ] No endpoints accept anonymous writes unless explicitly intended.
 
 ## Authorization and tenancy

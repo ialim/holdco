@@ -441,25 +441,28 @@ async function main() {
   }
 
   const paymentProviders = ["paystack", "flutterwave"];
+  const paymentEnvironments = ["test", "live"];
   for (const subsidiary of recipientSubsidiaries) {
     for (const provider of paymentProviders) {
-      await prisma.paymentProviderConfig.upsert({
-        where: {
-          subsidiaryId_provider_environment: {
+      for (const environment of paymentEnvironments) {
+        await prisma.paymentProviderConfig.upsert({
+          where: {
+            subsidiaryId_provider_environment: {
+              subsidiaryId: subsidiary.id,
+              provider,
+              environment,
+            },
+          },
+          update: { status: "draft" },
+          create: {
+            groupId: group.id,
             subsidiaryId: subsidiary.id,
             provider,
-            environment: "test",
+            environment,
+            status: "draft",
           },
-        },
-        update: { status: "draft" },
-        create: {
-          groupId: group.id,
-          subsidiaryId: subsidiary.id,
-          provider,
-          environment: "test",
-          status: "draft",
-        },
-      });
+        });
+      }
     }
   }
 }

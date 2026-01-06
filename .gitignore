@@ -12,6 +12,7 @@ apps/api/scripts/icg/output/
 .vscode/
 apps/api/scripts/warehouse/config.json
 apps/pos/config.json
+apps/pos/queue.json
 Agreements/
 sales-2025.csv
 sales-tot-2025.csv

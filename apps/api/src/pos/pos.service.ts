@@ -13,9 +13,24 @@ import { StartPosShiftDto } from "./dto/start-pos-shift.dto";
 import { ClosePosShiftDto } from "./dto/close-pos-shift.dto";
 import { PosCashierLoginDto } from "./dto/pos-cashier-login.dto";
 import { PosCashierPinDto } from "./dto/pos-cashier-pin.dto";
+import { ActivatePosDeviceDto } from "./dto/activate-pos-device.dto";
 import { ListQueryDto } from "../common/dto/list-query.dto";
 
 const scryptAsync = promisify(scrypt);
+const DEVICE_TOKEN_TTL_SECONDS = 60 * 60 * 24;
+const DEVICE_TOKEN_PERMISSIONS = [
+  "catalog.product.read",
+  "catalog.variant.read",
+  "pos.devices.read",
+  "pos.shifts.read",
+  "pos.shifts.manage",
+  "tenancy.locations.read",
+  "orders.write",
+  "payments.intent.create",
+  "payments.capture",
+  "inventory.stock.reserve",
+  "loyalty.points.issue",
+];
 
 @Injectable()
 export class PosService {
@@ -130,6 +145,66 @@ export class PosService {
     });
 
     return this.mapDevice(device);
+  }
+
+  async activateDevice(
+    groupId: string,
+    subsidiaryId: string,
+    locationId: string | undefined,
+    body: ActivatePosDeviceDto,
+  ) {
+    if (!groupId) throw new BadRequestException("X-Group-Id header is required");
+    if (!subsidiaryId) throw new BadRequestException("X-Subsidiary-Id header is required");
+
+    const secret = process.env.JWT_SECRET;
+    if (!secret) {
+      throw new BadRequestException("JWT_SECRET is not configured");
+    }
+
+    const deviceId = body.device_id.trim();
+    if (!deviceId) {
+      throw new BadRequestException("device_id is required");
+    }
+    const device = await this.prisma.posDevice.findFirst({
+      where: { groupId, deviceId },
+    });
+    if (!device) {
+      throw new NotFoundException("Device is not provisioned in Admin-Ops");
+    }
+    if (device.subsidiaryId !== subsidiaryId) {
+      throw new BadRequestException("Device belongs to a different subsidiary");
+    }
+    if (device.status === "retired") {
+      throw new BadRequestException("Device is retired");
+    }
+
+    const expectedLocationId = body.location_id ?? locationId;
+    if (expectedLocationId && device.locationId !== expectedLocationId) {
+      throw new BadRequestException("Device is not assigned to this location");
+    }
+
+    const token = sign(
+      {
+        sub: device.id,
+        device_id: device.deviceId,
+        groupId,
+        subsidiaryId,
+        permissions: DEVICE_TOKEN_PERMISSIONS,
+      },
+      secret,
+      { expiresIn: DEVICE_TOKEN_TTL_SECONDS },
+    );
+
+    const updated = await this.prisma.posDevice.update({
+      where: { id: device.id },
+      data: { lastSeenAt: new Date() },
+    });
+
+    return {
+      access_token: token,
+      expires_in: DEVICE_TOKEN_TTL_SECONDS,
+      device: this.mapDevice(updated),
+    };
   }
 
   async loginCashier(groupId: string, subsidiaryId: string, body: PosCashierLoginDto) {

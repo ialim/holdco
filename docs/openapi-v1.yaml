@@ -3508,6 +3508,36 @@ paths:
             $ref: '#/components/responses/BadRequest'
           '401':
             $ref: '#/components/responses/Unauthorized'
+    /v1/pos/devices/activate:
+      parameters:
+        - $ref: '#/components/parameters/GroupId'
+        - $ref: '#/components/parameters/SubsidiaryId'
+        - $ref: '#/components/parameters/LocationId'
+      post:
+        tags: [POS]
+        operationId: activatePosDevice
+        summary: Activate POS device (mint device token)
+        x-rbac:
+          permissions: [pos.devices.manage]
+        requestBody:
+          required: true
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActivatePosDeviceRequest'
+        responses:
+          '200':
+            description: OK
+            content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/ActivatePosDeviceResponse'
+          '400':
+            $ref: '#/components/responses/BadRequest'
+          '401':
+            $ref: '#/components/responses/Unauthorized'
+          '404':
+            $ref: '#/components/responses/NotFound'
     /v1/pos/devices/{device_id}:
       parameters:
         - $ref: '#/components/parameters/GroupId'
@@ -3549,8 +3579,6 @@ paths:
         tags: [POS]
         operationId: loginPosCashier
         summary: Cashier login (employee no + PIN)
-        x-rbac:
-          permissions: [pos.shifts.manage]
         requestBody:
           required: true
           content:
@@ -5630,6 +5658,24 @@ components:
         metadata:
           type: object
           additionalProperties: true
+    ActivatePosDeviceRequest:
+      type: object
+      required: [device_id]
+      properties:
+        device_id:
+          type: string
+        location_id:
+          type: string
+          format: uuid
+    ActivatePosDeviceResponse:
+      type: object
+      properties:
+        access_token:
+          type: string
+        expires_in:
+          type: integer
+        device:
+          $ref: '#/components/schemas/PosDevice'
     UpdatePosDeviceRequest:
       type: object
       properties:

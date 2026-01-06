@@ -20,12 +20,13 @@ Ensure the JWT includes `tenancy.locations.read` permission (or a role that maps
 Selecting a location will write `subsidiaryId` and `locationId` into `config.json`.
 
 ## Cashier login (hybrid mode)
-Cashiers sign in with employee number + PIN via `POST /v1/pos/cashiers/login` using the device JWT.
+Cashiers sign in with employee number + PIN via `POST /v1/pos/cashiers/login`.
 The returned cashier token is stored in `config.json` and sent on requests as `X-Cashier-Token` for audit attribution.
 Cashier PINs are set by a POS manager via `PATCH /v1/pos/cashiers/{user_id}/pin`.
 
 ## Device provisioning
 Device registration and updates are handled in Admin-Ops (not in the POS app).
+Managers can refresh the device token on-site via `POST /v1/pos/devices/activate` (24h JWT).
 
 ## Offline queue
 Checkout uses the retail adapter (`POST /v1/adapters/retail/checkout`) and is written to the offline queue with an idempotency key. If the network is down, the queue persists to disk and is replayed on reconnect.

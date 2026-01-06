@@ -18,6 +18,7 @@ This document defines the minimum API contract for the retail POS replacement th
 | Staff login | `POST /v1/pos/cashiers/login` | Employee number + PIN; returns cashier/manager JWT |
 | Set cashier PIN | `PATCH /v1/pos/cashiers/{user_id}/pin` | Manager sets PIN for cashier |
 | Provision device | `POST /v1/pos/devices` | Provision a terminal with `device_id` and `location_id` |
+| Activate device | `POST /v1/pos/devices/activate` | Manager refreshes the device token (24h) |
 | Start shift | `POST /v1/pos/shifts` | Opens a shift for a device |
 | Close shift | `POST /v1/pos/shifts/{shift_id}/close` | Closes the active shift |
 | Product lookup | `GET /v1/products?q=` or `GET /v1/products?barcode=` | Search by name/SKU or barcode |

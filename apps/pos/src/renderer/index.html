@@ -43,14 +43,21 @@
             </div>
             <div class="wizard-step">
               <div>
-                <h4>3. Cashier sign-in</h4>
+                <h4>3. Manager activation</h4>
+                <p>Manager refreshes the device token (24h).</p>
+              </div>
+              <span id="wizardActivationStatus" class="status-pill">Pending</span>
+            </div>
+            <div class="wizard-step">
+              <div>
+                <h4>4. Cashier sign-in</h4>
                 <p>Cashier JWT used for audit attribution.</p>
               </div>
               <span id="wizardCashierStatus" class="status-pill">Pending</span>
             </div>
             <div class="wizard-step">
               <div>
-                <h4>4. Shift open</h4>
+                <h4>5. Shift open</h4>
                 <p>Shift must be open to start trading.</p>
               </div>
               <span id="wizardShiftStatus" class="status-pill">Pending</span>
@@ -106,6 +113,25 @@
             <select id="locationSelect"></select>
           </div>
           <div class="helper">Locations load from <span class="mono">/locations</span>.</div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <h2>Manager Activation</h2>
+          </div>
+          <form id="managerActivateForm" class="stack">
+            <div class="form-row">
+              <label for="managerEmployeeNo">Manager Employee No</label>
+              <input id="managerEmployeeNo" type="text" placeholder="MGR-001" required />
+            </div>
+            <div class="form-row">
+              <label for="managerPin">Manager PIN</label>
+              <input id="managerPin" type="password" inputmode="numeric" required />
+            </div>
+            <button type="submit" class="primary">Activate Device</button>
+          </form>
+          <div id="managerInfo" class="info-panel"></div>
+          <div class="helper">Manager activation refreshes the device token for 24 hours.</div>
         </div>
 
         <div class="card">

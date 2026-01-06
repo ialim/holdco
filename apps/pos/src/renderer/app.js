@@ -18,8 +18,13 @@ const cashierEmployeeNoInput = document.getElementById("cashierEmployeeNo");
 const cashierPinInput = document.getElementById("cashierPin");
 const cashierInfo = document.getElementById("cashierInfo");
 const cashierLogoutButton = document.getElementById("cashierLogout");
+const managerActivateForm = document.getElementById("managerActivateForm");
+const managerEmployeeNoInput = document.getElementById("managerEmployeeNo");
+const managerPinInput = document.getElementById("managerPin");
+const managerInfo = document.getElementById("managerInfo");
 const wizardConfigStatus = document.getElementById("wizardConfigStatus");
 const wizardDeviceStatus = document.getElementById("wizardDeviceStatus");
+const wizardActivationStatus = document.getElementById("wizardActivationStatus");
 const wizardCashierStatus = document.getElementById("wizardCashierStatus");
 const wizardShiftStatus = document.getElementById("wizardShiftStatus");
 const wizardRefreshButton = document.getElementById("wizardRefresh");
@@ -127,17 +132,12 @@ function updateStatusPill(el, ready, labelReady, labelPending) {
 }
 
 function updateWizard() {
-  const configReady = Boolean(
-    state.config?.apiBaseUrl &&
-      state.config?.jwt &&
-      state.config?.groupId &&
-      state.config?.subsidiaryId &&
-      state.config?.locationId &&
-      state.config?.deviceId
-  );
+  const configReady = Boolean(state.config?.apiBaseUrl && state.config?.groupId && state.config?.subsidiaryId);
   const deviceReady = Boolean(state.config?.deviceId && state.config?.locationId);
+  const activationReady = Boolean(state.config?.jwt);
   updateStatusPill(wizardConfigStatus, configReady, "Ready", "Pending");
   updateStatusPill(wizardDeviceStatus, deviceReady, "Configured", "Pending");
+  updateStatusPill(wizardActivationStatus, activationReady, "Active", "Pending");
   updateStatusPill(wizardCashierStatus, Boolean(state.cashierToken), "Signed in", "Pending");
   updateStatusPill(wizardShiftStatus, Boolean(state.openShift), "Open", "Pending");
 }
@@ -166,7 +166,7 @@ function clearCashierSession() {
 
 async function checkHealth() {
   try {
-    const response = await window.pos.request({ method: "GET", path: "/health" });
+    const response = await window.pos.request({ method: "GET", path: "/health", skipAuth: true });
     setApiStatus(response.ok);
   } catch (error) {
     setApiStatus(false);
@@ -569,7 +569,8 @@ if (cashierLoginForm) {
       method: "POST",
       path: "/pos/cashiers/login",
       body: { employee_no: employeeNo, pin },
-      extraHeaders: getRequestHeaders({ includeCashier: false })
+      extraHeaders: getRequestHeaders({ includeCashier: false }),
+      skipAuth: true
     });
 
     if (!response.ok) {
@@ -588,6 +589,100 @@ if (cashierLogoutButton) {
   cashierLogoutButton.addEventListener("click", () => {
     clearCashierSession();
     showToast("Cashier signed out.");
+  });
+}
+
+if (managerActivateForm) {
+  managerActivateForm.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    if (!state.config) {
+      showToast("Config not loaded. Reload the app.", "error");
+      return;
+    }
+    if (!state.config.groupId || !state.config.subsidiaryId) {
+      showToast("Group and subsidiary IDs are required in config.", "error");
+      return;
+    }
+    if (!state.config.deviceId) {
+      showToast("Device ID missing in config.", "error");
+      return;
+    }
+    if (!state.online) {
+      showToast("API offline. Check the connection first.", "error");
+      return;
+    }
+
+    const employeeNo = managerEmployeeNoInput.value.trim();
+    const pin = managerPinInput.value.trim();
+    if (!employeeNo || !pin) {
+      showToast("Manager employee number and PIN are required.", "error");
+      return;
+    }
+
+    const loginResponse = await window.pos.request({
+      method: "POST",
+      path: "/pos/cashiers/login",
+      body: { employee_no: employeeNo, pin },
+      extraHeaders: getRequestHeaders({ includeCashier: false }),
+      skipAuth: true
+    });
+
+    if (!loginResponse.ok) {
+      const message = loginResponse.data?.message || "Manager login failed.";
+      showToast(message, "error");
+      if (managerInfo) managerInfo.textContent = message;
+      return;
+    }
+
+    const permissions = loginResponse.data?.user?.permissions ?? [];
+    const isManager = permissions.includes("*") || permissions.includes("pos.devices.manage");
+    if (!isManager) {
+      const message = "Manager permission required to activate device.";
+      showToast(message, "error");
+      if (managerInfo) managerInfo.textContent = message;
+      return;
+    }
+
+    const activateResponse = await window.pos.request({
+      method: "POST",
+      path: "/pos/devices/activate",
+      body: {
+        device_id: state.config.deviceId,
+        location_id: state.selectedLocationId || state.config.locationId || undefined
+      },
+      extraHeaders: {
+        ...getRequestHeaders({ includeCashier: false }),
+        Authorization: `Bearer ${loginResponse.data?.access_token}`
+      },
+      skipAuth: true
+    });
+
+    if (!activateResponse.ok) {
+      const message = activateResponse.data?.message || "Device activation failed.";
+      showToast(message, "error");
+      if (managerInfo) managerInfo.textContent = message;
+      return;
+    }
+
+    const accessToken = activateResponse.data?.access_token;
+    if (!accessToken) {
+      showToast("Activation succeeded but token was missing.", "error");
+      return;
+    }
+
+    state.config = window.pos.saveConfig({ jwt: accessToken });
+    configRawEl.textContent = JSON.stringify(maskConfig(state.config), null, 2);
+    managerPinInput.value = "";
+    const hours = Math.round((activateResponse.data?.expires_in ?? 0) / 3600);
+    if (managerInfo) {
+      managerInfo.textContent = `Device activated. Token valid for ${hours || 24} hours.`;
+    }
+    showToast("Device token refreshed.");
+    updateWizard();
+    await checkHealth();
+    await loadLocations();
+    await refreshDevice();
+    await refreshOpenShift();
   });
 }
 

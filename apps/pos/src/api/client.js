@@ -1,13 +1,13 @@
 const { loadConfig } = require("../config");
 
-async function request({ method, path, body, idempotencyKey, extraHeaders }) {
+async function request({ method, path, body, idempotencyKey, extraHeaders, skipAuth }) {
   if (typeof fetch !== "function") {
     throw new Error("fetch is not available in this runtime");
   }
 
   const config = loadConfig();
   const headers = {
-    Authorization: `Bearer ${config.jwt}`,
+    ...(skipAuth || !config.jwt ? {} : { Authorization: `Bearer ${config.jwt}` }),
     "X-Group-Id": config.groupId,
     "X-Subsidiary-Id": config.subsidiaryId,
     "X-Location-Id": config.locationId,

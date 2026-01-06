@@ -2,6 +2,7 @@ import { Body, Controller, Get, Headers, Param, ParseUUIDPipe, Patch, Post, Quer
 import { Request } from "express";
 import { Permissions } from "../auth/permissions.decorator";
 import { PermissionsGuard } from "../auth/permissions.guard";
+import { Public } from "../auth/public.decorator";
 import { CreatePosDeviceDto } from "./dto/create-pos-device.dto";
 import { UpdatePosDeviceDto } from "./dto/update-pos-device.dto";
 import { ListPosDevicesDto } from "./dto/list-pos-devices.dto";
@@ -10,6 +11,7 @@ import { StartPosShiftDto } from "./dto/start-pos-shift.dto";
 import { ClosePosShiftDto } from "./dto/close-pos-shift.dto";
 import { PosCashierLoginDto } from "./dto/pos-cashier-login.dto";
 import { PosCashierPinDto } from "./dto/pos-cashier-pin.dto";
+import { ActivatePosDeviceDto } from "./dto/activate-pos-device.dto";
 import { PosService } from "./pos.service";
 
 @Controller("v1/pos")
@@ -39,6 +41,17 @@ export class PosController {
   }
 
   @Permissions("pos.devices.manage")
+  @Post("devices/activate")
+  activateDevice(
+    @Headers("x-group-id") groupId: string,
+    @Headers("x-subsidiary-id") subsidiaryId: string,
+    @Headers("x-location-id") locationId: string | undefined,
+    @Body() body: ActivatePosDeviceDto,
+  ) {
+    return this.posService.activateDevice(groupId, subsidiaryId, locationId, body);
+  }
+
+  @Permissions("pos.devices.manage")
   @Patch("devices/:device_id")
   updateDevice(
     @Headers("x-group-id") groupId: string,
@@ -49,7 +62,7 @@ export class PosController {
     return this.posService.updateDevice(groupId, deviceId, channel, body);
   }
 
-  @Permissions("pos.shifts.manage")
+  @Public()
   @Post("cashiers/login")
   loginCashier(
     @Headers("x-group-id") groupId: string,

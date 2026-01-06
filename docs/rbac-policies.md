@@ -177,6 +177,7 @@ RBAC administration
 
 ## Endpoint mapping (POS)
 - Provision device: `POST /v1/pos/devices` -> `pos.devices.manage`
+- Activate device: `POST /v1/pos/devices/activate` -> `pos.devices.manage`
 - Update device: `PATCH /v1/pos/devices/{device_id}` -> `pos.devices.manage`
 - List devices: `GET /v1/pos/devices` -> `pos.devices.read`
 - Set cashier PIN: `PATCH /v1/pos/cashiers/{user_id}/pin` -> `pos.cashiers.manage`

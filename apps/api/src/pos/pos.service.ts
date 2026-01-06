@@ -21,6 +21,8 @@ const DEVICE_TOKEN_TTL_SECONDS = 60 * 60 * 24;
 const DEVICE_TOKEN_PERMISSIONS = [
   "catalog.product.read",
   "catalog.variant.read",
+  "pricing.price_list.read",
+  "pricing.price_rule.read",
   "pos.devices.read",
   "pos.shifts.read",
   "pos.shifts.manage",

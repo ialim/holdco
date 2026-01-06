@@ -20,6 +20,7 @@ async function run() {
   const config = loadConfig(args.configPath);
   const prisma = new PrismaClient();
   const externalSystemId = await getExternalSystemId(prisma, config.externalSystemName ?? "ICG");
+  const defaultSubsidiaryId = config.defaultSubsidiaryId ?? undefined;
 
   const rows = parseCsv<VariantRow>(args.filePath);
   let created = 0;
@@ -49,6 +50,7 @@ async function run() {
       skipped += 1;
       continue;
     }
+    const variantSubsidiaryId = product.subsidiaryId ?? defaultSubsidiaryId;
 
     if (args.dryRun) {
       continue;
@@ -71,6 +73,7 @@ async function run() {
           size: normalize(row.size) || null,
           unit: normalize(row.unit) || null,
           barcode,
+          ...(variantSubsidiaryId ? { subsidiaryId: variantSubsidiaryId } : {}),
         },
       });
       variantId = updatedVariant.id;
@@ -86,6 +89,7 @@ async function run() {
             productId: product.id,
             size: normalize(row.size) || null,
             unit: normalize(row.unit) || null,
+            ...(variantSubsidiaryId ? { subsidiaryId: variantSubsidiaryId } : {}),
           },
         });
         variantId = updatedVariant.id;
@@ -98,6 +102,7 @@ async function run() {
             size: normalize(row.size) || null,
             unit: normalize(row.unit) || null,
             barcode,
+            subsidiaryId: variantSubsidiaryId,
           },
         });
         variantId = createdVariant.id;

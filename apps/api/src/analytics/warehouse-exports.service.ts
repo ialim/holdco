@@ -1,4 +1,5 @@
 import { BadRequestException, Injectable } from "@nestjs/common";
+import { SubsidiaryRole } from "@prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
 
 type ExportValue = string | number | boolean | null | undefined;
@@ -169,8 +170,14 @@ export class WarehouseExportsService {
   async exportProducts(groupId: string, subsidiaryId: string, query: WarehouseExportQuery) {
     this.requireHeaders(groupId, subsidiaryId);
 
+    const subsidiary = await this.getSubsidiary(groupId, subsidiaryId);
     const dateRange = this.parseDateRange(query);
-    const where: Record<string, any> = { groupId, subsidiaryId };
+    const where: Record<string, any> = { groupId };
+    if (this.isTradingSubsidiary(subsidiary)) {
+      where.OR = [{ subsidiaryId }, { subsidiaryId: null }];
+    } else {
+      where.variants = { some: { assortments: { some: { subsidiaryId, status: "active" } } } };
+    }
     if (dateRange) where.updatedAt = dateRange;
 
     const products = await this.prisma.product.findMany({
@@ -216,8 +223,14 @@ export class WarehouseExportsService {
   async exportVariants(groupId: string, subsidiaryId: string, query: WarehouseExportQuery) {
     this.requireHeaders(groupId, subsidiaryId);
 
+    const subsidiary = await this.getSubsidiary(groupId, subsidiaryId);
     const dateRange = this.parseDateRange(query);
-    const where: Record<string, any> = { groupId, subsidiaryId };
+    const where: Record<string, any> = { groupId };
+    if (this.isTradingSubsidiary(subsidiary)) {
+      where.OR = [{ subsidiaryId }, { subsidiaryId: null }];
+    } else {
+      where.assortments = { some: { subsidiaryId, status: "active" } };
+    }
     if (dateRange) where.createdAt = dateRange;
 
     const variants = await this.prisma.variant.findMany({
@@ -369,6 +382,19 @@ export class WarehouseExportsService {
     }));
 
     return this.buildExportResponse("locations", columns, rows, query.format);
+  }
+
+  private async getSubsidiary(groupId: string, subsidiaryId: string) {
+    const subsidiary = await this.prisma.subsidiary.findFirst({
+      where: { id: subsidiaryId, groupId },
+      select: { id: true, role: true },
+    });
+    if (!subsidiary) throw new BadRequestException("Subsidiary not found");
+    return subsidiary;
+  }
+
+  private isTradingSubsidiary(subsidiary: { role: SubsidiaryRole | null }) {
+    return subsidiary.role === SubsidiaryRole.PROCUREMENT_TRADING;
   }
 
   private requireHeaders(groupId: string, subsidiaryId: string) {

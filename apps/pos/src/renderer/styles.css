@@ -37,8 +37,9 @@ body::before {
 }
 
 #app {
-  max-width: 1200px;
+  max-width: none;
   margin: 0 auto;
+  width: 100%;
   position: relative;
   z-index: 1;
 }
@@ -76,6 +77,58 @@ h1 {
   flex-wrap: wrap;
 }
 
+.status-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 18px;
+  flex-wrap: wrap;
+  margin-bottom: 18px;
+}
+
+.status-left {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  flex-wrap: wrap;
+}
+
+.status-right {
+  margin-left: auto;
+}
+
+.status-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.label {
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 11px;
+}
+
+.banner {
+  background: var(--danger-soft);
+  border: 1px solid rgba(179, 65, 47, 0.25);
+  color: var(--danger);
+  padding: 10px 14px;
+  border-radius: 12px;
+  font-weight: 600;
+  margin-bottom: 16px;
+}
+
+.banner.hidden {
+  display: none;
+}
+
+.hidden {
+  display: none;
+}
+
 .status-pill {
   padding: 6px 12px;
   border-radius: 999px;
@@ -98,6 +151,45 @@ h1 {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: 18px;
+}
+
+.checkout-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.checkout-full {
+  width: 100%;
+}
+
+.queue-card {
+  width: 100%;
+}
+
+.view {
+  display: none;
+}
+
+.view.active {
+  display: block;
+}
+
+.splash {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 12px;
+}
+
+.spinner {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 3px solid rgba(31, 75, 153, 0.2);
+  border-top-color: var(--primary);
+  animation: spin 1s linear infinite;
 }
 
 .wizard {
@@ -367,5 +459,14 @@ pre {
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
   }
 }

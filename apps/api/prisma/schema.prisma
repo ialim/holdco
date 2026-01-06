@@ -38,6 +38,7 @@ model TenantGroup {
   facetValues FacetValue[]
   productFacets ProductFacet[]
   variantFacets VariantFacet[]
+  variantAssortments VariantAssortment[]
   batches      Batch[]
   lots         Lot[]
   stockLevels  StockLevel[]
@@ -105,6 +106,8 @@ model Subsidiary {
   userRoles UserRole[]
   products     Product[]
   variants     Variant[]
+  variantAssortments VariantAssortment[]
+  variantAssortmentsProvided VariantAssortment[] @relation("VariantAssortmentSource")
   batches      Batch[]
   lots         Lot[]
   stockLevels  StockLevel[]
@@ -437,6 +440,7 @@ model Variant {
   importShipmentLines ImportShipmentLine[]
   goodsReceiptLines GoodsReceiptLine[]
   facets     VariantFacet[]
+  assortments VariantAssortment[]
 
   @@unique([groupId, barcode])
   @@index([productId])
@@ -516,6 +520,27 @@ model VariantFacet {
   @@index([variantId])
   @@index([groupId])
   @@map("variant_facets")
+}
+
+model VariantAssortment {
+  id                 String   @id @default(uuid()) @db.Uuid
+  groupId            String   @db.Uuid @map("group_id")
+  subsidiaryId       String   @db.Uuid @map("subsidiary_id")
+  variantId          String   @db.Uuid @map("variant_id")
+  sourceSubsidiaryId String?  @db.Uuid @map("source_subsidiary_id")
+  status             String   @default("active")
+  createdAt          DateTime @default(now()) @map("created_at")
+
+  group             TenantGroup @relation(fields: [groupId], references: [id])
+  subsidiary        Subsidiary  @relation(fields: [subsidiaryId], references: [id])
+  variant           Variant     @relation(fields: [variantId], references: [id])
+  sourceSubsidiary  Subsidiary? @relation("VariantAssortmentSource", fields: [sourceSubsidiaryId], references: [id])
+
+  @@unique([subsidiaryId, variantId])
+  @@index([groupId])
+  @@index([subsidiaryId])
+  @@index([variantId])
+  @@map("variant_assortments")
 }
 
 model Batch {

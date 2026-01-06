@@ -15,7 +15,7 @@ export class PricingService {
 
     const where = {
       groupId,
-      subsidiaryId,
+      OR: [{ subsidiaryId }, { subsidiaryId: null }],
     };
 
     const [total, priceLists] = await this.prisma.$transaction([
@@ -57,7 +57,9 @@ export class PricingService {
     if (!groupId) throw new BadRequestException("X-Group-Id header is required");
     if (!subsidiaryId) throw new BadRequestException("X-Subsidiary-Id header is required");
 
-    const priceList = await this.prisma.priceList.findFirst({ where: { id: priceListId, groupId, subsidiaryId } });
+    const priceList = await this.prisma.priceList.findFirst({
+      where: { id: priceListId, groupId, OR: [{ subsidiaryId }, { subsidiaryId: null }] },
+    });
     if (!priceList) throw new NotFoundException("Price list not found");
 
     return this.mapPriceList(priceList);
@@ -69,7 +71,7 @@ export class PricingService {
 
     const where = {
       groupId,
-      subsidiaryId,
+      OR: [{ subsidiaryId }, { subsidiaryId: null }],
       ...(query.price_list_id ? { priceListId: query.price_list_id } : {}),
     };
 

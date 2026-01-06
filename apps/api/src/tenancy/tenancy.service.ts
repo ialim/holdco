@@ -1,7 +1,18 @@
 import { BadRequestException, Injectable } from "@nestjs/common";
-import { Prisma } from "@prisma/client";
+import { Prisma, SubsidiaryRole } from "@prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
+import { CreateLocationDto } from "./dto/create-location.dto";
+import { CreateSubsidiaryDto } from "./dto/create-subsidiary.dto";
 import { ListLocationsDto } from "./dto/list-locations.dto";
+
+const DEFAULT_LOCATIONS: Record<SubsidiaryRole, { type: string; name: string } | null> = {
+  [SubsidiaryRole.HOLDCO]: null,
+  [SubsidiaryRole.PROCUREMENT_TRADING]: { type: "warehouse", name: "Central Warehouse" },
+  [SubsidiaryRole.RETAIL]: { type: "retail_store", name: "Retail Main" },
+  [SubsidiaryRole.RESELLER]: { type: "reseller_hub", name: "Reseller Hub" },
+  [SubsidiaryRole.DIGITAL_COMMERCE]: { type: "fulfillment_center", name: "Fulfillment Center" },
+  [SubsidiaryRole.LOGISTICS]: { type: "distribution_center", name: "Distribution Center" },
+};
 
 @Injectable()
 export class TenancyService {
@@ -137,6 +148,147 @@ export class TenancyService {
         offset: query.offset ?? 0,
         total,
       },
+    };
+  }
+
+  async createSubsidiary(groupId: string, body: CreateSubsidiaryDto) {
+    if (!groupId) {
+      throw new BadRequestException("Group id is required");
+    }
+
+    const group = await this.prisma.tenantGroup.findFirst({ where: { id: groupId } });
+    if (!group) {
+      throw new BadRequestException("Group not found");
+    }
+
+    const name = body.name.trim();
+    const status = body.status?.trim() || "active";
+    const createDefault = body.create_default_location !== false;
+    const defaultLocation = createDefault ? DEFAULT_LOCATIONS[body.role] : null;
+    const locationName = body.location?.name?.trim() || defaultLocation?.name;
+    const locationType = body.location?.type?.trim() || defaultLocation?.type;
+
+    return this.prisma.$transaction(async (tx) => {
+      const existing = await tx.subsidiary.findFirst({
+        where: { groupId, name },
+      });
+
+      const subsidiary = existing
+        ? await tx.subsidiary.update({
+            where: { id: existing.id },
+            data: { role: body.role, status },
+          })
+        : await tx.subsidiary.create({
+            data: {
+              groupId,
+              name,
+              role: body.role,
+              status,
+            },
+          });
+
+      let location;
+      if (locationName || locationType) {
+        if (!locationName || !locationType) {
+          throw new BadRequestException("Location name and type are required");
+        }
+
+        const existingLocation = await tx.location.findFirst({
+          where: { groupId, subsidiaryId: subsidiary.id, name: locationName, type: locationType },
+        });
+
+        location =
+          existingLocation ??
+          (await tx.location.create({
+            data: {
+              groupId,
+              subsidiaryId: subsidiary.id,
+              name: locationName,
+              type: locationType,
+              addressLine1: body.location?.address_line1?.trim() || undefined,
+              addressLine2: body.location?.address_line2?.trim() || undefined,
+              city: body.location?.city?.trim() || undefined,
+              state: body.location?.state?.trim() || undefined,
+              country: body.location?.country?.trim() || undefined,
+            },
+          }));
+      }
+
+      return {
+        subsidiary: {
+          id: subsidiary.id,
+          name: subsidiary.name,
+          role: subsidiary.role ?? undefined,
+          status: subsidiary.status,
+        },
+        location: location
+          ? {
+              id: location.id,
+              group_id: location.groupId,
+              subsidiary_id: location.subsidiaryId,
+              type: location.type,
+              name: location.name,
+              address_line1: location.addressLine1 ?? undefined,
+              address_line2: location.addressLine2 ?? undefined,
+              city: location.city ?? undefined,
+              state: location.state ?? undefined,
+              country: location.country ?? undefined,
+              created_at: location.createdAt.toISOString(),
+              updated_at: location.updatedAt.toISOString(),
+            }
+          : undefined,
+      };
+    });
+  }
+
+  async createLocation(groupId: string, body: CreateLocationDto) {
+    if (!groupId) {
+      throw new BadRequestException("Group id is required");
+    }
+
+    const subsidiary = await this.prisma.subsidiary.findFirst({
+      where: { id: body.subsidiary_id, groupId },
+    });
+    if (!subsidiary) {
+      throw new BadRequestException("Subsidiary not found");
+    }
+
+    const name = body.name.trim();
+    const type = body.type.trim();
+
+    const existing = await this.prisma.location.findFirst({
+      where: { groupId, subsidiaryId: subsidiary.id, name, type },
+    });
+
+    const location =
+      existing ??
+      (await this.prisma.location.create({
+        data: {
+          groupId,
+          subsidiaryId: subsidiary.id,
+          name,
+          type,
+          addressLine1: body.address_line1?.trim() || undefined,
+          addressLine2: body.address_line2?.trim() || undefined,
+          city: body.city?.trim() || undefined,
+          state: body.state?.trim() || undefined,
+          country: body.country?.trim() || undefined,
+        },
+      }));
+
+    return {
+      id: location.id,
+      group_id: location.groupId,
+      subsidiary_id: location.subsidiaryId,
+      type: location.type,
+      name: location.name,
+      address_line1: location.addressLine1 ?? undefined,
+      address_line2: location.addressLine2 ?? undefined,
+      city: location.city ?? undefined,
+      state: location.state ?? undefined,
+      country: location.country ?? undefined,
+      created_at: location.createdAt.toISOString(),
+      updated_at: location.updatedAt.toISOString(),
     };
   }
 }

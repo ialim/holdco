@@ -8,8 +8,10 @@ import { CreateFacetValueDto } from "./dto/create-facet-value.dto";
 import { CreateProductDto } from "./dto/create-product.dto";
 import { CreateSupplierDto } from "./dto/create-supplier.dto";
 import { CreateVariantDto } from "./dto/create-variant.dto";
+import { PublishVariantAssortmentDto } from "./dto/publish-variant-assortment.dto";
 import { UpdateProductDto } from "./dto/update-product.dto";
 import { UpdateVariantDto } from "./dto/update-variant.dto";
+import { WithdrawVariantAssortmentDto } from "./dto/withdraw-variant-assortment.dto";
 import { CatalogService } from "./catalog.service";
 
 @Controller("v1")
@@ -144,5 +146,25 @@ export class CatalogController {
     @Body() body: UpdateVariantDto,
   ) {
     return this.catalogService.updateVariant(groupId, subsidiaryId, variantId, body);
+  }
+
+  @Permissions("catalog.variant.write")
+  @Post("variants/assortments")
+  publishVariantAssortment(
+    @Headers("x-group-id") groupId: string,
+    @Headers("x-subsidiary-id") subsidiaryId: string,
+    @Body() body: PublishVariantAssortmentDto,
+  ) {
+    return this.catalogService.publishVariantAssortment(groupId, subsidiaryId, body);
+  }
+
+  @Permissions("catalog.variant.write")
+  @Post("variants/assortments/withdraw")
+  withdrawVariantAssortment(
+    @Headers("x-group-id") groupId: string,
+    @Headers("x-subsidiary-id") subsidiaryId: string,
+    @Body() body: WithdrawVariantAssortmentDto,
+  ) {
+    return this.catalogService.withdrawVariantAssortment(groupId, subsidiaryId, body);
   }
 }

@@ -73,6 +73,7 @@ async function run() {
   const config = loadConfig(args.configPath);
   const prisma = new PrismaClient();
   const externalSystemId = await getExternalSystemId(prisma, config.externalSystemName ?? "ICG");
+  const defaultSubsidiaryId = config.defaultSubsidiaryId ?? undefined;
 
   const rows = parseCsv<ProductRow>(args.filePath);
   let created = 0;
@@ -126,6 +127,7 @@ async function run() {
           sex,
           concentration,
           type,
+          subsidiaryId: defaultSubsidiaryId,
         },
       });
       productId = updatedProduct.id;
@@ -144,6 +146,7 @@ async function run() {
             sex,
             concentration,
             type,
+            subsidiaryId: defaultSubsidiaryId,
           },
         });
         productId = updatedProduct.id;
@@ -152,6 +155,7 @@ async function run() {
         const createdProduct = await prisma.product.create({
           data: {
             groupId: config.groupId,
+            subsidiaryId: defaultSubsidiaryId,
             sku,
             name,
             status,

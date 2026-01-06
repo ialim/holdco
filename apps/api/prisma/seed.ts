@@ -37,7 +37,13 @@ async function main() {
         data: { name: "Alims Group Limited" },
       });
 
-  const tenancyPermissions = ["tenancy.read", "tenancy.users.read", "tenancy.locations.read"];
+  const tenancyPermissions = [
+    "tenancy.read",
+    "tenancy.users.read",
+    "tenancy.locations.read",
+    "tenancy.locations.manage",
+    "tenancy.subsidiaries.manage",
+  ];
   const catalogPermissions = [
     "catalog.brand.read",
     "catalog.brand.write",
@@ -74,6 +80,8 @@ async function main() {
     "tenancy.locations.read",
     "catalog.product.read",
     "catalog.variant.read",
+    "pricing.price_list.read",
+    "pricing.price_rule.read",
   ];
   const paymentsPermissions = ["payments.intent.create", "payments.capture", "payments.refund", "payments.reconcile", "payments.config.manage"];
   const creditPermissions = [
@@ -193,6 +201,8 @@ async function main() {
       permissions: [
         "catalog.product.read",
         "catalog.variant.read",
+        "pricing.price_list.read",
+        "pricing.price_rule.read",
         "orders.write",
         "payments.intent.create",
         "payments.capture",
@@ -212,7 +222,7 @@ async function main() {
     { name: "Procurement Manager", scope: "group", permissions: [...procurementPermissions, "shared_services.request.read", "shared_services.request.approve", "shared_services.request.reject"] },
     { name: "Advisory Lead", scope: "group", permissions: [...advisoryPermissions, "shared_services.request.read"] },
     { name: "Auditor", scope: "group", permissions: ["finance.tax_impact.read", "finance.consolidated_pl.read"] },
-    { name: "RBAC Admin", scope: "group", permissions: [...rbacPermissions] },
+    { name: "RBAC Admin", scope: "group", permissions: [...rbacPermissions, "tenancy.subsidiaries.manage", "tenancy.locations.manage"] },
   ];
 
   for (const preset of rolePresets) {

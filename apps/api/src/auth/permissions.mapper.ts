@@ -12,6 +12,7 @@ const SHARED_SERVICES_ALL = [
 ];
 
 const TENANCY_LOCATIONS_READ = "tenancy.locations.read";
+const TENANCY_LOCATIONS_MANAGE = "tenancy.locations.manage";
 
 const HR_ALL = [
   "hr.department.manage",
@@ -37,6 +38,8 @@ const PROCUREMENT_ALL = [
 const POS_ALL = [
   "catalog.product.read",
   "catalog.variant.read",
+  "pricing.price_list.read",
+  "pricing.price_rule.read",
   "pos.devices.read",
   "pos.devices.manage",
   "pos.cashiers.manage",
@@ -48,6 +51,8 @@ const POS_ALL = [
 const POS_OPERATOR = [
   "catalog.product.read",
   "catalog.variant.read",
+  "pricing.price_list.read",
+  "pricing.price_rule.read",
   "pos.shifts.read",
   "pos.shifts.manage",
   TENANCY_LOCATIONS_READ,
@@ -130,7 +135,7 @@ const ROLE_PERMISSION_MAP: Record<string, string[]> = {
   ],
   ADVISORY_LEAD: [...ADVISORY_ALL, "shared_services.request.read"],
   AUDITOR: ["finance.tax_impact.read", "finance.consolidated_pl.read"],
-  RBAC_ADMIN: ["rbac.roles.manage", "rbac.permissions.read"],
+  RBAC_ADMIN: ["rbac.roles.manage", "rbac.permissions.read", "tenancy.subsidiaries.manage", TENANCY_LOCATIONS_MANAGE],
 };
 
 function normalizeRole(role: string): string {

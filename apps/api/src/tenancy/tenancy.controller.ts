@@ -1,7 +1,9 @@
 import {
+  Body,
   Controller,
   Get,
   Headers,
+  Post,
   Query,
   Req,
   UseGuards,
@@ -11,6 +13,8 @@ import {
 import { Request } from "express";
 import { Permissions } from "../auth/permissions.decorator";
 import { PermissionsGuard } from "../auth/permissions.guard";
+import { CreateLocationDto } from "./dto/create-location.dto";
+import { CreateSubsidiaryDto } from "./dto/create-subsidiary.dto";
 import { ListQueryDto } from "./dto/list-query.dto";
 import { ListLocationsDto } from "./dto/list-locations.dto";
 import { TenancyService } from "./tenancy.service";
@@ -51,5 +55,23 @@ export class TenancyController {
     @Query() query: ListLocationsDto,
   ) {
     return this.tenancyService.listLocations(groupId, query);
+  }
+
+  @Permissions("tenancy.locations.manage")
+  @Post("locations")
+  createLocation(
+    @Headers("x-group-id") groupId: string,
+    @Body() body: CreateLocationDto,
+  ) {
+    return this.tenancyService.createLocation(groupId, body);
+  }
+
+  @Permissions("tenancy.subsidiaries.manage")
+  @Post("subsidiaries")
+  createSubsidiary(
+    @Headers("x-group-id") groupId: string,
+    @Body() body: CreateSubsidiaryDto,
+  ) {
+    return this.tenancyService.createSubsidiary(groupId, body);
   }
 }

@@ -1,5 +1,5 @@
 import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
-import { Prisma } from "@prisma/client";
+import { Prisma, SubsidiaryRole } from "@prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
 import { ListQueryDto } from "../common/dto/list-query.dto";
 import { CreateBrandDto } from "./dto/create-brand.dto";
@@ -8,8 +8,10 @@ import { CreateFacetDefinitionDto } from "./dto/create-facet-definition.dto";
 import { CreateFacetValueDto } from "./dto/create-facet-value.dto";
 import { CreateProductDto } from "./dto/create-product.dto";
 import { CreateVariantDto } from "./dto/create-variant.dto";
+import { PublishVariantAssortmentDto } from "./dto/publish-variant-assortment.dto";
 import { UpdateProductDto } from "./dto/update-product.dto";
 import { UpdateVariantDto } from "./dto/update-variant.dto";
+import { WithdrawVariantAssortmentDto } from "./dto/withdraw-variant-assortment.dto";
 import { FacetInputDto } from "./dto/facet-input.dto";
 
 type NormalizedFacetInput = {
@@ -49,7 +51,7 @@ export class CatalogService {
     ]);
 
     return {
-      data: brands.map(this.mapBrand),
+      data: brands.map((brand) => this.mapBrand(brand)),
       meta: this.buildMeta(query, total),
     };
   }
@@ -88,7 +90,7 @@ export class CatalogService {
     ]);
 
     return {
-      data: suppliers.map(this.mapSupplier),
+      data: suppliers.map((supplier) => this.mapSupplier(supplier)),
       meta: this.buildMeta(query, total),
     };
   }
@@ -134,7 +136,7 @@ export class CatalogService {
     ]);
 
     return {
-      data: facets.map(this.mapFacetDefinition),
+      data: facets.map((facet) => this.mapFacetDefinition(facet)),
       meta: this.buildMeta(query, total),
     };
   }
@@ -224,13 +226,25 @@ export class CatalogService {
     if (!groupId) throw new BadRequestException("X-Group-Id header is required");
     if (!subsidiaryId) throw new BadRequestException("X-Subsidiary-Id header is required");
 
+    const subsidiary = await this.getSubsidiary(groupId, subsidiaryId);
+
     const where: Prisma.ProductWhereInput = {
       groupId,
-      subsidiaryId,
       ...(query.status ? { status: query.status } : {}),
     };
 
     const andFilters: Prisma.ProductWhereInput[] = [];
+    if (this.isTradingSubsidiary(subsidiary)) {
+      andFilters.push({ OR: [{ subsidiaryId }, { subsidiaryId: null }] });
+    } else {
+      andFilters.push({
+        variants: {
+          some: {
+            assortments: { some: { subsidiaryId, status: "active" } },
+          },
+        },
+      });
+    }
 
     if (query.barcode) {
       andFilters.push({ variants: { some: { barcode: query.barcode } } });
@@ -275,7 +289,7 @@ export class CatalogService {
     ]);
 
     return {
-      data: products.map(this.mapProduct),
+      data: products.map((product) => this.mapProduct(product)),
       meta: this.buildMeta(query, total),
     };
   }
@@ -283,6 +297,8 @@ export class CatalogService {
   async createProduct(groupId: string, subsidiaryId: string, body: CreateProductDto) {
     if (!groupId) throw new BadRequestException("X-Group-Id header is required");
     if (!subsidiaryId) throw new BadRequestException("X-Subsidiary-Id header is required");
+
+    const trading = await this.assertTradingSubsidiary(groupId, subsidiaryId);
 
     return this.prisma.$transaction(async (tx) => {
       const brand = body.brand_id
@@ -296,7 +312,7 @@ export class CatalogService {
       const product = await tx.product.create({
         data: {
           groupId,
-          subsidiaryId,
+          subsidiaryId: trading.id,
           sku: body.sku,
           name: body.name,
           brandId: body.brand_id,
@@ -328,8 +344,24 @@ export class CatalogService {
     if (!groupId) throw new BadRequestException("X-Group-Id header is required");
     if (!subsidiaryId) throw new BadRequestException("X-Subsidiary-Id header is required");
 
+    const subsidiary = await this.getSubsidiary(groupId, subsidiaryId);
+    const where: Prisma.ProductWhereInput = { id: productId, groupId };
+    if (this.isTradingSubsidiary(subsidiary)) {
+      where.AND = [{ OR: [{ subsidiaryId }, { subsidiaryId: null }] }];
+    } else {
+      where.AND = [
+        {
+          variants: {
+            some: {
+              assortments: { some: { subsidiaryId, status: "active" } },
+            },
+          },
+        },
+      ];
+    }
+
     const product = await this.prisma.product.findFirst({
-      where: { id: productId, groupId, subsidiaryId },
+      where,
       include: { facets: { include: { facetValue: { include: { facet: true } } } } },
     });
 
@@ -342,9 +374,11 @@ export class CatalogService {
     if (!groupId) throw new BadRequestException("X-Group-Id header is required");
     if (!subsidiaryId) throw new BadRequestException("X-Subsidiary-Id header is required");
 
+    const trading = await this.assertTradingSubsidiary(groupId, subsidiaryId);
+
     return this.prisma.$transaction(async (tx) => {
       const existing = await tx.product.findFirst({
-        where: { id: productId, groupId, subsidiaryId },
+        where: { id: productId, groupId, OR: [{ subsidiaryId: trading.id }, { subsidiaryId: null }] },
       });
 
       if (!existing) throw new NotFoundException("Product not found");
@@ -405,13 +439,19 @@ export class CatalogService {
     if (!groupId) throw new BadRequestException("X-Group-Id header is required");
     if (!subsidiaryId) throw new BadRequestException("X-Subsidiary-Id header is required");
 
+    const subsidiary = await this.getSubsidiary(groupId, subsidiaryId);
+
     const where: Prisma.VariantWhereInput = {
       groupId,
-      subsidiaryId,
       ...(query.barcode ? { barcode: query.barcode } : {}),
     };
 
     const andFilters: Prisma.VariantWhereInput[] = [];
+    if (this.isTradingSubsidiary(subsidiary)) {
+      andFilters.push({ OR: [{ subsidiaryId }, { subsidiaryId: null }] });
+    } else {
+      andFilters.push({ assortments: { some: { subsidiaryId, status: "active" } } });
+    }
     const facetFilters = this.parseFacetFilters(query.facets);
     for (const filter of facetFilters) {
       andFilters.push({
@@ -444,7 +484,7 @@ export class CatalogService {
     ]);
 
     return {
-      data: variants.map(this.mapVariant),
+      data: variants.map((variant) => this.mapVariant(variant)),
       meta: this.buildMeta(query, total),
     };
   }
@@ -453,12 +493,19 @@ export class CatalogService {
     if (!groupId) throw new BadRequestException("X-Group-Id header is required");
     if (!subsidiaryId) throw new BadRequestException("X-Subsidiary-Id header is required");
 
+    const trading = await this.assertTradingSubsidiary(groupId, subsidiaryId);
+
     return this.prisma.$transaction(async (tx) => {
+      const product = await tx.product.findFirst({
+        where: { id: body.product_id, groupId, OR: [{ subsidiaryId: trading.id }, { subsidiaryId: null }] },
+      });
+      if (!product) throw new BadRequestException("Product not found");
+
       const variant = await tx.variant.create({
         data: {
           groupId,
-          subsidiaryId,
-          productId: body.product_id,
+          subsidiaryId: trading.id,
+          productId: product.id,
           size: body.size,
           unit: body.unit,
           barcode: body.barcode,
@@ -486,9 +533,11 @@ export class CatalogService {
     if (!groupId) throw new BadRequestException("X-Group-Id header is required");
     if (!subsidiaryId) throw new BadRequestException("X-Subsidiary-Id header is required");
 
+    const trading = await this.assertTradingSubsidiary(groupId, subsidiaryId);
+
     return this.prisma.$transaction(async (tx) => {
       const existing = await tx.variant.findFirst({
-        where: { id: variantId, groupId, subsidiaryId },
+        where: { id: variantId, groupId, OR: [{ subsidiaryId: trading.id }, { subsidiaryId: null }] },
       });
 
       if (!existing) throw new NotFoundException("Variant not found");
@@ -527,6 +576,102 @@ export class CatalogService {
 
       return stored ? this.mapVariant(stored) : this.mapVariant(existing);
     });
+  }
+
+  async publishVariantAssortment(groupId: string, subsidiaryId: string, body: PublishVariantAssortmentDto) {
+    if (!groupId) throw new BadRequestException("X-Group-Id header is required");
+    if (!subsidiaryId) throw new BadRequestException("X-Subsidiary-Id header is required");
+
+    const trading = await this.assertTradingSubsidiary(groupId, subsidiaryId);
+    const target = await this.prisma.subsidiary.findFirst({
+      where: { id: body.subsidiary_id, groupId },
+      select: { id: true },
+    });
+    if (!target) throw new BadRequestException("Target subsidiary not found");
+
+    const variantIds = Array.from(new Set(body.variant_ids));
+    const variants = await this.prisma.variant.findMany({
+      where: {
+        id: { in: variantIds },
+        groupId,
+        OR: [{ subsidiaryId: trading.id }, { subsidiaryId: null }],
+        product: { OR: [{ subsidiaryId: trading.id }, { subsidiaryId: null }] },
+      },
+      select: { id: true },
+    });
+
+    if (variants.length !== variantIds.length) {
+      throw new BadRequestException("One or more variants are not owned by the trading subsidiary");
+    }
+
+    await this.prisma.variantAssortment.createMany({
+      data: variantIds.map((variantId) => ({
+        groupId,
+        subsidiaryId: target.id,
+        variantId,
+        sourceSubsidiaryId: trading.id,
+        status: "active",
+      })),
+      skipDuplicates: true,
+    });
+
+    const updated = await this.prisma.variantAssortment.updateMany({
+      where: { groupId, subsidiaryId: target.id, variantId: { in: variantIds } },
+      data: { status: "active", sourceSubsidiaryId: trading.id },
+    });
+
+    return {
+      subsidiary_id: target.id,
+      variant_ids: variantIds,
+      status: "active",
+      updated: updated.count,
+    };
+  }
+
+  async withdrawVariantAssortment(groupId: string, subsidiaryId: string, body: WithdrawVariantAssortmentDto) {
+    if (!groupId) throw new BadRequestException("X-Group-Id header is required");
+    if (!subsidiaryId) throw new BadRequestException("X-Subsidiary-Id header is required");
+
+    await this.assertTradingSubsidiary(groupId, subsidiaryId);
+    const target = await this.prisma.subsidiary.findFirst({
+      where: { id: body.subsidiary_id, groupId },
+      select: { id: true },
+    });
+    if (!target) throw new BadRequestException("Target subsidiary not found");
+
+    const variantIds = Array.from(new Set(body.variant_ids));
+    const updated = await this.prisma.variantAssortment.updateMany({
+      where: { groupId, subsidiaryId: target.id, variantId: { in: variantIds } },
+      data: { status: "inactive" },
+    });
+
+    return {
+      subsidiary_id: target.id,
+      variant_ids: variantIds,
+      status: "inactive",
+      updated: updated.count,
+    };
+  }
+
+  private async getSubsidiary(groupId: string, subsidiaryId: string) {
+    const subsidiary = await this.prisma.subsidiary.findFirst({
+      where: { id: subsidiaryId, groupId },
+      select: { id: true, role: true },
+    });
+    if (!subsidiary) throw new BadRequestException("Subsidiary not found");
+    return subsidiary;
+  }
+
+  private isTradingSubsidiary(subsidiary: { role: SubsidiaryRole | null }) {
+    return subsidiary.role === SubsidiaryRole.PROCUREMENT_TRADING;
+  }
+
+  private async assertTradingSubsidiary(groupId: string, subsidiaryId: string) {
+    const subsidiary = await this.getSubsidiary(groupId, subsidiaryId);
+    if (!this.isTradingSubsidiary(subsidiary)) {
+      throw new BadRequestException("Only the procurement/trading subsidiary can perform this action");
+    }
+    return subsidiary;
   }
 
   private normalizeFacetKey(value: string) {

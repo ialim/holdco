@@ -3,12 +3,15 @@ import { Permissions } from "../auth/permissions.decorator";
 import { PermissionsGuard } from "../auth/permissions.guard";
 import { ListQueryDto } from "../common/dto/list-query.dto";
 import { CreateBrandDto } from "./dto/create-brand.dto";
+import { CreateCategoryDto } from "./dto/create-category.dto";
 import { CreateFacetDefinitionDto } from "./dto/create-facet-definition.dto";
 import { CreateFacetValueDto } from "./dto/create-facet-value.dto";
 import { CreateProductDto } from "./dto/create-product.dto";
 import { CreateSupplierDto } from "./dto/create-supplier.dto";
 import { CreateVariantDto } from "./dto/create-variant.dto";
+import { ListCategoryQueryDto } from "./dto/list-category-query.dto";
 import { PublishVariantAssortmentDto } from "./dto/publish-variant-assortment.dto";
+import { UpdateCategoryDto } from "./dto/update-category.dto";
 import { UpdateProductDto } from "./dto/update-product.dto";
 import { UpdateVariantDto } from "./dto/update-variant.dto";
 import { WithdrawVariantAssortmentDto } from "./dto/withdraw-variant-assortment.dto";
@@ -86,6 +89,79 @@ export class CatalogController {
     return this.catalogService.listProducts(groupId, subsidiaryId, query);
   }
 
+  @Permissions("catalog.category.read")
+  @Get("categories")
+  listCategories(
+    @Headers("x-group-id") groupId: string,
+    @Headers("x-subsidiary-id") subsidiaryId: string,
+    @Query() query: ListQueryDto,
+  ) {
+    return this.catalogService.listCategories(groupId, subsidiaryId, query);
+  }
+
+  @Permissions("catalog.category.write")
+  @Post("categories")
+  createCategory(
+    @Headers("x-group-id") groupId: string,
+    @Headers("x-subsidiary-id") subsidiaryId: string,
+    @Body() body: CreateCategoryDto,
+  ) {
+    return this.catalogService.createCategory(groupId, subsidiaryId, body);
+  }
+
+  @Permissions("catalog.category.read")
+  @Get("categories/:category_id")
+  getCategory(
+    @Headers("x-group-id") groupId: string,
+    @Headers("x-subsidiary-id") subsidiaryId: string,
+    @Param("category_id", new ParseUUIDPipe()) categoryId: string,
+  ) {
+    return this.catalogService.getCategory(groupId, subsidiaryId, categoryId);
+  }
+
+  @Permissions("catalog.category.write")
+  @Patch("categories/:category_id")
+  updateCategory(
+    @Headers("x-group-id") groupId: string,
+    @Headers("x-subsidiary-id") subsidiaryId: string,
+    @Param("category_id", new ParseUUIDPipe()) categoryId: string,
+    @Body() body: UpdateCategoryDto,
+  ) {
+    return this.catalogService.updateCategory(groupId, subsidiaryId, categoryId, body);
+  }
+
+  @Permissions("catalog.product.read")
+  @Get("categories/:category_id/products")
+  listCategoryProductsById(
+    @Headers("x-group-id") groupId: string,
+    @Headers("x-subsidiary-id") subsidiaryId: string,
+    @Param("category_id", new ParseUUIDPipe()) categoryId: string,
+    @Query() query: ListQueryDto,
+  ) {
+    return this.catalogService.listCategoryProductsById(groupId, subsidiaryId, categoryId, query);
+  }
+
+  @Permissions("catalog.variant.read")
+  @Get("categories/:category_id/variants")
+  listCategoryVariantsById(
+    @Headers("x-group-id") groupId: string,
+    @Headers("x-subsidiary-id") subsidiaryId: string,
+    @Param("category_id", new ParseUUIDPipe()) categoryId: string,
+    @Query() query: ListQueryDto,
+  ) {
+    return this.catalogService.listCategoryVariantsById(groupId, subsidiaryId, categoryId, query);
+  }
+
+  @Permissions("catalog.product.read")
+  @Get("categories/products")
+  listCategoryProducts(
+    @Headers("x-group-id") groupId: string,
+    @Headers("x-subsidiary-id") subsidiaryId: string,
+    @Query() query: ListCategoryQueryDto,
+  ) {
+    return this.catalogService.listCategoryProducts(groupId, subsidiaryId, query);
+  }
+
   @Permissions("catalog.product.write")
   @Post("products")
   createProduct(
@@ -125,6 +201,16 @@ export class CatalogController {
     @Query() query: ListQueryDto,
   ) {
     return this.catalogService.listVariants(groupId, subsidiaryId, query);
+  }
+
+  @Permissions("catalog.variant.read")
+  @Get("categories/variants")
+  listCategoryVariants(
+    @Headers("x-group-id") groupId: string,
+    @Headers("x-subsidiary-id") subsidiaryId: string,
+    @Query() query: ListCategoryQueryDto,
+  ) {
+    return this.catalogService.listCategoryVariants(groupId, subsidiaryId, query);
   }
 
   @Permissions("catalog.variant.write")

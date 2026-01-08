@@ -230,6 +230,160 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '409':
           $ref: '#/components/responses/Conflict'
+  /v1/categories:
+    parameters:
+      - $ref: '#/components/parameters/GroupId'
+      - $ref: '#/components/parameters/SubsidiaryId'
+    get:
+      tags: [Catalog]
+      operationId: listCategories
+      summary: List categories
+      x-rbac:
+        permissions: [catalog.category.read]
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Offset'
+        - $ref: '#/components/parameters/Query'
+        - $ref: '#/components/parameters/Status'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CategoryListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    post:
+      tags: [Catalog]
+      operationId: createCategory
+      summary: Create category
+      x-rbac:
+        permissions: [catalog.category.write]
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateCategoryRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Category'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /v1/categories/{category_id}:
+    parameters:
+      - $ref: '#/components/parameters/GroupId'
+      - $ref: '#/components/parameters/SubsidiaryId'
+      - $ref: '#/components/parameters/CategoryId'
+    get:
+      tags: [Catalog]
+      operationId: getCategory
+      summary: Get category
+      x-rbac:
+        permissions: [catalog.category.read]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Category'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    patch:
+      tags: [Catalog]
+      operationId: updateCategory
+      summary: Update category
+      x-rbac:
+        permissions: [catalog.category.write]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateCategoryRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Category'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /v1/categories/{category_id}/products:
+    parameters:
+      - $ref: '#/components/parameters/GroupId'
+      - $ref: '#/components/parameters/SubsidiaryId'
+      - $ref: '#/components/parameters/CategoryId'
+      - $ref: '#/components/parameters/Channel'
+    get:
+      tags: [Catalog]
+      operationId: listCategoryProductsById
+      summary: List products by category
+      x-rbac:
+        permissions: [catalog.product.read]
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Offset'
+        - $ref: '#/components/parameters/Query'
+        - $ref: '#/components/parameters/Barcode'
+        - $ref: '#/components/parameters/Facets'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /v1/categories/{category_id}/variants:
+    parameters:
+      - $ref: '#/components/parameters/GroupId'
+      - $ref: '#/components/parameters/SubsidiaryId'
+      - $ref: '#/components/parameters/CategoryId'
+    get:
+      tags: [Catalog]
+      operationId: listCategoryVariantsById
+      summary: List variants by category
+      x-rbac:
+        permissions: [catalog.variant.read]
+      parameters:
+        - $ref: '#/components/parameters/ProductIdQuery'
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Offset'
+        - $ref: '#/components/parameters/Facets'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VariantListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
   /v1/suppliers:
     parameters:
       - $ref: '#/components/parameters/GroupId'
@@ -483,6 +637,59 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
+  /v1/categories/products:
+    parameters:
+      - $ref: '#/components/parameters/GroupId'
+      - $ref: '#/components/parameters/SubsidiaryId'
+      - $ref: '#/components/parameters/Channel'
+    get:
+      tags: [Catalog]
+      operationId: listCategoryProducts
+      summary: List products by category facet
+      x-rbac:
+        permissions: [catalog.product.read]
+      parameters:
+        - $ref: '#/components/parameters/FacetKey'
+        - $ref: '#/components/parameters/FacetValue'
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Offset'
+        - $ref: '#/components/parameters/Query'
+        - $ref: '#/components/parameters/Barcode'
+        - $ref: '#/components/parameters/Facets'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /v1/categories/variants:
+    parameters:
+      - $ref: '#/components/parameters/GroupId'
+      - $ref: '#/components/parameters/SubsidiaryId'
+    get:
+      tags: [Catalog]
+      operationId: listCategoryVariants
+      summary: List variants by category facet
+      x-rbac:
+        permissions: [catalog.variant.read]
+      parameters:
+        - $ref: '#/components/parameters/FacetKey'
+        - $ref: '#/components/parameters/FacetValue'
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Offset'
+        - $ref: '#/components/parameters/Facets'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VariantListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
   /v1/variants:
     parameters:
       - $ref: '#/components/parameters/GroupId'
@@ -4274,6 +4481,20 @@ components:
       schema:
         type: string
       description: Facet filters in `key=value|key=value` format.
+    FacetKey:
+      name: facet_key
+      in: query
+      required: true
+      schema:
+        type: string
+      description: Facet key for category filtering.
+    FacetValue:
+      name: facet_value
+      in: query
+      required: true
+      schema:
+        type: string
+      description: Facet value for category filtering.
     Barcode:
       name: barcode
       in: query
@@ -4340,6 +4561,13 @@ components:
         format: uuid
     VariantId:
       name: variant_id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    CategoryId:
+      name: category_id
       in: path
       required: true
       schema:
@@ -4715,6 +4943,118 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Brand'
+        meta:
+          $ref: '#/components/schemas/PageMeta'
+    CategoryFilter:
+      type: object
+      required: [key, value]
+      properties:
+        key:
+          type: string
+          example: gender
+        value:
+          type: string
+          example: male
+    CategoryFilterGroup:
+      type: object
+      required: [all]
+      properties:
+        all:
+          type: array
+          items:
+            $ref: '#/components/schemas/CategoryFilter'
+    Category:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: 4f1b40fa-2f2c-4c1a-85d1-f0a6454a9c5d
+        code:
+          type: string
+          example: MALE_COLOGNE
+        name:
+          type: string
+          example: Male Cologne
+        description:
+          type: string
+          example: Cologne and deodorants for men.
+        status:
+          type: string
+          example: active
+        sort_order:
+          type: integer
+          example: 0
+        product_filters:
+          type: array
+          items:
+            $ref: '#/components/schemas/CategoryFilterGroup'
+        variant_filters:
+          type: array
+          items:
+            $ref: '#/components/schemas/CategoryFilterGroup'
+        created_at:
+          type: string
+          format: date-time
+          example: '2024-05-02T09:12:45Z'
+        updated_at:
+          type: string
+          format: date-time
+          example: '2024-05-02T09:12:45Z'
+    CreateCategoryRequest:
+      type: object
+      required: [code, name]
+      properties:
+        code:
+          type: string
+          example: MALE_COLOGNE
+        name:
+          type: string
+          example: Male Cologne
+        description:
+          type: string
+        status:
+          type: string
+          enum: [active, inactive]
+        sort_order:
+          type: integer
+        product_filters:
+          type: array
+          items:
+            $ref: '#/components/schemas/CategoryFilterGroup'
+        variant_filters:
+          type: array
+          items:
+            $ref: '#/components/schemas/CategoryFilterGroup'
+    UpdateCategoryRequest:
+      type: object
+      properties:
+        code:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        status:
+          type: string
+          enum: [active, inactive]
+        sort_order:
+          type: integer
+        product_filters:
+          type: array
+          items:
+            $ref: '#/components/schemas/CategoryFilterGroup'
+        variant_filters:
+          type: array
+          items:
+            $ref: '#/components/schemas/CategoryFilterGroup'
+    CategoryListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Category'
         meta:
           $ref: '#/components/schemas/PageMeta'
     Supplier:

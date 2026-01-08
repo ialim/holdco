@@ -14,6 +14,9 @@ Required fields:
 - channel (retail)
 - deviceId
 
+Optional fields:
+- categoryFacetKey (default: `category`)
+
 ## Locations
 The app now loads locations from `GET /v1/locations` using the configured `subsidiaryId`.
 Ensure the JWT includes `tenancy.locations.read` permission (or a role that maps to it).
@@ -30,6 +33,9 @@ Managers can refresh the device token on-site via `POST /v1/pos/devices/activate
 
 ## Offline queue
 Checkout uses the retail adapter (`POST /v1/adapters/retail/checkout`) and is written to the offline queue with an idempotency key. If the network is down, the queue persists to disk and is replayed on reconnect.
+
+## Categories
+Categories are loaded from `GET /v1/categories` (subsidiary-scoped). If none exist, the POS falls back to facet values from `categoryFacetKey`.
 
 ## Next steps
 - Replace the file-backed queue with SQLite for durability and reporting.

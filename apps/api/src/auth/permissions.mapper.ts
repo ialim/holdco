@@ -36,6 +36,7 @@ const PROCUREMENT_ALL = [
 ];
 
 const POS_ALL = [
+  "catalog.category.read",
   "catalog.product.read",
   "catalog.variant.read",
   "pricing.price_list.read",
@@ -49,6 +50,7 @@ const POS_ALL = [
 ];
 
 const POS_OPERATOR = [
+  "catalog.category.read",
   "catalog.product.read",
   "catalog.variant.read",
   "pricing.price_list.read",

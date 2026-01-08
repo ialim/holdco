@@ -19,6 +19,9 @@ import { ListQueryDto } from "../common/dto/list-query.dto";
 const scryptAsync = promisify(scrypt);
 const DEVICE_TOKEN_TTL_SECONDS = 60 * 60 * 24;
 const DEVICE_TOKEN_PERMISSIONS = [
+  "catalog.category.read",
+  "catalog.brand.read",
+  "catalog.facet.read",
   "catalog.product.read",
   "catalog.variant.read",
   "pricing.price_list.read",
@@ -31,6 +34,7 @@ const DEVICE_TOKEN_PERMISSIONS = [
   "payments.intent.create",
   "payments.capture",
   "inventory.stock.reserve",
+  "loyalty.customer.read",
   "loyalty.points.issue",
 ];
 

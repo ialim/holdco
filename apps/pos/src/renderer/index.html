@@ -95,6 +95,10 @@
                   <div id="configChannel" class="mono"></div>
                 </div>
                 <div>
+                  <label>Category Facet</label>
+                  <div id="configCategoryFacet" class="mono"></div>
+                </div>
+                <div>
                   <label>Device ID</label>
                   <div id="configDevice" class="mono"></div>
                 </div>
@@ -197,52 +201,156 @@
         </section>
 
         <section id="viewCheckout" class="view">
-          <div class="checkout-stack">
-            <div class="card checkout checkout-full">
-              <div class="card-header">
-                <h2>Checkout</h2>
-                <button id="searchProducts" class="ghost">Search</button>
+          <div class="checkout-shell">
+            <div class="checkout-top">
+              <div class="checkout-field">
+                <span class="field-label">Date</span>
+                <div id="checkoutDate" class="field-value">-</div>
               </div>
-              <div class="form-row">
-                <label for="productSearch">Product search</label>
-                <input id="productSearch" type="text" placeholder="Search by name or SKU" />
+              <div class="checkout-field">
+                <span class="field-label">Warehouse</span>
+                <div id="checkoutLocation" class="field-value">-</div>
               </div>
-              <div id="productResults" class="list"></div>
-
-              <div class="divider"></div>
-
-              <h3>Cart</h3>
-              <div id="cartItems" class="cart"></div>
-              <div class="cart-summary">
-                <div>Items: <span id="cartCount">0</span></div>
-                <div>Total: <span id="cartTotal">0.00</span></div>
+              <div class="checkout-field">
+                <span class="field-label">Biller</span>
+                <div id="checkoutBiller" class="field-value">-</div>
               </div>
-              <div class="form-row">
-                <label for="orderCurrency">Currency</label>
-                <input id="orderCurrency" type="text" maxlength="3" value="NGN" />
+              <div class="checkout-field">
+                <span class="field-label">Customer</span>
+                <div class="field-value field-select">
+                  <span id="checkoutCustomer">Walk in customer</span>
+                  <button id="addCustomer" class="ghost icon-button" type="button">+</button>
+                </div>
               </div>
-              <div class="form-row">
-                <label for="orderNotes">Notes</label>
-                <input id="orderNotes" type="text" />
-              </div>
-              <div class="actions">
-                <button id="submitOrder" class="primary">Submit Order</button>
-                <button id="clearCart" class="ghost">Clear Cart</button>
-              </div>
-              <div id="orderStatus" class="helper"></div>
             </div>
 
-            <div class="card queue-card">
-              <div class="card-header">
-                <h2>Offline Queue</h2>
-                <button id="refreshQueue" class="ghost">Refresh</button>
+            <div class="checkout-search-row">
+              <div class="search-box">
+                <input id="productSearch" type="text" placeholder="Scan/Search product by name/code/IMEI" />
+                <button id="searchProducts" class="primary icon-button" type="button">Search</button>
               </div>
-              <div id="queueSummary" class="helper"></div>
-              <pre id="queueOutput"></pre>
+              <div class="filter-mode">
+                <button id="filterCategory" class="tab-pill active" type="button">Category</button>
+                <button id="filterBrand" class="tab-pill" type="button">Brand</button>
+                <button id="filterFeatured" class="tab-pill" type="button">Featured</button>
+              </div>
             </div>
+
+            <div class="filter-strip">
+              <div id="categoryTabs" class="chip-row"></div>
+              <div id="brandTabs" class="chip-row hidden"></div>
+              <div id="featuredHint" class="chip-row hidden">
+                <span class="helper">Showing featured items only.</span>
+              </div>
+            </div>
+
+            <div class="checkout-body">
+              <div class="cart-panel">
+                <div class="cart-head">
+                  <span>Product</span>
+                  <span>Price</span>
+                  <span>Quantity</span>
+                  <span>SubTotal</span>
+                </div>
+                <div id="cartItems" class="cart-items"></div>
+
+                <div class="cart-summary-grid">
+                  <div class="summary-item">
+                    <span class="summary-label">Items</span>
+                    <span id="cartCount" class="summary-value">0</span>
+                  </div>
+                  <div class="summary-item">
+                    <span class="summary-label">Total</span>
+                    <span id="cartTotal" class="summary-value">0.00</span>
+                  </div>
+                  <div class="summary-item">
+                    <span class="summary-label">Discount</span>
+                    <span id="cartDiscount" class="summary-value">0.00</span>
+                  </div>
+                  <div class="summary-item">
+                    <span class="summary-label">Tax</span>
+                    <span id="cartTax" class="summary-value">0.00</span>
+                  </div>
+                  <div class="summary-item">
+                    <span class="summary-label">Shipping</span>
+                    <span id="cartShipping" class="summary-value">0.00</span>
+                  </div>
+                </div>
+                <div class="grand-total">
+                  <span>Grand Total</span>
+                  <span id="cartGrandTotal">0.00</span>
+                </div>
+
+                <div class="order-meta">
+                  <div class="form-row inline">
+                    <label for="orderCurrency">Currency</label>
+                    <input id="orderCurrency" type="text" maxlength="3" value="NGN" />
+                  </div>
+                  <div class="form-row inline">
+                    <label for="orderNotes">Notes</label>
+                    <input id="orderNotes" type="text" />
+                  </div>
+                </div>
+                <div class="actions checkout-actions">
+                  <button id="submitOrder" class="primary">Submit Order</button>
+                  <button id="clearCart" class="ghost">Clear Cart</button>
+                </div>
+                <div id="orderStatus" class="helper"></div>
+              </div>
+
+              <div class="product-panel">
+                <div class="product-panel-header">
+                  <h3>Products</h3>
+                  <span id="productCount" class="mono"></span>
+                </div>
+                <div id="productResults" class="product-grid"></div>
+              </div>
+            </div>
+
+            <div class="payment-bar">
+              <button type="button" class="payment-button">Card</button>
+              <button type="button" class="payment-button">Cash</button>
+              <button type="button" class="payment-button">Transfer</button>
+              <button type="button" class="payment-button">Split</button>
+              <button type="button" class="payment-button">Installment</button>
+              <button type="button" class="payment-button">Deposit</button>
+              <button type="button" class="payment-button">Points</button>
+              <div class="payment-spacer"></div>
+              <button type="button" class="payment-button ghost">Draft</button>
+              <button type="button" class="payment-button danger">Cancel</button>
+              <button type="button" class="payment-button ghost">Recent</button>
+            </div>
+          </div>
+
+          <div class="card queue-card">
+            <div class="card-header">
+              <h2>Offline Queue</h2>
+              <button id="refreshQueue" class="ghost">Refresh</button>
+            </div>
+            <div id="queueSummary" class="helper"></div>
+            <pre id="queueOutput"></pre>
           </div>
         </section>
       </main>
+    </div>
+
+    <div id="customerModal" class="modal hidden">
+      <div class="modal-card">
+        <div class="modal-header">
+          <h3>Select Customer</h3>
+          <button id="closeCustomerModal" class="ghost" type="button">Close</button>
+        </div>
+        <div class="modal-body">
+          <div class="search-box modal-search">
+            <input id="customerSearch" type="text" placeholder="Search by name" />
+            <button id="customerSearchBtn" class="primary icon-button" type="button">Search</button>
+          </div>
+          <div id="customerResults" class="list"></div>
+        </div>
+        <div class="modal-actions">
+          <button id="setWalkIn" class="ghost" type="button">Walk in customer</button>
+        </div>
+      </div>
     </div>
 
     <div id="toast" class="toast"></div>

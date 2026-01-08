@@ -5,6 +5,7 @@
   "subsidiaryId": "",
   "locationId": "",
   "channel": "retail",
+  "categoryFacetKey": "category",
   "deviceId": "pos-001",
   "cashierToken": null,
   "cashierUser": null

@@ -3,16 +3,20 @@ import { Prisma, SubsidiaryRole } from "@prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
 import { ListQueryDto } from "../common/dto/list-query.dto";
 import { CreateBrandDto } from "./dto/create-brand.dto";
+import { CreateCategoryDto } from "./dto/create-category.dto";
 import { CreateSupplierDto } from "./dto/create-supplier.dto";
 import { CreateFacetDefinitionDto } from "./dto/create-facet-definition.dto";
 import { CreateFacetValueDto } from "./dto/create-facet-value.dto";
 import { CreateProductDto } from "./dto/create-product.dto";
 import { CreateVariantDto } from "./dto/create-variant.dto";
+import { ListCategoryQueryDto } from "./dto/list-category-query.dto";
 import { PublishVariantAssortmentDto } from "./dto/publish-variant-assortment.dto";
+import { UpdateCategoryDto } from "./dto/update-category.dto";
 import { UpdateProductDto } from "./dto/update-product.dto";
 import { UpdateVariantDto } from "./dto/update-variant.dto";
 import { WithdrawVariantAssortmentDto } from "./dto/withdraw-variant-assortment.dto";
 import { FacetInputDto } from "./dto/facet-input.dto";
+import { CategoryFilterGroupDto } from "./dto/category-filter.dto";
 
 type NormalizedFacetInput = {
   key: string;
@@ -24,6 +28,24 @@ type NormalizedFacetInput = {
 type FacetFilter = {
   normalizedKey: string;
   normalizedValue: string;
+};
+
+type CategoryFilter = {
+  key: string;
+  value: string;
+};
+
+type CategoryFilterGroup = {
+  all: CategoryFilter[];
+};
+
+type NormalizedCategoryFilter = {
+  normalizedKey: string;
+  normalizedValue: string;
+};
+
+type NormalizedCategoryFilterGroup = {
+  all: NormalizedCategoryFilter[];
 };
 
 @Injectable()
@@ -294,6 +316,196 @@ export class CatalogService {
     };
   }
 
+  async listCategories(groupId: string, subsidiaryId: string, query: ListQueryDto) {
+    if (!groupId) throw new BadRequestException("X-Group-Id header is required");
+    if (!subsidiaryId) throw new BadRequestException("X-Subsidiary-Id header is required");
+
+    const where: Prisma.CategoryWhereInput = {
+      groupId,
+      subsidiaryId,
+      ...(query.status ? { status: query.status } : {}),
+      ...(query.q
+        ? {
+            OR: [
+              { name: { contains: query.q, mode: "insensitive" as const } },
+              { code: { contains: query.q, mode: "insensitive" as const } },
+            ],
+          }
+        : {}),
+    };
+
+    const [total, categories] = await this.prisma.$transaction([
+      this.prisma.category.count({ where }),
+      this.prisma.category.findMany({
+        where,
+        orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
+        skip: query.offset ?? 0,
+        take: query.limit ?? 100,
+      }),
+    ]);
+
+    return {
+      data: categories.map((category) => this.mapCategory(category)),
+      meta: this.buildMeta(query, total),
+    };
+  }
+
+  async createCategory(groupId: string, subsidiaryId: string, body: CreateCategoryDto) {
+    if (!groupId) throw new BadRequestException("X-Group-Id header is required");
+    if (!subsidiaryId) throw new BadRequestException("X-Subsidiary-Id header is required");
+
+    const productFilters = this.prepareCategoryFilters(body.product_filters);
+    const variantFilters = this.prepareCategoryFilters(body.variant_filters);
+
+    const category = await this.prisma.category.create({
+      data: {
+        groupId,
+        subsidiaryId,
+        code: body.code.trim(),
+        name: body.name.trim(),
+        description: body.description?.trim() || undefined,
+        status: body.status ?? "active",
+        sortOrder: body.sort_order ?? 0,
+        productFilters,
+        variantFilters,
+      },
+    });
+
+    return this.mapCategory(category);
+  }
+
+  async getCategory(groupId: string, subsidiaryId: string, categoryId: string) {
+    if (!groupId) throw new BadRequestException("X-Group-Id header is required");
+    if (!subsidiaryId) throw new BadRequestException("X-Subsidiary-Id header is required");
+
+    const category = await this.prisma.category.findFirst({
+      where: { id: categoryId, groupId, subsidiaryId },
+    });
+    if (!category) throw new NotFoundException("Category not found");
+    return this.mapCategory(category);
+  }
+
+  async updateCategory(groupId: string, subsidiaryId: string, categoryId: string, body: UpdateCategoryDto) {
+    if (!groupId) throw new BadRequestException("X-Group-Id header is required");
+    if (!subsidiaryId) throw new BadRequestException("X-Subsidiary-Id header is required");
+
+    const existing = await this.prisma.category.findFirst({
+      where: { id: categoryId, groupId, subsidiaryId },
+    });
+    if (!existing) throw new NotFoundException("Category not found");
+
+    const productFilters = body.product_filters ? this.prepareCategoryFilters(body.product_filters) : undefined;
+    const variantFilters = body.variant_filters ? this.prepareCategoryFilters(body.variant_filters) : undefined;
+
+    const category = await this.prisma.category.update({
+      where: { id: existing.id },
+      data: {
+        code: body.code?.trim(),
+        name: body.name?.trim(),
+        description: body.description?.trim(),
+        status: body.status,
+        sortOrder: body.sort_order,
+        productFilters,
+        variantFilters,
+      },
+    });
+
+    return this.mapCategory(category);
+  }
+
+  async listCategoryProductsById(
+    groupId: string,
+    subsidiaryId: string,
+    categoryId: string,
+    query: ListQueryDto,
+  ) {
+    if (!groupId) throw new BadRequestException("X-Group-Id header is required");
+    if (!subsidiaryId) throw new BadRequestException("X-Subsidiary-Id header is required");
+
+    const category = await this.prisma.category.findFirst({
+      where: { id: categoryId, groupId, subsidiaryId, status: "active" },
+    });
+    if (!category) throw new NotFoundException("Category not found");
+
+    const subsidiary = await this.getSubsidiary(groupId, subsidiaryId);
+    const where: Prisma.ProductWhereInput = {
+      groupId,
+      ...(query.status ? { status: query.status } : {}),
+    };
+
+    const andFilters: Prisma.ProductWhereInput[] = [];
+    if (this.isTradingSubsidiary(subsidiary)) {
+      andFilters.push({ OR: [{ subsidiaryId }, { subsidiaryId: null }] });
+    } else {
+      andFilters.push({
+        variants: {
+          some: {
+            assortments: { some: { subsidiaryId, status: "active" } },
+          },
+        },
+      });
+    }
+
+    if (query.barcode) {
+      andFilters.push({ variants: { some: { barcode: query.barcode } } });
+    } else if (query.q) {
+      andFilters.push({
+        OR: [
+          { name: { contains: query.q, mode: "insensitive" as const } },
+          { sku: { contains: query.q, mode: "insensitive" as const } },
+        ],
+      });
+    }
+
+    const facetFilters = this.parseFacetFilters(query.facets);
+    for (const filter of facetFilters) {
+      andFilters.push({
+        facets: {
+          some: {
+            facetValue: {
+              normalizedValue: filter.normalizedValue,
+              facet: { key: filter.normalizedKey },
+            },
+          },
+        },
+      });
+    }
+
+    const categoryOr = this.buildCategoryProductOr(category);
+    if (categoryOr.length) {
+      andFilters.push({ OR: categoryOr });
+    }
+
+    if (andFilters.length) {
+      where.AND = andFilters;
+    }
+
+    const [total, products] = await this.prisma.$transaction([
+      this.prisma.product.count({ where }),
+      this.prisma.product.findMany({
+        where,
+        orderBy: { createdAt: "desc" },
+        skip: query.offset ?? 0,
+        take: query.limit ?? 50,
+        include: {
+          facets: { include: { facetValue: { include: { facet: true } } } },
+        },
+      }),
+    ]);
+
+    return {
+      data: products.map((product) => this.mapProduct(product)),
+      meta: this.buildMeta(query, total),
+    };
+  }
+
+  async listCategoryProducts(groupId: string, subsidiaryId: string, query: ListCategoryQueryDto) {
+    const facets = this.buildCategoryFacets(query);
+    const { facet_key, facet_value, ...rest } = query;
+    const listQuery: ListQueryDto = { ...rest, facets };
+    return this.listProducts(groupId, subsidiaryId, listQuery);
+  }
+
   async createProduct(groupId: string, subsidiaryId: string, body: CreateProductDto) {
     if (!groupId) throw new BadRequestException("X-Group-Id header is required");
     if (!subsidiaryId) throw new BadRequestException("X-Subsidiary-Id header is required");
@@ -489,6 +701,87 @@ export class CatalogService {
     };
   }
 
+  async listCategoryVariantsById(
+    groupId: string,
+    subsidiaryId: string,
+    categoryId: string,
+    query: ListQueryDto,
+  ) {
+    if (!groupId) throw new BadRequestException("X-Group-Id header is required");
+    if (!subsidiaryId) throw new BadRequestException("X-Subsidiary-Id header is required");
+
+    const category = await this.prisma.category.findFirst({
+      where: { id: categoryId, groupId, subsidiaryId, status: "active" },
+    });
+    if (!category) throw new NotFoundException("Category not found");
+
+    const subsidiary = await this.getSubsidiary(groupId, subsidiaryId);
+    const where: Prisma.VariantWhereInput = {
+      groupId,
+    };
+
+    const andFilters: Prisma.VariantWhereInput[] = [];
+    if (this.isTradingSubsidiary(subsidiary)) {
+      andFilters.push({ OR: [{ subsidiaryId }, { subsidiaryId: null }] });
+    } else {
+      andFilters.push({
+        assortments: { some: { subsidiaryId, status: "active" } },
+      });
+    }
+
+    if (query.product_id) {
+      andFilters.push({ productId: query.product_id });
+    }
+
+    const facetFilters = this.parseFacetFilters(query.facets);
+    for (const filter of facetFilters) {
+      andFilters.push({
+        facets: {
+          some: {
+            facetValue: {
+              normalizedValue: filter.normalizedValue,
+              facet: { key: filter.normalizedKey },
+            },
+          },
+        },
+      });
+    }
+
+    const categoryOr = this.buildCategoryVariantOr(category);
+    if (categoryOr.length) {
+      andFilters.push({ OR: categoryOr });
+    }
+
+    if (andFilters.length) {
+      where.AND = andFilters;
+    }
+
+    const [total, variants] = await this.prisma.$transaction([
+      this.prisma.variant.count({ where }),
+      this.prisma.variant.findMany({
+        where,
+        orderBy: { createdAt: "desc" },
+        skip: query.offset ?? 0,
+        take: query.limit ?? 50,
+        include: {
+          facets: { include: { facetValue: { include: { facet: true } } } },
+        },
+      }),
+    ]);
+
+    return {
+      data: variants.map((variant) => this.mapVariant(variant)),
+      meta: this.buildMeta(query, total),
+    };
+  }
+
+  async listCategoryVariants(groupId: string, subsidiaryId: string, query: ListCategoryQueryDto) {
+    const facets = this.buildCategoryFacets(query);
+    const { facet_key, facet_value, ...rest } = query;
+    const listQuery: ListQueryDto = { ...rest, facets };
+    return this.listVariants(groupId, subsidiaryId, listQuery);
+  }
+
   async createVariant(groupId: string, subsidiaryId: string, body: CreateVariantDto) {
     if (!groupId) throw new BadRequestException("X-Group-Id header is required");
     if (!subsidiaryId) throw new BadRequestException("X-Subsidiary-Id header is required");
@@ -680,6 +973,169 @@ export class CatalogService {
 
   private normalizeFacetValue(value: string) {
     return value.trim().toLowerCase();
+  }
+
+  private prepareCategoryFilters(filters?: CategoryFilterGroupDto[]) {
+    if (!filters?.length) return null;
+    const cleaned = filters
+      .map((group) => ({
+        all: (group.all || [])
+          .map((filter) => ({
+            key: filter.key.trim(),
+            value: filter.value.trim(),
+          }))
+          .filter((filter) => filter.key && filter.value),
+      }))
+      .filter((group) => group.all.length);
+
+    return cleaned.length ? cleaned : null;
+  }
+
+  private parseCategoryFilters(filters: Prisma.JsonValue | null | undefined): CategoryFilterGroup[] {
+    if (!filters || !Array.isArray(filters)) return [];
+    return filters
+      .map((group) => {
+        if (!group || typeof group !== "object") return null;
+        const anyGroup = group as { all?: unknown };
+        const items = Array.isArray(anyGroup.all) ? anyGroup.all : [];
+        const parsed = items
+          .map((item) => {
+            if (!item || typeof item !== "object") return null;
+            const record = item as { key?: unknown; value?: unknown };
+            if (typeof record.key !== "string" || typeof record.value !== "string") return null;
+            return { key: record.key, value: record.value };
+          })
+          .filter(Boolean) as CategoryFilter[];
+
+        if (!parsed.length) return null;
+        return { all: parsed };
+      })
+      .filter(Boolean) as CategoryFilterGroup[];
+  }
+
+  private normalizeCategoryFilters(filters: CategoryFilterGroup[]): NormalizedCategoryFilterGroup[] {
+    return filters
+      .map((group) => ({
+        all: group.all
+          .map((filter) => ({
+            normalizedKey: this.normalizeFacetKey(filter.key),
+            normalizedValue: this.normalizeFacetValue(filter.value),
+          }))
+          .filter((filter) => filter.normalizedKey && filter.normalizedValue),
+      }))
+      .filter((group) => group.all.length);
+  }
+
+  private buildCategoryProductOr(category: { productFilters: Prisma.JsonValue | null; variantFilters: Prisma.JsonValue | null }) {
+    const productGroups = this.normalizeCategoryFilters(this.parseCategoryFilters(category.productFilters));
+    const variantGroups = this.normalizeCategoryFilters(this.parseCategoryFilters(category.variantFilters));
+    const useVariant = !productGroups.length && variantGroups.length;
+    const groups = useVariant ? variantGroups : productGroups;
+
+    if (!groups.length) return [];
+
+    if (useVariant) {
+      return groups.map((group) => ({
+        variants: {
+          some: {
+            AND: group.all.map((filter) => ({
+              facets: {
+                some: {
+                  facetValue: {
+                    normalizedValue: filter.normalizedValue,
+                    facet: { key: filter.normalizedKey },
+                  },
+                },
+              },
+            })),
+          },
+        },
+      }));
+    }
+
+    return groups.map((group) => ({
+      AND: group.all.map((filter) => ({
+        facets: {
+          some: {
+            facetValue: {
+              normalizedValue: filter.normalizedValue,
+              facet: { key: filter.normalizedKey },
+            },
+          },
+        },
+      })),
+    }));
+  }
+
+  private buildCategoryVariantOr(category: { productFilters: Prisma.JsonValue | null; variantFilters: Prisma.JsonValue | null }) {
+    const variantGroups = this.normalizeCategoryFilters(this.parseCategoryFilters(category.variantFilters));
+    const productGroups = this.normalizeCategoryFilters(this.parseCategoryFilters(category.productFilters));
+    const useProduct = !variantGroups.length && productGroups.length;
+    const groups = useProduct ? productGroups : variantGroups;
+
+    if (!groups.length) return [];
+
+    if (useProduct) {
+      return groups.map((group) => ({
+        product: {
+          AND: group.all.map((filter) => ({
+            facets: {
+              some: {
+                facetValue: {
+                  normalizedValue: filter.normalizedValue,
+                  facet: { key: filter.normalizedKey },
+                },
+              },
+            },
+          })),
+        },
+      }));
+    }
+
+    return groups.map((group) => ({
+      AND: group.all.map((filter) => ({
+        facets: {
+          some: {
+            facetValue: {
+              normalizedValue: filter.normalizedValue,
+              facet: { key: filter.normalizedKey },
+            },
+          },
+        },
+      })),
+    }));
+  }
+
+  private mapCategory(category: {
+    id: string;
+    code: string;
+    name: string;
+    description: string | null;
+    status: string;
+    sortOrder: number;
+    productFilters: Prisma.JsonValue | null;
+    variantFilters: Prisma.JsonValue | null;
+    createdAt: Date;
+    updatedAt: Date;
+  }) {
+    return {
+      id: category.id,
+      code: category.code,
+      name: category.name,
+      description: category.description ?? undefined,
+      status: category.status,
+      sort_order: category.sortOrder,
+      product_filters: category.productFilters ?? undefined,
+      variant_filters: category.variantFilters ?? undefined,
+      created_at: category.createdAt.toISOString(),
+      updated_at: category.updatedAt.toISOString(),
+    };
+  }
+
+  private buildCategoryFacets(query: ListCategoryQueryDto) {
+    const base = `${query.facet_key}=${query.facet_value}`;
+    if (query.facets) return `${base}|${query.facets}`;
+    return base;
   }
 
   private parseFacetFilters(raw?: string): FacetFilter[] {

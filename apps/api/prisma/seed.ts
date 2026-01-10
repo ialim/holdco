@@ -301,7 +301,9 @@ async function main() {
   const defaultFacets = [
     { key: "brand", name: "Brand", scope: "product" },
     { key: "concentration", name: "Concentration", scope: "product" },
+    { key: "sex", name: "Sex", scope: "product" },
     { key: "size", name: "Size", scope: "variant" },
+    { key: "packaging", name: "Packaging", scope: "variant" },
   ];
 
   for (const facet of defaultFacets) {
@@ -317,6 +319,73 @@ async function main() {
         status: "active",
       },
     });
+  }
+
+  type DefaultCategorySeed = {
+    code: string;
+    name: string;
+    sortOrder: number;
+    productFilters?: { all: { key: string; value: string }[] }[];
+    variantFilters?: { all: { key: string; value: string }[] }[];
+  };
+
+  const defaultCategories: DefaultCategorySeed[] = [
+    { code: "ALL", name: "All Products", sortOrder: 0 },
+    {
+      code: "MEN",
+      name: "Men",
+      sortOrder: 10,
+      productFilters: [{ all: [{ key: "sex", value: "male" }] }],
+    },
+    {
+      code: "WOMEN",
+      name: "Women",
+      sortOrder: 20,
+      productFilters: [{ all: [{ key: "sex", value: "female" }] }],
+    },
+    {
+      code: "UNISEX",
+      name: "Unisex",
+      sortOrder: 30,
+      productFilters: [{ all: [{ key: "sex", value: "unisex" }] }],
+    },
+    {
+      code: "GIFT_SETS",
+      name: "Gift Sets",
+      sortOrder: 40,
+      variantFilters: [{ all: [{ key: "packaging", value: "gift_set" }] }],
+    },
+    {
+      code: "TESTERS",
+      name: "Testers",
+      sortOrder: 50,
+      variantFilters: [{ all: [{ key: "packaging", value: "tester" }] }],
+    },
+  ];
+
+  for (const subsidiary of recipientSubsidiaries) {
+    for (const category of defaultCategories) {
+      const existingCategory = await prisma.category.findFirst({
+        where: {
+          subsidiaryId: subsidiary.id,
+          code: category.code,
+        },
+      });
+      if (existingCategory) continue;
+
+      await prisma.category.create({
+        data: {
+          groupId: group.id,
+          subsidiaryId: subsidiary.id,
+          code: category.code,
+          name: category.name,
+          status: "active",
+          sortOrder: category.sortOrder,
+          productFilters: category.productFilters ?? undefined,
+          variantFilters: category.variantFilters ?? undefined,
+        },
+      });
+    }
   }
 
   const chartAccounts = [

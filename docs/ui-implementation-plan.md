@@ -20,9 +20,9 @@ Related docs:
 - Rollout: start with read-heavy dashboards, then CRUD flows with validation.
 
 ## POS (Electron)
-- Local store: SQLite (or equivalent embedded DB) for catalog, price lists, promotions, and offline queue.
-- Offline queue: persist `order`, `payment intent`, and `capture` requests with deterministic idempotency keys.
-- Sync loop: replay queue on reconnect, treat `409 Conflict` as already processed, reconcile totals.
+- Local store: SQLite (or equivalent embedded DB) for catalog, price lists, promotions, and offline queue. (done)
+- Offline queue: persist `order`, `payment intent`, and `capture` requests with deterministic idempotency keys. (done)
+- Sync loop: replay queue on reconnect, treat `409 Conflict` as already processed, reconcile totals. (done)
 - Device provisioning: introduce device ID and store mapping for unique idempotency scopes.
 - Observability: local logs plus server-side audit events per request.
 

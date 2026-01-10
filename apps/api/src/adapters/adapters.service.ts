@@ -129,6 +129,7 @@ export class AdaptersService {
     let paymentIntent: any;
     let capturedPayment: any;
     let loyalty: any;
+    let finalOrder = order;
 
     try {
       const reserveStock = params.body.reserve_stock ?? params.channel === "retail";
@@ -166,8 +167,16 @@ export class AdaptersService {
         });
       }
 
+      const shouldFulfill =
+        params.channel === "retail" &&
+        (!params.body.payment || capturedPayment?.status === "captured");
+
+      if (shouldFulfill) {
+        finalOrder = await this.ordersService.fulfillOrder(params.groupId, params.subsidiaryId, order.id);
+      }
+
       return {
-        order,
+        order: finalOrder,
         reservations,
         payment_intent: paymentIntent,
         captured_payment: capturedPayment,

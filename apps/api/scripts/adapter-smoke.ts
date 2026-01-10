@@ -59,6 +59,9 @@ async function cleanup(prisma: PrismaClient, created: CreatedIds) {
   if (created.reservations.length) {
     await prisma.stockReservation.deleteMany({ where: { id: { in: created.reservations } } });
   }
+  if (created.productId) {
+    await prisma.stockReservation.deleteMany({ where: { productId: created.productId } });
+  }
   if (created.paymentIntents.length) {
     await prisma.refund.deleteMany({ where: { paymentIntentId: { in: created.paymentIntents } } });
     await prisma.paymentIntent.deleteMany({ where: { id: { in: created.paymentIntents } } });
@@ -182,7 +185,7 @@ async function main() {
           payment: {
             amount: 3500,
             currency: "NGN",
-            provider: "paystack",
+            provider: "manual",
             customer_email: "smoke-retail@example.com",
           },
           reserve_stock: true,
@@ -216,7 +219,7 @@ async function main() {
           payment: {
             amount: 4200,
             currency: "NGN",
-            provider: "paystack",
+            provider: "manual",
             customer_email: "smoke-digital@example.com",
           },
           capture_payment: true,

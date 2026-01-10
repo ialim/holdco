@@ -32,12 +32,14 @@ Device registration and updates are handled in Admin-Ops (not in the POS app).
 Managers can refresh the device token on-site via `POST /v1/pos/devices/activate` (24h JWT).
 
 ## Offline queue
-Checkout uses the retail adapter (`POST /v1/adapters/retail/checkout`) and is written to the offline queue with an idempotency key. If the network is down, the queue persists to disk and is replayed on reconnect.
+Checkout uses the retail adapter (`POST /v1/adapters/retail/checkout`) and is written to the offline queue with an idempotency key. The queue is backed by SQLite (`apps/pos/data/pos.sqlite`) and is replayed on reconnect with idempotent retries.
+
+## Local cache
+Catalog filters, product queries, and pricing rules are cached in SQLite for offline use. When online, the app refreshes caches on a timer and falls back to cached data if requests fail.
 
 ## Categories
 Categories are loaded from `GET /v1/categories` (subsidiary-scoped). If none exist, the POS falls back to facet values from `categoryFacetKey`.
 
 ## Next steps
-- Replace the file-backed queue with SQLite for durability and reporting.
-- Add local cache tables for catalog, price lists, and promotions.
+- Add local cache tables for promotions and receipts.
 - Expand checkout with pricing rules and customer lookups.

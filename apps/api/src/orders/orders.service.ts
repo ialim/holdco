@@ -23,6 +23,8 @@ export class OrdersService {
       groupId,
       subsidiaryId,
       ...(query.status ? { status: query.status } : {}),
+      ...(query.channel ? { channel: query.channel } : {}),
+      ...(query.location_id ? { locationId: query.location_id } : {}),
       ...(createdAt.gte || createdAt.lte ? { createdAt } : {}),
     };
 
@@ -69,7 +71,15 @@ export class OrdersService {
       };
     });
 
-    const totalAmount = items.reduce((sum, item) => sum + item.totalPrice, 0);
+    const itemsTotal = items.reduce((sum, item) => sum + item.totalPrice, 0);
+    const discountAmount = body.discount_amount ?? 0;
+    const taxAmount = body.tax_amount ?? 0;
+    const shippingAmount = body.shipping_amount ?? 0;
+    const totalAmount = itemsTotal - discountAmount + taxAmount + shippingAmount;
+
+    if (totalAmount < 0) {
+      throw new BadRequestException("Order total cannot be negative");
+    }
 
     const order = await this.prisma.order.create({
       data: {
@@ -82,6 +92,9 @@ export class OrdersService {
         resellerId: body.reseller_id,
         status: "pending",
         totalAmount,
+        discountAmount,
+        taxAmount,
+        shippingAmount,
         currency,
         items: { create: items },
       },
@@ -148,6 +161,9 @@ export class OrdersService {
     customerId: string | null;
     resellerId: string | null;
     totalAmount: any;
+    discountAmount?: any;
+    taxAmount?: any;
+    shippingAmount?: any;
     currency: string;
     items: Array<{
       productId: string;
@@ -164,6 +180,9 @@ export class OrdersService {
       customer_id: order.customerId ?? undefined,
       reseller_id: order.resellerId ?? undefined,
       total_amount: Number(order.totalAmount),
+      discount_amount: Number(order.discountAmount ?? 0),
+      tax_amount: Number(order.taxAmount ?? 0),
+      shipping_amount: Number(order.shippingAmount ?? 0),
       currency: order.currency,
       items: order.items.map((item) => ({
         product_id: item.productId,

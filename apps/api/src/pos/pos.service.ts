@@ -26,6 +26,7 @@ const DEVICE_TOKEN_PERMISSIONS = [
   "catalog.variant.read",
   "pricing.price_list.read",
   "pricing.price_rule.read",
+  "pricing.promotion.read",
   "pos.devices.read",
   "pos.shifts.read",
   "pos.shifts.manage",
@@ -34,6 +35,7 @@ const DEVICE_TOKEN_PERMISSIONS = [
   "payments.intent.create",
   "payments.capture",
   "inventory.stock.reserve",
+  "inventory.stock.read",
   "loyalty.customer.read",
   "loyalty.points.issue",
 ];

@@ -1,4 +1,4 @@
-import { IsArray, IsOptional, IsString, IsUUID, Matches, ValidateNested } from "class-validator";
+import { IsArray, IsOptional, IsString, IsUUID, Matches, Min, ValidateNested } from "class-validator";
 import { Type } from "class-transformer";
 import { CreateOrderItemDto } from "./create-order-item.dto";
 
@@ -15,6 +15,21 @@ export class CreateOrderDto {
   @IsString()
   @Matches(/^[A-Z]{3}$/)
   currency?: string;
+
+  @IsOptional()
+  @Type(() => Number)
+  @Min(0)
+  discount_amount?: number;
+
+  @IsOptional()
+  @Type(() => Number)
+  @Min(0)
+  tax_amount?: number;
+
+  @IsOptional()
+  @Type(() => Number)
+  @Min(0)
+  shipping_amount?: number;
 
   @IsArray()
   @ValidateNested({ each: true })

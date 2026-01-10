@@ -1,0 +1,4 @@
+-- AlterTable
+ALTER TABLE "orders" ADD COLUMN "discount_amount" DECIMAL(12,2) NOT NULL DEFAULT 0;
+ALTER TABLE "orders" ADD COLUMN "tax_amount" DECIMAL(12,2) NOT NULL DEFAULT 0;
+ALTER TABLE "orders" ADD COLUMN "shipping_amount" DECIMAL(12,2) NOT NULL DEFAULT 0;

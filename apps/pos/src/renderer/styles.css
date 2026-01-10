@@ -597,6 +597,10 @@ pre {
   flex-wrap: wrap;
 }
 
+.chip-row.hidden {
+  display: none;
+}
+
 .chip {
   padding: 8px 12px;
   border-radius: 999px;
@@ -704,6 +708,35 @@ pre {
   font-size: 13px;
 }
 
+.adjustment-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.adjustment-grid .coupon-field {
+  grid-column: span 2;
+}
+
+.coupon-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  width: 100%;
+  flex-wrap: nowrap;
+}
+
+.coupon-row input {
+  flex: 1 1 140px;
+  min-width: 0;
+}
+
+.coupon-row button {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
 .summary-item {
   display: flex;
   justify-content: space-between;
@@ -752,6 +785,10 @@ pre {
   display: flex;
   flex-direction: column;
   gap: 12px;
+  min-height: 0;
+  max-height: clamp(320px, 52vh, 560px);
+  overflow: hidden;
+  position: relative;
 }
 
 .product-panel-header {
@@ -765,6 +802,45 @@ pre {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
   gap: 12px;
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding-right: 4px;
+  align-content: start;
+}
+
+.filter-drawer {
+  position: absolute;
+  inset: 0;
+  background: rgba(255, 253, 250, 0.97);
+  border-left: 1px solid var(--stroke);
+  box-shadow: -8px 0 22px rgba(30, 26, 18, 0.12);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  transform: translateX(100%);
+  opacity: 0;
+  pointer-events: none;
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+.filter-drawer.open {
+  transform: translateX(0);
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.drawer-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.filter-drawer .chip-row {
+  max-height: 60vh;
+  overflow: auto;
 }
 
 .product-card {
@@ -826,6 +902,11 @@ pre {
 .product-stock {
   font-size: 11px;
   color: var(--muted);
+}
+
+.product-stock.low {
+  color: var(--danger);
+  font-weight: 600;
 }
 
 .payment-bar {
@@ -929,6 +1010,22 @@ pre {
 }
 
 .customer-meta {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.order-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid var(--stroke);
+  background: #fdfbf7;
+}
+
+.order-meta {
   font-size: 12px;
   color: var(--muted);
 }

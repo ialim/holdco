@@ -236,14 +236,6 @@
               </div>
             </div>
 
-            <div class="filter-strip">
-              <div id="categoryTabs" class="chip-row"></div>
-              <div id="brandTabs" class="chip-row hidden"></div>
-              <div id="featuredHint" class="chip-row hidden">
-                <span class="helper">Showing featured items only.</span>
-              </div>
-            </div>
-
             <div class="checkout-body">
               <div class="cart-panel">
                 <div class="cart-head">
@@ -276,6 +268,28 @@
                     <span id="cartShipping" class="summary-value">0.00</span>
                   </div>
                 </div>
+                <div class="adjustment-grid">
+                  <div class="form-row inline coupon-field">
+                    <label for="discountInput">Discount</label>
+                    <input id="discountInput" type="number" min="0" step="0.01" value="0" />
+                  </div>
+                  <div class="form-row inline">
+                    <label for="taxRateInput">Tax %</label>
+                    <input id="taxRateInput" type="number" min="0" step="0.01" value="0" />
+                  </div>
+                  <div class="form-row inline">
+                    <label for="shippingInput">Shipping</label>
+                    <input id="shippingInput" type="number" min="0" step="0.01" value="0" />
+                  </div>
+                  <div class="form-row inline">
+                    <label for="couponCode">Coupon</label>
+                    <div class="coupon-row">
+                      <input id="couponCode" type="text" placeholder="PROMO2026" />
+                      <button id="applyCoupon" class="ghost" type="button">Apply</button>
+                    </div>
+                    <div id="couponStatus" class="helper"></div>
+                  </div>
+                </div>
                 <div class="grand-total">
                   <span>Grand Total</span>
                   <span id="cartGrandTotal">0.00</span>
@@ -304,21 +318,32 @@
                   <span id="productCount" class="mono"></span>
                 </div>
                 <div id="productResults" class="product-grid"></div>
+                <div id="filterDrawer" class="filter-drawer">
+                  <div class="drawer-header">
+                    <h4 id="filterDrawerTitle">Filter</h4>
+                    <button id="closeFilterDrawer" class="ghost" type="button">Close</button>
+                  </div>
+                  <div id="categoryTabs" class="chip-row"></div>
+                  <div id="brandTabs" class="chip-row hidden"></div>
+                  <div id="featuredHint" class="chip-row hidden">
+                    <span class="helper">Showing featured items only.</span>
+                  </div>
+                </div>
               </div>
             </div>
 
             <div class="payment-bar">
-              <button type="button" class="payment-button">Card</button>
-              <button type="button" class="payment-button">Cash</button>
-              <button type="button" class="payment-button">Transfer</button>
-              <button type="button" class="payment-button">Split</button>
-              <button type="button" class="payment-button">Installment</button>
-              <button type="button" class="payment-button">Deposit</button>
-              <button type="button" class="payment-button">Points</button>
+              <button id="payCard" type="button" class="payment-button">Card</button>
+              <button id="payCash" type="button" class="payment-button">Cash</button>
+              <button id="payTransfer" type="button" class="payment-button">Transfer</button>
+              <button id="paySplit" type="button" class="payment-button">Split</button>
+              <button id="payInstallment" type="button" class="payment-button">Installment</button>
+              <button id="payDeposit" type="button" class="payment-button">Deposit</button>
+              <button id="payPoints" type="button" class="payment-button">Points</button>
               <div class="payment-spacer"></div>
-              <button type="button" class="payment-button ghost">Draft</button>
-              <button type="button" class="payment-button danger">Cancel</button>
-              <button type="button" class="payment-button ghost">Recent</button>
+              <button id="payDraft" type="button" class="payment-button ghost">Draft</button>
+              <button id="payCancel" type="button" class="payment-button danger">Cancel</button>
+              <button id="payRecent" type="button" class="payment-button ghost">Recent</button>
             </div>
           </div>
 
@@ -349,6 +374,107 @@
         </div>
         <div class="modal-actions">
           <button id="setWalkIn" class="ghost" type="button">Walk in customer</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="paymentModal" class="modal hidden">
+      <div class="modal-card">
+        <div class="modal-header">
+          <h3>Take Payment</h3>
+          <button id="closePaymentModal" class="ghost" type="button">Close</button>
+        </div>
+        <form id="paymentForm" class="stack">
+          <div class="summary-item">
+            <span class="summary-label">Amount due</span>
+            <span id="paymentTotal" class="summary-value">0.00</span>
+          </div>
+          <div class="form-row">
+            <label for="paymentMethod">Method</label>
+            <select id="paymentMethod">
+              <option value="card">Card</option>
+              <option value="transfer">Transfer</option>
+              <option value="ussd">USSD</option>
+              <option value="manual">Cash (Manual)</option>
+            </select>
+          </div>
+          <div class="form-row">
+            <label for="paymentProvider">Provider</label>
+            <select id="paymentProvider">
+              <option value="paystack">Paystack</option>
+              <option value="flutterwave">Flutterwave</option>
+              <option value="monnify">Monnify</option>
+              <option value="interswitch">Interswitch</option>
+              <option value="manual">Manual</option>
+            </select>
+          </div>
+          <div class="form-row">
+            <label for="paymentAmount">Amount</label>
+            <input id="paymentAmount" type="number" min="0" step="0.01" />
+          </div>
+          <div class="form-row">
+            <label for="paymentCurrency">Currency</label>
+            <input id="paymentCurrency" type="text" maxlength="3" value="NGN" />
+          </div>
+          <div class="form-row">
+            <label for="paymentEmail">Customer email</label>
+            <input id="paymentEmail" type="email" placeholder="customer@example.com" />
+          </div>
+          <div class="form-row">
+            <label for="paymentCapture">Capture now</label>
+            <select id="paymentCapture">
+              <option value="false">No</option>
+              <option value="true">Yes</option>
+            </select>
+          </div>
+          <div id="paymentHint" class="helper"></div>
+          <div class="actions">
+            <button type="submit" class="primary">Proceed</button>
+            <button id="cancelPayment" type="button" class="ghost">Cancel</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <div id="refundModal" class="modal hidden">
+      <div class="modal-card">
+        <div class="modal-header">
+          <h3>Refund Payment</h3>
+          <button id="closeRefundModal" class="ghost" type="button">Close</button>
+        </div>
+        <form id="refundForm" class="stack">
+          <div class="form-row">
+            <label for="refundPaymentId">Payment intent ID</label>
+            <input id="refundPaymentId" type="text" placeholder="pi_..." />
+          </div>
+          <div class="form-row">
+            <label for="refundAmount">Amount</label>
+            <input id="refundAmount" type="number" min="0" step="0.01" />
+          </div>
+          <div class="form-row">
+            <label for="refundReason">Reason</label>
+            <input id="refundReason" type="text" placeholder="Customer return" />
+          </div>
+          <div id="refundHint" class="helper"></div>
+          <div class="actions">
+            <button type="submit" class="primary">Submit refund</button>
+            <button id="cancelRefund" type="button" class="ghost">Cancel</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <div id="recentModal" class="modal hidden">
+      <div class="modal-card">
+        <div class="modal-header">
+          <h3>Recent Orders</h3>
+          <button id="closeRecentModal" class="ghost" type="button">Close</button>
+        </div>
+        <div class="modal-body">
+          <div class="actions">
+            <button id="refreshRecent" class="ghost" type="button">Refresh</button>
+          </div>
+          <div id="recentOrders" class="list"></div>
         </div>
       </div>
     </div>

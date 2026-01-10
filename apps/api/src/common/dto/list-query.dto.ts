@@ -29,6 +29,14 @@ export class ListQueryDto {
 
   @IsOptional()
   @IsString()
+  channel?: string;
+
+  @IsOptional()
+  @IsUUID()
+  location_id?: string;
+
+  @IsOptional()
+  @IsString()
   facets?: string;
 
   @IsOptional()

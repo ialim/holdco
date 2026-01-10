@@ -9,6 +9,7 @@ This document outlines the offline-first approach for the retail POS desktop app
 
 ## Offline queue
 - Persist create order and payment operations before attempting network calls.
+- Use SQLite for durable storage (`apps/pos/data/pos.sqlite`).
 - Every queued entry includes an idempotency key.
 - Replays are sequential to preserve order-level integrity.
 - Treat HTTP 409 responses as already processed.
@@ -18,9 +19,9 @@ This document outlines the offline-first approach for the retail POS desktop app
 - Open shifts with `POST /v1/pos/shifts` and close with `POST /v1/pos/shifts/{shift_id}/close`.
 
 ## Local cache
-- Cache product catalog, price lists, price rules, and promotions.
+- Cache product catalog, price lists, price rules, and promotions in SQLite.
 - Cache by store and channel for fast lookup.
-- Refresh on schedule and on login.
+- Refresh on schedule and on login; fall back to cache when offline.
 
 ## Idempotency key scheme
 - Deterministic key per operation scope and payload hash.

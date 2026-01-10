@@ -41,12 +41,15 @@ const POS_ALL = [
   "catalog.variant.read",
   "pricing.price_list.read",
   "pricing.price_rule.read",
+  "pricing.promotion.read",
+  "inventory.stock.read",
   "pos.devices.read",
   "pos.devices.manage",
   "pos.cashiers.manage",
   "pos.shifts.read",
   "pos.shifts.manage",
   TENANCY_LOCATIONS_READ,
+  "orders.read",
 ];
 
 const POS_OPERATOR = [
@@ -55,9 +58,12 @@ const POS_OPERATOR = [
   "catalog.variant.read",
   "pricing.price_list.read",
   "pricing.price_rule.read",
+  "pricing.promotion.read",
+  "inventory.stock.read",
   "pos.shifts.read",
   "pos.shifts.manage",
   TENANCY_LOCATIONS_READ,
+  "orders.read",
   "orders.write",
   "payments.intent.create",
   "payments.capture",

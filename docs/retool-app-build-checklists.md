@@ -6,17 +6,17 @@ Use these ordered checklists when building each Retool app. Each checklist follo
 Layout guide: `docs/retool-app1-catalog-layout.md`.
 
 Queries
-- [ ] Create list queries: `qListBrands`, `qListSuppliers`, `qListProducts`, `qListVariants`, `qListFacets`, `qListFacetValues`.
-- [ ] Create write queries: `qCreateBrand`, `qCreateSupplier`, `qCreateProduct`, `qCreateVariant`, `qCreateFacet`, `qCreateFacetValue`.
-- [ ] Create update queries: `qUpdateProduct`, `qUpdateVariant`.
+- [ ] Create list queries: `qListBrands`, `qListSuppliers`, `qListCategories`, `qListProducts`, `qListVariants`, `qListFacets`, `qListFacetValues`.
+- [ ] Create write queries: `qCreateBrand`, `qCreateSupplier`, `qCreateCategory`, `qCreateProduct`, `qCreateVariant`, `qCreateFacet`, `qCreateFacetValue`.
+- [ ] Create update queries: `qUpdateCategory`, `qUpdateProduct`, `qUpdateVariant`.
 - [ ] Optional detail query: `qGetProduct`.
 - [ ] All write queries include `Idempotency-Key` from `newIdempotencyKey`.
 
 Components
-- [ ] Tabs: Brands, Suppliers, Products, Variants, Facets, Facet Values.
-- [ ] Tables: `tableBrands`, `tableSuppliers`, `tableProducts`, `tableVariants`, `tableFacets`, `tableFacetValues`.
-- [ ] Inputs: `searchBrands`, `searchSuppliers`, `searchProducts`, `searchVariants`, `searchFacets`.
-- [ ] Drawers: `drawerBrand`, `drawerSupplier`, `drawerProduct`, `drawerVariant`, `drawerFacet`, `drawerFacetValue`.
+- [ ] Tabs: Brands, Suppliers, Categories, Products, Variants, Facets, Facet Values.
+- [ ] Tables: `tableBrands`, `tableSuppliers`, `tableCategories`, `tableProducts`, `tableVariants`, `tableFacets`, `tableFacetValues`.
+- [ ] Inputs: `searchBrands`, `searchSuppliers`, `searchCategories`, `searchProducts`, `searchVariants`, `searchFacets`.
+- [ ] Drawers: `drawerBrand`, `drawerSupplier`, `drawerCategory`, `drawerProduct`, `drawerVariant`, `drawerFacet`, `drawerFacetValue`.
 - [ ] Buttons: create actions per tab.
 
 Bindings
@@ -28,6 +28,7 @@ Bindings
 
 QA
 - [ ] Create brand and supplier (create-only).
+- [ ] Create and update a category with filters.
 - [ ] Create and update product/variant with facets.
 - [ ] Facet values visible only when a facet is selected.
 - [ ] Pagination + filters return expected results.

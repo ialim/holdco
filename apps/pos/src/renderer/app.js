@@ -92,6 +92,49 @@ const cartDiscount = document.getElementById("cartDiscount");
 const cartTax = document.getElementById("cartTax");
 const cartShipping = document.getElementById("cartShipping");
 const cartGrandTotal = document.getElementById("cartGrandTotal");
+const discountInput = document.getElementById("discountInput");
+const taxRateInput = document.getElementById("taxRateInput");
+const shippingInput = document.getElementById("shippingInput");
+const couponCodeInput = document.getElementById("couponCode");
+const applyCouponButton = document.getElementById("applyCoupon");
+const couponStatus = document.getElementById("couponStatus");
+const filterDrawer = document.getElementById("filterDrawer");
+const filterDrawerTitle = document.getElementById("filterDrawerTitle");
+const closeFilterDrawerButton = document.getElementById("closeFilterDrawer");
+const payCardButton = document.getElementById("payCard");
+const payCashButton = document.getElementById("payCash");
+const payTransferButton = document.getElementById("payTransfer");
+const paySplitButton = document.getElementById("paySplit");
+const payInstallmentButton = document.getElementById("payInstallment");
+const payDepositButton = document.getElementById("payDeposit");
+const payPointsButton = document.getElementById("payPoints");
+const payDraftButton = document.getElementById("payDraft");
+const payCancelButton = document.getElementById("payCancel");
+const payRecentButton = document.getElementById("payRecent");
+const paymentModal = document.getElementById("paymentModal");
+const paymentForm = document.getElementById("paymentForm");
+const paymentTotal = document.getElementById("paymentTotal");
+const paymentMethod = document.getElementById("paymentMethod");
+const paymentProvider = document.getElementById("paymentProvider");
+const paymentAmount = document.getElementById("paymentAmount");
+const paymentCurrency = document.getElementById("paymentCurrency");
+const paymentEmail = document.getElementById("paymentEmail");
+const paymentCapture = document.getElementById("paymentCapture");
+const paymentHint = document.getElementById("paymentHint");
+const closePaymentModalButton = document.getElementById("closePaymentModal");
+const cancelPaymentButton = document.getElementById("cancelPayment");
+const refundModal = document.getElementById("refundModal");
+const refundForm = document.getElementById("refundForm");
+const refundPaymentId = document.getElementById("refundPaymentId");
+const refundAmount = document.getElementById("refundAmount");
+const refundReason = document.getElementById("refundReason");
+const refundHint = document.getElementById("refundHint");
+const closeRefundModalButton = document.getElementById("closeRefundModal");
+const cancelRefundButton = document.getElementById("cancelRefund");
+const recentModal = document.getElementById("recentModal");
+const closeRecentModalButton = document.getElementById("closeRecentModal");
+const refreshRecentButton = document.getElementById("refreshRecent");
+const recentOrders = document.getElementById("recentOrders");
 
 const state = {
   config: null,
@@ -118,7 +161,27 @@ const state = {
   brands: [],
   filtersLoaded: false,
   customer: null,
-  categoryFacetKey: "category"
+  categoryFacetKey: "category",
+  orderTotals: {
+    itemCount: 0,
+    total: 0,
+    discount: 0,
+    tax: 0,
+    shipping: 0,
+    grandTotal: 0
+  },
+  lastOrder: null,
+  lastPaymentIntent: null,
+  stockLoaded: false,
+  stockByProduct: new Map(),
+  stockByVariant: new Map(),
+  drawerOpen: false,
+  promotionsLoaded: false,
+  promotionsByCode: new Map(),
+  appliedPromotion: null,
+  manualDiscount: 0,
+  taxRate: 0,
+  shippingAmount: 0
 };
 
 function showToast(message, tone = "neutral") {
@@ -176,9 +239,14 @@ function buildQuery(params) {
 }
 
 function setApiStatus(online) {
+  const wasOnline = state.online;
   state.online = online;
   apiStatusEl.textContent = online ? "Online" : "Offline";
   apiStatusEl.classList.toggle("online", online);
+  if (online && !wasOnline) {
+    refreshCaches();
+    syncQueue();
+  }
 }
 
 function renderCashier() {
@@ -271,8 +339,15 @@ function loadConfig() {
   }
 
   if (configStatusEl) {
-    configStatusEl.textContent = "Config loaded.";
-    configStatusEl.classList.remove("error");
+    const warning = window.pos?.warning;
+    if (warning) {
+      configStatusEl.textContent = `Config loaded with warnings: ${warning}`;
+      configStatusEl.classList.add("error");
+      showToast(`POS warning: ${warning}`, "error");
+    } else {
+      configStatusEl.textContent = "Config loaded.";
+      configStatusEl.classList.remove("error");
+    }
   }
   if (configMissingMessage) {
     configMissingMessage.textContent = "";
@@ -294,6 +369,15 @@ function loadConfig() {
   state.priceRulesLoaded = false;
   state.priceRulesByProduct = new Map();
   state.priceRulesByVariant = new Map();
+  state.stockLoaded = false;
+  state.stockByProduct = new Map();
+  state.stockByVariant = new Map();
+  state.promotionsLoaded = false;
+  state.promotionsByCode = new Map();
+  state.appliedPromotion = null;
+  state.manualDiscount = 0;
+  state.taxRate = Number(state.config.taxRate ?? 0) || 0;
+  state.shippingAmount = Number(state.config.shippingAmount ?? 0) || 0;
   state.filtersLoaded = false;
   state.categories = [];
   state.brands = [];
@@ -302,11 +386,68 @@ function loadConfig() {
   state.filterMode = "category";
   state.featuredOnly = false;
   state.customer = null;
+  hydrateFiltersFromCache();
+  hydrateStockFromCache();
   renderCashier();
+  if (discountInput) {
+    discountInput.value = state.manualDiscount.toFixed(2);
+    discountInput.disabled = false;
+  }
+  if (taxRateInput) {
+    taxRateInput.value = state.taxRate.toFixed(2);
+  }
+  if (shippingInput) {
+    shippingInput.value = state.shippingAmount.toFixed(2);
+  }
+  if (couponCodeInput) {
+    couponCodeInput.value = "";
+  }
+  if (couponStatus) {
+    couponStatus.textContent = "";
+  }
   configRawEl.textContent = JSON.stringify(maskConfig(state.config), null, 2);
   updateTokenStatus();
   updateNav();
   updateCheckoutHeader();
+  updateCartSummary();
+}
+
+function getDefaultPaymentProvider() {
+  return state.config?.paymentProvider || "paystack";
+}
+
+function hydrateFiltersFromCache() {
+  const cachedCategories = readCache("filters:categories:saved", null);
+  const cachedFacetCategories = readCache("filters:categories:facet", null);
+  const cachedBrands = readCache("filters:brands", null);
+
+  if (cachedCategories?.length) {
+    state.categorySource = "saved";
+    state.categories = cachedCategories;
+  } else if (cachedFacetCategories?.length) {
+    state.categorySource = "facet";
+    state.categories = cachedFacetCategories;
+  }
+
+  if (cachedBrands?.length) {
+    state.brands = cachedBrands;
+  }
+
+  if (state.categories.length || state.brands.length) {
+    state.filtersLoaded = true;
+  }
+}
+
+function hydrateStockFromCache() {
+  const locationId = state.selectedLocationId || state.config?.locationId;
+  if (!locationId) return;
+  const cached = readCache(`stock-levels:${locationId}`, STOCK_CACHE_TTL_MS);
+  if (!cached) return;
+  setStockMaps(cached);
+  state.stockLoaded = true;
+  if (state.catalogResults.length) {
+    renderProducts();
+  }
 }
 
 const VIEWS = {
@@ -320,6 +461,28 @@ const VIEWS = {
 
 const TOKEN_EXPIRY_GRACE_MS = 60 * 1000;
 const IDLE_TIMEOUT_MS = 10 * 60 * 1000;
+const CACHE_TTL_MS = 15 * 60 * 1000;
+const PRODUCT_CACHE_TTL_MS = 60 * 60 * 1000;
+const STOCK_CACHE_TTL_MS = 5 * 60 * 1000;
+const PROMOTION_CACHE_TTL_MS = 30 * 60 * 1000;
+const CACHE_REFRESH_MS = 10 * 60 * 1000;
+const QUEUE_SYNC_MS = 60 * 1000;
+
+function readCache(key, maxAgeMs = CACHE_TTL_MS) {
+  if (!window.pos?.cacheGet) return null;
+  const cached = window.pos.cacheGet(key);
+  if (!cached) return null;
+  if (!cached.updated_at) return cached.payload ?? null;
+  if (maxAgeMs === null) return cached.payload ?? null;
+  const age = Date.now() - Date.parse(cached.updated_at);
+  if (Number.isFinite(age) && age > maxAgeMs) return null;
+  return cached.payload ?? null;
+}
+
+function writeCache(key, payload) {
+  if (!window.pos?.cacheSet) return null;
+  return window.pos.cacheSet(key, payload);
+}
 
 function isConfigComplete(config) {
   return Boolean(
@@ -542,11 +705,68 @@ function startIdleTimer() {
 
 function renderQueue() {
   const queue = window.pos.readQueue();
-  queueSummary.textContent = `${queue.length} queued operation${queue.length === 1 ? "" : "s"}.`;
+  const meta = window.pos.getQueueMeta ? window.pos.getQueueMeta() : null;
+  const reconcile = readCache("pos.reconcile", null);
+  const summaryParts = [
+    `${queue.length} queued operation${queue.length === 1 ? "" : "s"}.`
+  ];
+  if (meta?.at) {
+    summaryParts.push(`Last sync: ${formatDate(new Date(meta.at))}.`);
+  }
+  if (reconcile?.at) {
+    summaryParts.push(`Last reconcile: ${formatDate(new Date(reconcile.at))}.`);
+  }
+  queueSummary.textContent = summaryParts.join(" ");
   queueOutput.textContent = JSON.stringify(queue, null, 2);
   if (queueCount) {
     queueCount.textContent = `${queue.length}`;
   }
+}
+
+async function reconcileAfterSync(processed) {
+  if (!processed || !state.online) return;
+  const response = await window.pos.request({
+    method: "GET",
+    path: `/orders${buildQuery({ limit: 1 })}`,
+    extraHeaders: getRequestHeaders()
+  });
+  if (response.ok) {
+    writeCache("pos.reconcile", { at: new Date().toISOString(), processed });
+    renderQueue();
+  }
+}
+
+async function syncQueue() {
+  if (!state.online) return;
+  if (!window.pos?.flushQueue) {
+    showToast("Queue sync unavailable. Restart the app.", "error");
+    return;
+  }
+  try {
+    const meta = await window.pos.flushQueue();
+    renderQueue();
+    try {
+      await reconcileAfterSync(meta?.processed || 0);
+    } catch (error) {
+      const message = error?.message || String(error);
+      showToast(`Reconcile failed: ${message}`, "error");
+    }
+  } catch (error) {
+    const message = error?.message || String(error);
+    showToast(`Queue sync failed: ${message}`, "error");
+  }
+}
+
+async function refreshCaches() {
+  if (!state.online) return;
+  state.filtersLoaded = false;
+  state.priceRulesLoaded = false;
+  state.stockLoaded = false;
+  state.promotionsLoaded = false;
+  await ensureFiltersLoaded();
+  await ensurePricingLoaded();
+  await ensureStockLevelsLoaded();
+  await ensurePromotionsLoaded();
 }
 
 function setFilterMode(mode) {
@@ -566,14 +786,8 @@ function setFilterMode(mode) {
   if (brandTabs) brandTabs.classList.toggle("hidden", mode !== "brand");
   if (featuredHint) featuredHint.classList.toggle("hidden", mode !== "featured");
 
-  renderFilterChips(categoryTabs, state.categories, state.selectedCategory, (value) => {
-    state.selectedCategory = value;
-    loadProducts();
-  }, "No categories configured.");
-  renderFilterChips(brandTabs, state.brands, state.selectedBrand, (value) => {
-    state.selectedBrand = value;
-    loadProducts();
-  }, "No brands configured.");
+  renderFilterChips(categoryTabs, state.categories, state.selectedCategory, handleCategorySelect, "No categories configured.");
+  renderFilterChips(brandTabs, state.brands, state.selectedBrand, handleBrandSelect, "No brands configured.");
 
   if (mode === "featured") {
     renderProducts();
@@ -642,6 +856,273 @@ function openCustomerModal() {
 function closeCustomerModal() {
   if (!customerModal) return;
   customerModal.classList.add("hidden");
+}
+
+function canCheckout() {
+  if (!state.cart.length) {
+    showToast("Cart is empty.", "error");
+    return false;
+  }
+  if (!state.openShift) {
+    showToast("Open a shift before checkout.", "error");
+    return false;
+  }
+  if (!state.cashierToken) {
+    showToast("Cashier sign-in required.", "error");
+    return false;
+  }
+  return true;
+}
+
+function openPaymentModal(method = "card") {
+  if (!paymentModal || !paymentForm) return;
+  if (!canCheckout()) return;
+  paymentMethod.value = method;
+  paymentProvider.value = getDefaultPaymentProvider();
+  paymentAmount.value = state.orderTotals.grandTotal.toFixed(2);
+  paymentCurrency.value = orderCurrencyInput?.value?.trim().toUpperCase() || "NGN";
+  paymentEmail.value = state.customer?.email || "";
+  paymentCapture.value = "true";
+  updatePaymentFormState();
+  paymentModal.classList.remove("hidden");
+}
+
+function closePaymentModal() {
+  if (!paymentModal) return;
+  paymentModal.classList.add("hidden");
+}
+
+function updatePaymentFormState() {
+  if (!paymentMethod || !paymentProvider || !paymentEmail || !paymentCapture || !paymentHint) return;
+  const isManual = paymentMethod.value === "manual";
+  paymentProvider.disabled = isManual;
+  paymentEmail.disabled = isManual;
+  paymentCapture.disabled = isManual;
+  if (isManual) {
+    paymentProvider.value = "manual";
+    paymentEmail.value = "";
+    paymentCapture.value = "true";
+    paymentHint.textContent = "Cash payment will record the order without a payment intent.";
+    return;
+  }
+  paymentHint.textContent = "Payment intent will be created with the selected provider.";
+}
+
+function buildPaymentPayload() {
+  const method = paymentMethod?.value || "card";
+  if (method === "manual") {
+    return { payment: undefined, capturePayment: undefined, method };
+  }
+
+  const amountRaw = Number(paymentAmount?.value);
+  const amount = Number.isFinite(amountRaw) && amountRaw > 0 ? amountRaw : state.orderTotals.grandTotal;
+  const currency = paymentCurrency?.value?.trim().toUpperCase() || "NGN";
+  const email = paymentEmail?.value?.trim() || state.customer?.email;
+  if (!email) {
+    showToast("Customer email is required for payment.", "error");
+    return null;
+  }
+  const provider = paymentProvider?.value || getDefaultPaymentProvider();
+  const capturePayment = paymentCapture?.value === "true";
+
+  return {
+    payment: {
+      amount,
+      currency,
+      provider,
+      capture_method: capturePayment ? "automatic" : "manual",
+      payment_method: method,
+      customer_email: email
+    },
+    capturePayment,
+    method
+  };
+}
+
+async function handlePaymentSubmit(event) {
+  event.preventDefault();
+  if (!canCheckout()) return;
+  const payload = buildPaymentPayload();
+  if (!payload) return;
+  if (payload.method !== "manual" && !state.online) {
+    showToast("Online connection required for card/transfer payments.", "error");
+    return;
+  }
+
+  const result = await submitOrder({
+    payment: payload.payment,
+    capturePayment: payload.capturePayment
+  });
+  if (!result) return;
+  closePaymentModal();
+}
+
+function openRefundModal() {
+  if (!refundModal || !refundForm) return;
+  if (!state.cashierToken) {
+    showToast("Cashier sign-in required.", "error");
+    return;
+  }
+  if (!state.online) {
+    showToast("Refunds require an online connection.", "error");
+    return;
+  }
+  const lastIntent = state.lastPaymentIntent;
+  if (refundPaymentId) {
+    refundPaymentId.value = lastIntent?.id || "";
+  }
+  if (refundAmount) {
+    const amount = lastIntent?.amount ?? state.orderTotals.grandTotal ?? 0;
+    refundAmount.value = amount ? Number(amount).toFixed(2) : "";
+  }
+  if (refundReason) {
+    refundReason.value = "";
+  }
+  if (refundHint) {
+    refundHint.textContent = lastIntent?.id
+      ? `Last payment intent: ${lastIntent.id}`
+      : "Enter the payment intent ID you want to refund.";
+  }
+  refundModal.classList.remove("hidden");
+}
+
+function closeRefundModal() {
+  if (!refundModal) return;
+  refundModal.classList.add("hidden");
+}
+
+async function handleRefundSubmit(event) {
+  event.preventDefault();
+  if (!state.online) {
+    showToast("Refunds require an online connection.", "error");
+    return;
+  }
+
+  const paymentId = refundPaymentId?.value?.trim();
+  if (!paymentId) {
+    showToast("Payment intent ID is required.", "error");
+    return;
+  }
+
+  const amountValue = Number(refundAmount?.value);
+  if (!Number.isFinite(amountValue) || amountValue <= 0) {
+    showToast("Refund amount is required.", "error");
+    return;
+  }
+
+  const reason = refundReason?.value?.trim();
+  const result = await safeWrite({
+    method: "POST",
+    path: "/refunds",
+    body: {
+      payment_id: paymentId,
+      amount: amountValue,
+      reason: reason || undefined
+    },
+    scope: `refunds.create:${paymentId}:${amountValue}`
+  });
+
+  if (result.queued) {
+    orderStatus.textContent = "Refund queued (offline).";
+    return;
+  }
+
+  if (!result.response?.ok) {
+    const message = result.response?.data?.message || "Refund failed.";
+    showToast(message, "error");
+    return;
+  }
+
+  orderStatus.textContent = `Refund submitted: ${paymentId}`;
+  showToast("Refund submitted.");
+  closeRefundModal();
+}
+
+function renderRecentOrders(orders) {
+  if (!recentOrders) return;
+  recentOrders.innerHTML = "";
+  if (!orders.length) {
+    recentOrders.textContent = "No recent orders found.";
+    return;
+  }
+
+  orders.forEach((order) => {
+    const row = document.createElement("div");
+    row.className = "order-item";
+
+    const info = document.createElement("div");
+    const title = document.createElement("div");
+    title.textContent = `${order.order_no} · ${order.currency} ${Number(order.total_amount).toFixed(2)}`;
+    const meta = document.createElement("div");
+    meta.className = "order-meta";
+    meta.textContent = `Status: ${order.status ?? "unknown"}`;
+    info.appendChild(title);
+    info.appendChild(meta);
+
+    row.appendChild(info);
+    recentOrders.appendChild(row);
+  });
+}
+
+async function loadRecentOrders() {
+  if (!recentOrders) return;
+  if (!state.online) {
+    recentOrders.textContent = "Recent orders require an online connection.";
+    return;
+  }
+
+  recentOrders.textContent = "Loading recent orders...";
+  const baseParams = {
+    limit: 20,
+    status: "fulfilled",
+    channel: state.config?.channel ?? "retail",
+    location_id: state.selectedLocationId || undefined
+  };
+
+  let response = await window.pos.request({
+    method: "GET",
+    path: `/orders${buildQuery(baseParams)}`,
+    extraHeaders: getRequestHeaders({ authToken: state.cashierToken })
+  });
+
+  if (response.ok && Array.isArray(response.data?.data) && response.data.data.length) {
+    renderRecentOrders(response.data.data);
+    return;
+  }
+
+  const fallbackParams = { ...baseParams };
+  delete fallbackParams.status;
+  response = await window.pos.request({
+    method: "GET",
+    path: `/orders${buildQuery(fallbackParams)}`,
+    extraHeaders: getRequestHeaders({ authToken: state.cashierToken })
+  });
+
+  if (!response.ok) {
+    recentOrders.textContent = "Unable to load recent orders.";
+    return;
+  }
+
+  renderRecentOrders(response.data?.data || []);
+}
+
+function openRecentModal() {
+  if (!recentModal) return;
+  if (!state.cashierToken) {
+    showToast("Cashier sign-in required.", "error");
+    return;
+  }
+  if (!state.online) {
+    showToast("Recent orders require an online connection.", "error");
+    return;
+  }
+  recentModal.classList.remove("hidden");
+  loadRecentOrders();
+}
+
+function closeRecentModal() {
+  if (!recentModal) return;
+  recentModal.classList.add("hidden");
 }
 
 function renderCustomerResults(customers) {
@@ -727,26 +1208,123 @@ async function fetchPaged(path, limit = 100) {
   return results;
 }
 
+function setStockMaps(levels) {
+  state.stockByProduct = new Map();
+  state.stockByVariant = new Map();
+
+  if (!Array.isArray(levels)) return;
+  levels.forEach((level) => {
+    const productId = level.product_id;
+    if (!productId) return;
+    const onHand = Number(level.on_hand ?? 0);
+    const reserved = Number(level.reserved ?? 0);
+    const available = Number(level.available ?? onHand - reserved);
+
+    const existing = state.stockByProduct.get(productId) ?? { on_hand: 0, reserved: 0, available: 0 };
+    state.stockByProduct.set(productId, {
+      on_hand: existing.on_hand + onHand,
+      reserved: existing.reserved + reserved,
+      available: existing.available + available
+    });
+
+    if (level.variant_id) {
+      state.stockByVariant.set(level.variant_id, { on_hand: onHand, reserved, available });
+    }
+  });
+}
+
+async function loadStockLevels() {
+  const locationId = state.selectedLocationId || state.config?.locationId;
+  if (!locationId) return;
+  const cacheKey = `stock-levels:${locationId}`;
+
+  if (!state.online) {
+    const cached = readCache(cacheKey, STOCK_CACHE_TTL_MS);
+    if (cached) {
+      setStockMaps(cached);
+      state.stockLoaded = true;
+    }
+    return;
+  }
+
+  const levels = await fetchPaged("/stock-levels", 200);
+  if (!levels) {
+    const cached = readCache(cacheKey, STOCK_CACHE_TTL_MS);
+    if (cached) {
+      setStockMaps(cached);
+      state.stockLoaded = true;
+    }
+    return;
+  }
+
+  writeCache(cacheKey, levels);
+  setStockMaps(levels);
+  state.stockLoaded = true;
+  if (state.catalogResults.length) {
+    renderProducts();
+  }
+}
+
+async function ensureStockLevelsLoaded() {
+  if (state.stockLoaded) return;
+  await loadStockLevels();
+}
+
+function getStockForProduct(productId) {
+  if (!productId) return null;
+  const stock = state.stockByProduct.get(productId);
+  if (!stock) return null;
+  return Number.isFinite(stock.available) ? stock.available : null;
+}
+
 async function loadBrandFilters() {
+  const cacheKey = "filters:brands";
+  if (!state.online) {
+    const cached = readCache(cacheKey, null);
+    if (cached?.length) {
+      state.brands = cached;
+      renderFilterChips(brandTabs, state.brands, state.selectedBrand, handleBrandSelect, "No brands configured.");
+      return true;
+    }
+    renderFilterChips(brandTabs, [], state.selectedBrand, handleBrandSelect, "Offline: no cached brands.");
+    return false;
+  }
+
   const brands = await fetchPaged("/brands", 200);
   if (!brands) {
-    renderFilterChips(brandTabs, [], state.selectedBrand, (value) => {
-      state.selectedBrand = value;
-      loadProducts();
-    }, "Unable to load brands.");
+    renderFilterChips(brandTabs, [], state.selectedBrand, handleBrandSelect, "Unable to load brands.");
     return false;
   }
   state.brands = brands.map((brand) => brand.name).filter(Boolean);
   state.brands.sort((a, b) => a.localeCompare(b));
-  renderFilterChips(brandTabs, state.brands, state.selectedBrand, (value) => {
-    state.selectedBrand = value;
-    loadProducts();
-  }, "No brands configured.");
+  writeCache(cacheKey, state.brands);
+  renderFilterChips(brandTabs, state.brands, state.selectedBrand, handleBrandSelect, "No brands configured.");
   return true;
 }
 
 async function loadCategoryFilters() {
+  const cacheSavedKey = "filters:categories:saved";
+  const cacheFacetKey = "filters:categories:facet";
   const previousSource = state.categorySource;
+  if (!state.online) {
+    const cachedSaved = readCache(cacheSavedKey, null);
+    const cachedFacet = readCache(cacheFacetKey, null);
+    if (cachedSaved?.length) {
+      state.categorySource = "saved";
+      state.categories = cachedSaved;
+      renderFilterChips(categoryTabs, state.categories, state.selectedCategory, handleCategorySelect, "No categories configured.");
+      return true;
+    }
+    if (cachedFacet?.length) {
+      state.categorySource = "facet";
+      state.categories = cachedFacet;
+      renderFilterChips(categoryTabs, state.categories, state.selectedCategory, handleCategorySelect, "No categories configured.");
+      return true;
+    }
+    renderFilterChips(categoryTabs, [], state.selectedCategory, handleCategorySelect, "Offline: no cached categories.");
+    return false;
+  }
+
   const categories = await fetchPaged("/categories", 100);
   if (categories && categories.length) {
     state.categorySource = "saved";
@@ -756,19 +1334,14 @@ async function loadCategoryFilters() {
     state.categories = categories
       .map((category) => ({ value: category.id, label: category.name }))
       .filter((category) => category.label);
-    renderFilterChips(categoryTabs, state.categories, state.selectedCategory, (value) => {
-      state.selectedCategory = value;
-      loadProducts();
-    }, "No categories configured.");
+    writeCache(cacheSavedKey, state.categories);
+    renderFilterChips(categoryTabs, state.categories, state.selectedCategory, handleCategorySelect, "No categories configured.");
     return true;
   }
 
   const facets = await fetchPaged("/facets", 50);
   if (!facets) {
-    renderFilterChips(categoryTabs, [], state.selectedCategory, (value) => {
-      state.selectedCategory = value;
-      loadProducts();
-    }, "Unable to load categories.");
+    renderFilterChips(categoryTabs, [], state.selectedCategory, handleCategorySelect, "Unable to load categories.");
     return false;
   }
   const facetKey = state.categoryFacetKey || "category";
@@ -779,19 +1352,13 @@ async function loadCategoryFilters() {
       state.selectedCategory = null;
     }
     state.categories = [];
-    renderFilterChips(categoryTabs, state.categories, state.selectedCategory, (value) => {
-      state.selectedCategory = value;
-      loadProducts();
-    }, `No facet values for ${facetKey}.`);
+    renderFilterChips(categoryTabs, state.categories, state.selectedCategory, handleCategorySelect, `No facet values for ${facetKey}.`);
     return true;
   }
 
   const values = await fetchPaged(`/facets/${categoryFacet.id}/values`, 200);
   if (!values) {
-    renderFilterChips(categoryTabs, [], state.selectedCategory, (value) => {
-      state.selectedCategory = value;
-      loadProducts();
-    }, "Unable to load categories.");
+    renderFilterChips(categoryTabs, [], state.selectedCategory, handleCategorySelect, "Unable to load categories.");
     return false;
   }
   state.categorySource = "facet";
@@ -800,23 +1367,15 @@ async function loadCategoryFilters() {
   }
   state.categories = values.map((value) => value.value).filter(Boolean);
   state.categories.sort((a, b) => a.localeCompare(b));
-  renderFilterChips(categoryTabs, state.categories, state.selectedCategory, (value) => {
-    state.selectedCategory = value;
-    loadProducts();
-  }, "No categories configured.");
+  writeCache(cacheFacetKey, state.categories);
+  renderFilterChips(categoryTabs, state.categories, state.selectedCategory, handleCategorySelect, "No categories configured.");
   return true;
 }
 
 async function ensureFiltersLoaded() {
-  if (state.filtersLoaded || !state.online) {
-    renderFilterChips(categoryTabs, state.categories, state.selectedCategory, (value) => {
-      state.selectedCategory = value;
-      loadProducts();
-    }, "No categories configured.");
-    renderFilterChips(brandTabs, state.brands, state.selectedBrand, (value) => {
-      state.selectedBrand = value;
-      loadProducts();
-    }, "No brands configured.");
+  if (state.filtersLoaded) {
+    renderFilterChips(categoryTabs, state.categories, state.selectedCategory, handleCategorySelect, "No categories configured.");
+    renderFilterChips(brandTabs, state.brands, state.selectedBrand, handleBrandSelect, "No brands configured.");
     return;
   }
 
@@ -824,46 +1383,12 @@ async function ensureFiltersLoaded() {
   state.filtersLoaded = Boolean(categoryOk || brandOk);
 }
 
-async function ensurePricingLoaded() {
-  if (state.priceRulesLoaded) return true;
-  if (!state.online) return false;
-  if (!state.config?.subsidiaryId) return false;
-
-  let priceListId = state.priceListId || state.config?.priceListId;
-  if (!priceListId) {
-    const response = await window.pos.request({
-      method: "GET",
-      path: `/price-lists${buildQuery({ limit: 50 })}`,
-      extraHeaders: getRequestHeaders()
-    });
-    if (!response.ok) {
-      showToast("Unable to load price lists.", "error");
-      return false;
-    }
-    const lists = response.data?.data || [];
-    if (!lists.length) {
-      showToast("No price lists configured for this subsidiary.", "error");
-      return false;
-    }
-
-    const channel = (state.config?.channel || "").toLowerCase();
-    const preferred = lists.find((list) => (list.channel || "").toLowerCase() === channel);
-    priceListId = (preferred || lists[0]).id;
-    state.priceListId = priceListId;
-    if (state.config && window.pos?.saveConfig) {
-      state.config = window.pos.saveConfig({ priceListId });
-      configRawEl.textContent = JSON.stringify(maskConfig(state.config), null, 2);
-    }
-  }
-
-  const rules = await fetchPriceRules(priceListId);
-  if (!rules) return false;
-
+function applyPricingRules(rules) {
   const productPrices = new Map();
   const variantPrices = new Map();
   const productFallback = new Map();
 
-  for (const rule of rules) {
+  for (const rule of rules || []) {
     const price = Number(rule.price);
     if (!Number.isFinite(price)) continue;
     if (rule.variant_id) {
@@ -886,6 +1411,67 @@ async function ensurePricingLoaded() {
   state.priceRulesByProduct = productPrices;
   state.priceRulesByVariant = variantPrices;
   state.priceRulesLoaded = true;
+}
+
+async function ensurePricingLoaded() {
+  if (state.priceRulesLoaded) return true;
+  if (!state.config?.subsidiaryId) return false;
+
+  let priceListId = state.priceListId || state.config?.priceListId;
+  const cachedLists = readCache("pricing:lists", null);
+
+  if (!priceListId && cachedLists?.length) {
+    const channel = (state.config?.channel || "").toLowerCase();
+    const preferred = cachedLists.find((list) => (list.channel || "").toLowerCase() === channel);
+    priceListId = (preferred || cachedLists[0]).id;
+    state.priceListId = priceListId;
+  }
+
+  if (!state.online) {
+    if (!priceListId) return false;
+    const cachedRules = readCache(`pricing:rules:${priceListId}`, null);
+    if (!cachedRules?.length) return false;
+    applyPricingRules(cachedRules);
+    return true;
+  }
+
+  if (!priceListId) {
+    const response = await window.pos.request({
+      method: "GET",
+      path: `/price-lists${buildQuery({ limit: 50 })}`,
+      extraHeaders: getRequestHeaders()
+    });
+    if (!response.ok) {
+      showToast("Unable to load price lists.", "error");
+      return false;
+    }
+    const lists = response.data?.data || [];
+    if (!lists.length) {
+      showToast("No price lists configured for this subsidiary.", "error");
+      return false;
+    }
+    writeCache("pricing:lists", lists);
+
+    const channel = (state.config?.channel || "").toLowerCase();
+    const preferred = lists.find((list) => (list.channel || "").toLowerCase() === channel);
+    priceListId = (preferred || lists[0]).id;
+    state.priceListId = priceListId;
+    if (state.config && window.pos?.saveConfig) {
+      state.config = window.pos.saveConfig({ priceListId });
+      configRawEl.textContent = JSON.stringify(maskConfig(state.config), null, 2);
+    }
+  }
+
+  let rules = await fetchPriceRules(priceListId);
+  if (!rules) {
+    const cachedRules = readCache(`pricing:rules:${priceListId}`, null);
+    if (!cachedRules?.length) return false;
+    rules = cachedRules;
+  } else {
+    writeCache(`pricing:rules:${priceListId}`, rules);
+  }
+
+  applyPricingRules(rules);
   return true;
 }
 
@@ -1069,8 +1655,16 @@ function renderProducts() {
 
     const stock = document.createElement("div");
     stock.className = "product-stock";
-    const stockValue = extractStock(product);
-    stock.textContent = stockValue !== null ? `Qty: ${stockValue}` : "Qty: -";
+    const stockValue = getStockForProduct(product.id) ?? extractStock(product);
+    if (stockValue !== null) {
+      const threshold = getLowStockThreshold();
+      if (stockValue <= threshold) {
+        stock.classList.add("low");
+      }
+      stock.textContent = `Qty: ${stockValue}`;
+    } else {
+      stock.textContent = "Qty: -";
+    }
 
     info.appendChild(name);
     info.appendChild(meta);
@@ -1092,16 +1686,241 @@ function renderProducts() {
 function updateCartSummary() {
   const itemCount = state.cart.reduce((sum, item) => sum + item.quantity, 0);
   const total = state.cart.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0);
-  const discount = 0;
-  const tax = 0;
-  const shipping = 0;
-  const grandTotal = total - discount + tax + shipping;
+  let discount = 0;
+  if (state.appliedPromotion) {
+    const promoType = String(state.appliedPromotion.type || "").toLowerCase();
+    const value = Number(state.appliedPromotion.value) || 0;
+    if (promoType.includes("percent")) {
+      discount = total * (value / 100);
+    } else if (promoType.includes("fixed") || promoType.includes("amount") || promoType.includes("flat")) {
+      discount = value;
+    } else {
+      discount = 0;
+    }
+  } else {
+    discount = Number(state.manualDiscount) || 0;
+  }
+  discount = Math.max(0, Math.min(discount, total));
+
+  const taxRate = Number(state.taxRate) || 0;
+  const shipping = Number(state.shippingAmount) || 0;
+  const taxable = Math.max(0, total - discount);
+  const tax = taxable * (taxRate / 100);
+  const grandTotal = taxable + tax + shipping;
+  state.orderTotals = { itemCount, total, discount, tax, shipping, grandTotal };
   cartCount.textContent = `${itemCount}`;
   cartTotal.textContent = total.toFixed(2);
   if (cartDiscount) cartDiscount.textContent = discount.toFixed(2);
   if (cartTax) cartTax.textContent = tax.toFixed(2);
   if (cartShipping) cartShipping.textContent = shipping.toFixed(2);
   if (cartGrandTotal) cartGrandTotal.textContent = grandTotal.toFixed(2);
+  if (discountInput) {
+    discountInput.value = discount.toFixed(2);
+  }
+  if (taxRateInput) {
+    taxRateInput.value = taxRate.toFixed(2);
+  }
+  if (shippingInput) {
+    shippingInput.value = shipping.toFixed(2);
+  }
+  updatePaymentSummary();
+}
+
+function buildAdjustmentNote() {
+  const parts = [];
+  if (state.appliedPromotion) {
+    parts.push(`Coupon ${state.appliedPromotion.code} (-${state.orderTotals.discount.toFixed(2)})`);
+  } else if (state.orderTotals.discount > 0) {
+    parts.push(`Discount -${state.orderTotals.discount.toFixed(2)}`);
+  }
+  if (state.taxRate > 0) {
+    parts.push(`Tax ${state.taxRate.toFixed(2)}% (+${state.orderTotals.tax.toFixed(2)})`);
+  }
+  if (state.shippingAmount > 0) {
+    parts.push(`Shipping +${state.orderTotals.shipping.toFixed(2)}`);
+  }
+  if (!parts.length) return "";
+  return `Adjustments: ${parts.join(", ")}`;
+}
+
+function updatePaymentSummary() {
+  if (paymentTotal) {
+    paymentTotal.textContent = formatMoney(state.orderTotals.grandTotal);
+  }
+  if (paymentModal?.classList.contains("hidden")) {
+    if (paymentAmount) {
+      paymentAmount.value = state.orderTotals.grandTotal.toFixed(2);
+    }
+    if (paymentCurrency) {
+      paymentCurrency.value = orderCurrencyInput?.value?.trim().toUpperCase() || "NGN";
+    }
+  }
+}
+
+function getLowStockThreshold() {
+  const fromConfig = state.config?.lowStockThreshold ?? state.config?.low_stock_threshold;
+  const value = Number(fromConfig);
+  return Number.isFinite(value) ? value : 5;
+}
+
+function openFilterDrawer(title) {
+  if (!filterDrawer) return;
+  state.drawerOpen = true;
+  if (filterDrawerTitle) {
+    filterDrawerTitle.textContent = title;
+  }
+  filterDrawer.classList.add("open");
+}
+
+function closeFilterDrawer() {
+  if (!filterDrawer) return;
+  state.drawerOpen = false;
+  filterDrawer.classList.remove("open");
+}
+
+function toggleFilterDrawer(mode, title) {
+  if (state.filterMode === mode && state.drawerOpen) {
+    closeFilterDrawer();
+    return;
+  }
+  setFilterMode(mode);
+  openFilterDrawer(title);
+}
+
+function handleCategorySelect(value) {
+  state.selectedCategory = value;
+  loadProducts();
+  closeFilterDrawer();
+}
+
+function handleBrandSelect(value) {
+  state.selectedBrand = value;
+  loadProducts();
+  closeFilterDrawer();
+}
+
+function normalizeCouponCode(value) {
+  return (value || "").trim().toUpperCase();
+}
+
+function isPromotionActive(promotion) {
+  if (!promotion?.start_at || !promotion?.end_at) return true;
+  const now = Date.now();
+  const start = Date.parse(promotion.start_at);
+  const end = Date.parse(promotion.end_at);
+  if (Number.isFinite(start) && now < start) return false;
+  if (Number.isFinite(end) && now > end) return false;
+  return true;
+}
+
+function setPromotionMap(promotions) {
+  state.promotionsByCode = new Map();
+  (promotions || []).forEach((promo) => {
+    if (!promo?.code) return;
+    state.promotionsByCode.set(normalizeCouponCode(promo.code), promo);
+  });
+}
+
+async function loadPromotions() {
+  const cacheKey = "promotions";
+  if (!state.online) {
+    const cached = readCache(cacheKey, PROMOTION_CACHE_TTL_MS);
+    if (cached?.length) {
+      setPromotionMap(cached);
+      state.promotionsLoaded = true;
+      return true;
+    }
+    return false;
+  }
+
+  const promotions = await fetchPaged("/promotions", 200);
+  if (!promotions) {
+    const cached = readCache(cacheKey, PROMOTION_CACHE_TTL_MS);
+    if (cached?.length) {
+      setPromotionMap(cached);
+      state.promotionsLoaded = true;
+      return true;
+    }
+    return false;
+  }
+
+  writeCache(cacheKey, promotions);
+  setPromotionMap(promotions);
+  state.promotionsLoaded = true;
+  return true;
+}
+
+async function ensurePromotionsLoaded() {
+  if (state.promotionsLoaded) return true;
+  return loadPromotions();
+}
+
+function clearPromotion(options = {}) {
+  state.appliedPromotion = null;
+  if (couponStatus) {
+    couponStatus.textContent = "";
+  }
+  if (!options.keepCode && couponCodeInput) {
+    couponCodeInput.value = "";
+  }
+  if (discountInput) {
+    discountInput.disabled = false;
+  }
+}
+
+async function applyCoupon() {
+  const code = normalizeCouponCode(couponCodeInput?.value);
+  if (!code) {
+    clearPromotion();
+    updateCartSummary();
+    return;
+  }
+
+  const ok = await ensurePromotionsLoaded();
+  if (!ok) {
+    showToast("Unable to load promotions.", "error");
+    return;
+  }
+
+  const promotion = state.promotionsByCode.get(code);
+  if (!promotion) {
+    showToast("Coupon not found.", "error");
+    if (couponStatus) couponStatus.textContent = "Coupon not found.";
+    return;
+  }
+  if (!isPromotionActive(promotion)) {
+    showToast("Coupon is not active.", "error");
+    if (couponStatus) couponStatus.textContent = "Coupon is not active.";
+    return;
+  }
+
+  state.appliedPromotion = promotion;
+  if (couponStatus) couponStatus.textContent = `Applied ${promotion.code}`;
+  if (discountInput) {
+    discountInput.disabled = true;
+  }
+  updateCartSummary();
+}
+
+function handleDiscountChange() {
+  const value = Number(discountInput?.value);
+  if (state.appliedPromotion) {
+    clearPromotion({ keepCode: false });
+  }
+  state.manualDiscount = Number.isFinite(value) && value >= 0 ? value : 0;
+  updateCartSummary();
+}
+
+function handleTaxRateChange() {
+  const value = Number(taxRateInput?.value);
+  state.taxRate = Number.isFinite(value) && value >= 0 ? value : 0;
+  updateCartSummary();
+}
+
+function handleShippingChange() {
+  const value = Number(shippingInput?.value);
+  state.shippingAmount = Number.isFinite(value) && value >= 0 ? value : 0;
+  updateCartSummary();
 }
 
 function renderCart() {
@@ -1236,28 +2055,53 @@ async function loadProducts() {
     facets: facetFilters.length ? facetFilters.join("|") : undefined,
     limit: 24
   });
+  const cacheKey = `products:${path}${query}`;
+
+  if (!state.online) {
+    const cached = readCache(cacheKey, PRODUCT_CACHE_TTL_MS);
+    if (cached) {
+      state.catalogResults = cached;
+      renderProducts();
+      showToast("Offline: showing cached products.");
+      return;
+    }
+    showToast("Offline: no cached products for this filter.", "error");
+    return;
+  }
+
   const response = await window.pos.request({ method: "GET", path: `${path}${query}`, extraHeaders: getRequestHeaders() });
   if (!response.ok) {
+    const cached = readCache(cacheKey, PRODUCT_CACHE_TTL_MS);
+    if (cached) {
+      state.catalogResults = cached;
+      renderProducts();
+      showToast("Using cached products after API error.", "error");
+      return;
+    }
     const message = response.data?.message || `Failed to load products (${response.status})`;
     showToast(message, "error");
     return;
   }
 
   state.catalogResults = response.data?.data || [];
+  writeCache(cacheKey, state.catalogResults);
   renderProducts();
 }
 
-async function submitOrder() {
-  if (!state.cart.length) {
-    showToast("Cart is empty.", "error");
-    return;
+async function submitOrder(options = {}) {
+  if (!canCheckout()) {
+    return null;
   }
-  if (!state.openShift) {
-    showToast("Open a shift before checkout.", "error");
-    return;
+  if (options.payment && !state.online) {
+    showToast("Online connection required for card/transfer payments.", "error");
+    return null;
   }
 
   const currency = orderCurrencyInput.value.trim().toUpperCase() || "NGN";
+  const baseNotes = orderNotesInput.value.trim();
+  const adjustmentNote = buildAdjustmentNote();
+  const notes = [baseNotes, adjustmentNote].filter(Boolean).join(" | ") || undefined;
+  const { discount, tax, shipping } = state.orderTotals;
   const items = state.cart.map((item) => ({
     product_id: item.productId,
     quantity: item.quantity,
@@ -1267,11 +2111,20 @@ async function submitOrder() {
     order: {
       currency,
       customer_id: state.customer?.id || undefined,
+      discount_amount: discount || 0,
+      tax_amount: tax || 0,
+      shipping_amount: shipping || 0,
       items,
-      notes: orderNotesInput.value.trim() || undefined
+      notes
     },
     reserve_stock: true
   };
+  if (options.payment) {
+    payload.payment = options.payment;
+  }
+  if (typeof options.capturePayment === "boolean") {
+    payload.capture_payment = options.capturePayment;
+  }
 
   orderStatus.textContent = "Submitting order...";
   const result = await safeWrite({
@@ -1283,17 +2136,40 @@ async function submitOrder() {
 
   if (result.queued) {
     orderStatus.textContent = "Order queued (offline).";
-    return;
+    return result;
   }
 
-  const order = result.response?.data?.order ?? result.response?.data;
+  if (!result.response?.ok) {
+    const message = result.response?.data?.message || "Order request failed.";
+    orderStatus.textContent = message;
+    return result;
+  }
+
+  const responseData = result.response.data;
+  const order = responseData?.order ?? responseData;
+  const paymentIntent = responseData?.payment_intent;
+  const capturedPayment = responseData?.captured_payment;
   if (order) {
     orderStatus.textContent = `Order created: ${order.order_no} (${order.total_amount} ${order.currency})`;
   } else {
     orderStatus.textContent = "Order created.";
   }
+  if (paymentIntent) {
+    const status = paymentIntent.status ? ` (${paymentIntent.status})` : "";
+    const intentLabel = paymentIntent.id ? ` ${paymentIntent.id}` : "";
+    orderStatus.textContent += ` | Payment intent${intentLabel}${status}`;
+    if (paymentIntent.checkout_url) {
+      orderStatus.textContent += ` | Checkout: ${paymentIntent.checkout_url}`;
+    }
+  }
+  if (capturedPayment) {
+    orderStatus.textContent += " | Payment captured.";
+  }
+  state.lastOrder = order || null;
+  state.lastPaymentIntent = paymentIntent || null;
   state.cart = [];
   renderCart();
+  return result;
 }
 
 function getRequestHeaders(options = {}) {
@@ -1335,7 +2211,8 @@ async function safeWrite({ method, path, body, scope, authToken, includeCashier 
       return { queued: false, response };
     }
 
-    showToast(`Request failed (${response.status}).`, "error");
+    const message = response.data?.message || response.data?.error || "Request failed.";
+    showToast(`${message} (${response.status}).`, "error");
     return { queued: false, response };
   } catch (error) {
     window.pos.enqueueOperation({ method, path, body, idempotencyKey, extraHeaders });
@@ -1547,13 +2424,16 @@ productSearchInput.addEventListener("keydown", (event) => {
 });
 
 if (filterCategoryButton) {
-  filterCategoryButton.addEventListener("click", () => setFilterMode("category"));
+  filterCategoryButton.addEventListener("click", () => toggleFilterDrawer("category", "Categories"));
 }
 if (filterBrandButton) {
-  filterBrandButton.addEventListener("click", () => setFilterMode("brand"));
+  filterBrandButton.addEventListener("click", () => toggleFilterDrawer("brand", "Brands"));
 }
 if (filterFeaturedButton) {
-  filterFeaturedButton.addEventListener("click", () => setFilterMode("featured"));
+  filterFeaturedButton.addEventListener("click", () => {
+    setFilterMode("featured");
+    closeFilterDrawer();
+  });
 }
 if (addCustomerButton) {
   addCustomerButton.addEventListener("click", () => openCustomerModal());
@@ -1579,12 +2459,99 @@ if (customerSearchInput) {
   });
 }
 
-submitOrderButton.addEventListener("click", submitOrder);
+if (discountInput) {
+  discountInput.addEventListener("input", handleDiscountChange);
+}
+if (taxRateInput) {
+  taxRateInput.addEventListener("input", handleTaxRateChange);
+}
+if (shippingInput) {
+  shippingInput.addEventListener("input", handleShippingChange);
+}
+if (applyCouponButton) {
+  applyCouponButton.addEventListener("click", () => applyCoupon());
+}
+if (couponCodeInput) {
+  couponCodeInput.addEventListener("keydown", (event) => {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      applyCoupon();
+    }
+  });
+}
+
+submitOrderButton.addEventListener("click", () => submitOrder());
 clearCartButton.addEventListener("click", () => {
   state.cart = [];
   orderStatus.textContent = "Cart cleared.";
   renderCart();
 });
+
+if (payCardButton) {
+  payCardButton.addEventListener("click", () => openPaymentModal("card"));
+}
+if (payCashButton) {
+  payCashButton.addEventListener("click", () => openPaymentModal("manual"));
+}
+if (payTransferButton) {
+  payTransferButton.addEventListener("click", () => openPaymentModal("transfer"));
+}
+if (paySplitButton) {
+  paySplitButton.addEventListener("click", () => showToast("Split payments are coming soon."));
+}
+if (payInstallmentButton) {
+  payInstallmentButton.addEventListener("click", () => showToast("Installments are coming soon."));
+}
+if (payDepositButton) {
+  payDepositButton.addEventListener("click", () => showToast("Deposits are coming soon."));
+}
+if (payPointsButton) {
+  payPointsButton.addEventListener("click", () => showToast("Points redemption is coming soon."));
+}
+if (payDraftButton) {
+  payDraftButton.addEventListener("click", () => submitOrder());
+}
+if (payCancelButton) {
+  payCancelButton.addEventListener("click", () => {
+    state.cart = [];
+    orderStatus.textContent = "Checkout cancelled.";
+    renderCart();
+  });
+}
+if (payRecentButton) {
+  payRecentButton.addEventListener("click", () => openRecentModal());
+}
+
+if (paymentForm) {
+  paymentForm.addEventListener("submit", handlePaymentSubmit);
+}
+if (paymentMethod) {
+  paymentMethod.addEventListener("change", updatePaymentFormState);
+}
+if (closePaymentModalButton) {
+  closePaymentModalButton.addEventListener("click", () => closePaymentModal());
+}
+if (cancelPaymentButton) {
+  cancelPaymentButton.addEventListener("click", () => closePaymentModal());
+}
+if (refundForm) {
+  refundForm.addEventListener("submit", handleRefundSubmit);
+}
+if (closeRefundModalButton) {
+  closeRefundModalButton.addEventListener("click", () => closeRefundModal());
+}
+if (cancelRefundButton) {
+  cancelRefundButton.addEventListener("click", () => closeRefundModal());
+}
+if (closeRecentModalButton) {
+  closeRecentModalButton.addEventListener("click", () => closeRecentModal());
+}
+if (refreshRecentButton) {
+  refreshRecentButton.addEventListener("click", () => loadRecentOrders());
+}
+if (closeFilterDrawerButton) {
+  closeFilterDrawerButton.addEventListener("click", () => closeFilterDrawer());
+}
 
 refreshDeviceButton.addEventListener("click", refreshDevice);
 refreshShiftButton.addEventListener("click", refreshOpenShift);
@@ -1660,7 +2627,11 @@ async function bootstrap() {
   renderCart();
   renderProducts();
   startIdleTimer();
+  await refreshCaches();
+  await syncQueue();
   setInterval(updateTokenStatus, 30000);
+  setInterval(refreshCaches, CACHE_REFRESH_MS);
+  setInterval(syncQueue, QUEUE_SYNC_MS);
 }
 
 bootstrap();

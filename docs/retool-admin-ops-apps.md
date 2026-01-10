@@ -11,7 +11,7 @@ This document is a concrete query + component checklist for the Phase 1 Retool a
 - [ ] Standard refresh pattern: on create/update, re-run list query and close form.
 
 ## App 1: Catalog Admin
-Purpose: Manage brands, suppliers, products, variants, facets.
+Purpose: Manage brands, suppliers, categories, products, variants, facets.
 Layout guide: `docs/retool-app1-catalog-layout.md`.
 Implementation steps: `docs/retool-app1-catalog-implementation.md`.
 
@@ -20,6 +20,9 @@ Queries checklist:
 - [ ] Create brand: `POST /brands` (Idempotency-Key)
 - [ ] List suppliers: `GET /suppliers?limit=50&offset={{tableSuppliers.offset}}&q={{searchSuppliers.value}}`
 - [ ] Create supplier: `POST /suppliers` (Idempotency-Key)
+- [ ] List categories: `GET /categories?limit=100&offset={{tableCategories.offset}}&q={{searchCategories.value}}`
+- [ ] Create category: `POST /categories` (Idempotency-Key)
+- [ ] Update category: `PATCH /categories/{{tableCategories.selectedRow.id}}` (Idempotency-Key)
 - [ ] List products: `GET /products?limit=50&offset={{tableProducts.offset}}&q={{searchProducts.value}}`
 - [ ] Get product: `GET /products/{{tableProducts.selectedRow.id}}`
 - [ ] Create product: `POST /products` (Idempotency-Key)
@@ -33,9 +36,10 @@ Queries checklist:
 - [ ] Create facet value: `POST /facets/{{tableFacets.selectedRow.id}}/values` (Idempotency-Key)
 
 Component checklist:
-- [ ] Tables for brands, suppliers, products, variants, facets, facet values.
+- [ ] Tables for brands, suppliers, categories, products, variants, facets, facet values.
 - [ ] Search input for each table; pagination controls.
 - [ ] Create/edit drawers for product and variant (validate required fields).
+- [ ] Category drawer with filter JSON editors.
 - [ ] Facet value drawer tied to selected facet.
 - [ ] Success toast + refresh list on create/update.
 
@@ -46,6 +50,13 @@ Field validation checklist:
   - [ ] `name`: required, min length 2.
   - [ ] `contact_name`: optional string.
   - [ ] `contact_phone`: optional string.
+- Category
+  - [ ] `code`: required, min length 2.
+  - [ ] `name`: required, min length 2.
+  - [ ] `status`: optional enum `active`, `inactive`.
+  - [ ] `sort_order`: optional integer.
+  - [ ] `product_filters`: optional array of `{ all: [{ key, value }] }`.
+  - [ ] `variant_filters`: optional array of `{ all: [{ key, value }] }`.
 - Product
   - [ ] `sku`: required, min length 3.
   - [ ] `name`: required, min length 2.

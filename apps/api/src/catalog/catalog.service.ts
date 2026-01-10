@@ -394,8 +394,10 @@ export class CatalogService {
     });
     if (!existing) throw new NotFoundException("Category not found");
 
-    const productFilters = body.product_filters ? this.prepareCategoryFilters(body.product_filters) : undefined;
-    const variantFilters = body.variant_filters ? this.prepareCategoryFilters(body.variant_filters) : undefined;
+    const productFilters =
+      body.product_filters !== undefined ? this.prepareCategoryFilters(body.product_filters) : undefined;
+    const variantFilters =
+      body.variant_filters !== undefined ? this.prepareCategoryFilters(body.variant_filters) : undefined;
 
     const category = await this.prisma.category.update({
       where: { id: existing.id },
@@ -976,7 +978,7 @@ export class CatalogService {
   }
 
   private prepareCategoryFilters(filters?: CategoryFilterGroupDto[]) {
-    if (!filters?.length) return null;
+    if (!filters) return undefined;
     const cleaned = filters
       .map((group) => ({
         all: (group.all || [])
@@ -988,7 +990,8 @@ export class CatalogService {
       }))
       .filter((group) => group.all.length);
 
-    return cleaned.length ? cleaned : null;
+    if (!cleaned.length) return Prisma.DbNull;
+    return cleaned;
   }
 
   private parseCategoryFilters(filters: Prisma.JsonValue | null | undefined): CategoryFilterGroup[] {
@@ -1274,7 +1277,7 @@ export class CatalogService {
     }
 
     const keys = Array.from(new Set(inputs.map((item) => item.normalizedKey)));
-    const definitions = await this.resolveFacetDefinitions(tx, groupId, keys, "product", new Set(["brand", "concentration"]));
+    const definitions = await this.resolveFacetDefinitions(tx, groupId, keys, "product", new Set(["brand", "concentration", "sex"]));
 
     if (mode === "keys") {
       const facetIds = Array.from(definitions.values()).map((def) => def.id);
@@ -1326,7 +1329,7 @@ export class CatalogService {
     }
 
     const keys = Array.from(new Set(inputs.map((item) => item.normalizedKey)));
-    const definitions = await this.resolveFacetDefinitions(tx, groupId, keys, "variant", new Set(["size"]));
+    const definitions = await this.resolveFacetDefinitions(tx, groupId, keys, "variant", new Set(["size", "packaging"]));
 
     if (mode === "keys") {
       const facetIds = Array.from(definitions.values()).map((def) => def.id);

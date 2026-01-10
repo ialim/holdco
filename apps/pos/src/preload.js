@@ -1,29 +1,63 @@
 const { contextBridge } = require("electron");
 const path = require("node:path");
+const crypto = require("node:crypto");
 
-let api = null;
+const api = {};
+const warnings = [];
 let preloadError = null;
 
 try {
-  const queue = require(path.join(__dirname, "offline", "queue"));
-  const idempotency = require(path.join(__dirname, "offline", "idempotency"));
-  const client = require(path.join(__dirname, "api", "client"));
   const config = require(path.join(__dirname, "config"));
-
-  api = {
-    request: client.request,
-    enqueueOperation: queue.enqueueOperation,
-    flushQueue: queue.flushQueue,
-    readQueue: queue.readQueue,
-    buildIdempotencyKey: idempotency.buildIdempotencyKey,
-    getConfig: config.loadConfig,
-    saveConfig: config.saveConfig
-  };
+  api.getConfig = config.loadConfig;
+  api.saveConfig = config.saveConfig;
 } catch (error) {
   preloadError = error;
 }
 
+try {
+  const client = require(path.join(__dirname, "api", "client"));
+  api.request = client.request;
+} catch (error) {
+  preloadError = preloadError ?? error;
+}
+
+try {
+  const idempotency = require(path.join(__dirname, "offline", "idempotency"));
+  api.buildIdempotencyKey = idempotency.buildIdempotencyKey;
+} catch (error) {
+  warnings.push(`idempotency unavailable: ${error.message || error}`);
+  api.buildIdempotencyKey = (scope, payload) =>
+    `${scope}:${crypto.createHash("sha1").update(JSON.stringify(payload ?? {})).digest("hex")}`;
+}
+
+try {
+  const queue = require(path.join(__dirname, "offline", "queue"));
+  api.enqueueOperation = queue.enqueueOperation;
+  api.flushQueue = queue.flushQueue;
+  api.readQueue = queue.readQueue;
+  api.getQueueMeta = queue.getQueueMeta;
+} catch (error) {
+  warnings.push(`offline queue disabled: ${error.message || error}`);
+  api.enqueueOperation = () => ({ id: `noop_${Date.now()}` });
+  api.flushQueue = async () => ({ processed: 0, remaining: 0 });
+  api.readQueue = () => [];
+  api.getQueueMeta = () => null;
+}
+
+try {
+  const cache = require(path.join(__dirname, "offline", "cache"));
+  api.cacheGet = cache.getCache;
+  api.cacheSet = cache.setCache;
+  api.cacheDelete = cache.deleteCache;
+} catch (error) {
+  warnings.push(`offline cache disabled: ${error.message || error}`);
+  api.cacheGet = () => null;
+  api.cacheSet = () => null;
+  api.cacheDelete = () => null;
+}
+
 contextBridge.exposeInMainWorld("pos", {
-  ...(api ?? {}),
-  error: preloadError ? String(preloadError.message || preloadError) : null
+  ...api,
+  error: preloadError ? String(preloadError.message || preloadError) : null,
+  warning: warnings.length ? warnings.join(" | ") : null
 });

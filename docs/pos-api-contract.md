@@ -29,6 +29,7 @@ This document defines the minimum API contract for the retail POS replacement th
 | Capture payment | `POST /v1/payments/{payment_id}/capture` | Finalize payment |
 | Refund | `POST /v1/refunds` | For returns and reversals |
 | Loyalty | `POST /v1/points/issue` | Issue points after checkout |
+| Loyalty | `POST /v1/points/redeem` | Redeem points as tender |
 
 ## Order creation payload (example)
 ```json

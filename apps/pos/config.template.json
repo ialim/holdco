@@ -8,8 +8,34 @@
   "lowStockThreshold": 5,
   "taxRate": 0,
   "shippingAmount": 0,
+  "loyaltySpendPerPoint": 100,
   "categoryFacetKey": "category",
   "deviceId": "pos-001",
   "cashierToken": null,
-  "cashierUser": null
+  "cashierUser": null,
+  "managerToken": null,
+  "managerUser": null,
+  "printer": {
+    "type": "none",
+    "autoPrint": false,
+    "printOnOffline": false,
+    "columns": 42,
+    "encoding": "GB18030",
+    "autoCut": true,
+    "kickDrawer": false,
+    "network": {
+      "host": "",
+      "port": 9100
+    },
+    "usb": {
+      "vendorId": "",
+      "productId": ""
+    },
+    "bluetooth": {
+      "address": "",
+      "channel": 1
+    },
+    "headerLines": ["HoldCo Retail"],
+    "footerLines": ["Thank you for shopping"]
+  }
 }

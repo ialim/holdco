@@ -6,6 +6,7 @@ import { LoyaltyService } from "./loyalty.service";
 import { CreateCustomerDto } from "./dto/create-customer.dto";
 import { CreateLoyaltyAccountDto } from "./dto/create-loyalty-account.dto";
 import { IssuePointsDto } from "./dto/issue-points.dto";
+import { RedeemPointsDto } from "./dto/redeem-points.dto";
 
 @Controller("v1")
 @UseGuards(PermissionsGuard)
@@ -61,5 +62,15 @@ export class LoyaltyController {
     @Body() body: IssuePointsDto,
   ) {
     return this.loyaltyService.issuePoints(groupId, subsidiaryId, body);
+  }
+
+  @Permissions("loyalty.points.redeem")
+  @Post("points/redeem")
+  redeemPoints(
+    @Headers("x-group-id") groupId: string,
+    @Headers("x-subsidiary-id") subsidiaryId: string,
+    @Body() body: RedeemPointsDto,
+  ) {
+    return this.loyaltyService.redeemPoints(groupId, subsidiaryId, body);
   }
 }

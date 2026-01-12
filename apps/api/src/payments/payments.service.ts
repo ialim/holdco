@@ -37,14 +37,14 @@ export class PaymentsService {
       throw new BadRequestException("Payment method is not supported for this channel");
     }
 
-    const customerEmail = body.customer_email ?? order.customer?.email ?? undefined;
-    if (!customerEmail) {
-      throw new BadRequestException("Customer email is required to initialize payment");
-    }
-
     const provider = (body.provider ?? this.gatewayFactory.defaultProvider()).toLowerCase();
     if (body.provider && !this.gatewayFactory.hasProvider(provider)) {
       throw new BadRequestException("Unsupported payment provider");
+    }
+
+    const customerEmail = body.customer_email ?? order.customer?.email ?? undefined;
+    if (!customerEmail && provider !== "moniepoint") {
+      throw new BadRequestException("Customer email is required to initialize payment");
     }
 
     const fallbackProvider = this.gatewayFactory.fallbackEnabled() ? this.gatewayFactory.fallbackProvider() : undefined;
@@ -70,6 +70,9 @@ export class PaymentsService {
           channel,
           paymentMethod: body.payment_method,
           allowedMethods,
+          terminalSerial: body.terminal_serial,
+          transactionType: body.transaction_type,
+          merchantReference: reference,
           metadata: {
             order_no: order.orderNo,
             channel,
@@ -133,6 +136,12 @@ export class PaymentsService {
       },
     });
 
+    await this.prisma.orderPayment.updateMany({
+      where: { paymentIntentId: intent.id },
+      data: { status: intent.status, reference: intent.reference ?? undefined },
+    });
+    await this.refreshOrderPaymentSummary(groupId, subsidiaryId, intent.orderId);
+
     return {
       id: intent.id,
       order_id: intent.orderId,
@@ -142,6 +151,30 @@ export class PaymentsService {
       provider: intent.provider ?? undefined,
       reference: intent.reference ?? undefined,
     };
+  }
+
+  private async refreshOrderPaymentSummary(groupId: string, subsidiaryId: string, orderId: string) {
+    const order = await this.prisma.order.findFirst({
+      where: { id: orderId, groupId, subsidiaryId },
+    });
+    if (!order) return;
+
+    const captured = await this.prisma.orderPayment.aggregate({
+      where: { orderId, groupId, subsidiaryId, status: "captured" },
+      _sum: { amount: true },
+    });
+    const paidAmount = Number(captured._sum.amount ?? 0);
+    const paymentStatus =
+      paidAmount >= Number(order.totalAmount)
+        ? "paid"
+        : paidAmount > 0
+          ? "partial"
+          : "unpaid";
+
+    await this.prisma.order.update({
+      where: { id: order.id },
+      data: { paidAmount, paymentStatus },
+    });
   }
 
   async createRefund(groupId: string, subsidiaryId: string, body: CreateRefundDto) {

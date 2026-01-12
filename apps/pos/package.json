@@ -12,6 +12,12 @@
     "electron": "^30.0.0"
   },
   "dependencies": {
-    "better-sqlite3": "^12.5.0"
+    "better-sqlite3": "^12.5.0",
+    "escpos": "3.0.0-alpha.6",
+    "escpos-network": "3.0.0-alpha.5"
+  },
+  "optionalDependencies": {
+    "escpos-bluetooth": "3.0.0-alpha.2",
+    "escpos-usb": "3.0.0-alpha.4"
   }
 }

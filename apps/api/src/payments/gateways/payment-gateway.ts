@@ -7,6 +7,9 @@ export type PaymentIntentCreateParams = {
   channel?: string;
   paymentMethod?: string;
   allowedMethods?: string[];
+  terminalSerial?: string;
+  merchantReference?: string;
+  transactionType?: string;
   metadata?: Record<string, string | number | boolean | null | undefined>;
   redirectUrl?: string;
 };

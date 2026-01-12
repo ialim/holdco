@@ -28,6 +28,7 @@ model TenantGroup {
   locations    Location[]
   posDevices   PosDevice[]
   posShifts    PosShift[]
+  posCashDrops PosCashDrop[]
   users        User[]
   roles        Role[]
   brands       Brand[]
@@ -56,6 +57,7 @@ model TenantGroup {
   carts        Cart[]
     orders       Order[]
     paymentIntents PaymentIntent[]
+    orderPayments OrderPayment[]
     refunds      Refund[]
     paymentProviderConfigs PaymentProviderConfig[]
     returnRecords ReturnRecord[]
@@ -104,6 +106,7 @@ model Subsidiary {
   locations Location[]
   posDevices PosDevice[]
   posShifts  PosShift[]
+  posCashDrops PosCashDrop[]
   userRoles UserRole[]
   products     Product[]
   variants     Variant[]
@@ -124,6 +127,7 @@ model Subsidiary {
   carts        Cart[]
     orders       Order[]
     paymentIntents PaymentIntent[]
+    orderPayments OrderPayment[]
     refunds      Refund[]
     paymentProviderConfigs PaymentProviderConfig[]
     returnRecords ReturnRecord[]
@@ -198,6 +202,7 @@ model Location {
   orders     Order[]
   posDevices PosDevice[]
   posShifts  PosShift[]
+  posCashDrops PosCashDrop[]
   goodsReceipts GoodsReceipt[]
   stockTransfersFrom StockTransfer[] @relation("StockTransferFromLocation")
   stockTransfersTo   StockTransfer[] @relation("StockTransferToLocation")
@@ -223,6 +228,7 @@ model PosDevice {
   subsidiary Subsidiary  @relation(fields: [subsidiaryId], references: [id])
   location   Location    @relation(fields: [locationId], references: [id])
   shifts     PosShift[]
+  cashDrops  PosCashDrop[]
 
   @@unique([groupId, deviceId])
   @@index([subsidiaryId])
@@ -253,11 +259,37 @@ model PosShift {
   posDevice  PosDevice   @relation(fields: [posDeviceId], references: [id])
   openedBy   User?       @relation("PosShiftOpenedBy", fields: [openedById], references: [id])
   closedBy   User?       @relation("PosShiftClosedBy", fields: [closedById], references: [id])
+  cashDrops  PosCashDrop[]
 
   @@index([subsidiaryId])
   @@index([locationId])
   @@index([posDeviceId])
   @@map("pos_shifts")
+}
+
+model PosCashDrop {
+  id           String   @id @default(uuid()) @db.Uuid
+  groupId      String   @db.Uuid @map("group_id")
+  subsidiaryId String   @db.Uuid @map("subsidiary_id")
+  locationId   String   @db.Uuid @map("location_id")
+  posShiftId   String   @db.Uuid @map("pos_shift_id")
+  posDeviceId  String   @db.Uuid @map("pos_device_id")
+  recordedById String?  @db.Uuid @map("recorded_by")
+  amount       Decimal  @db.Decimal(12, 2)
+  currency     String   @default("NGN")
+  reason       String?
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  group      TenantGroup @relation(fields: [groupId], references: [id])
+  subsidiary Subsidiary  @relation(fields: [subsidiaryId], references: [id])
+  location   Location    @relation(fields: [locationId], references: [id])
+  posShift   PosShift    @relation(fields: [posShiftId], references: [id])
+  posDevice  PosDevice   @relation(fields: [posDeviceId], references: [id])
+  recordedBy User?       @relation("PosCashDropRecordedBy", fields: [recordedById], references: [id])
+
+  @@index([posShiftId])
+  @@index([locationId])
+  @@map("pos_cash_drops")
 }
 
 model User {
@@ -274,6 +306,7 @@ model User {
   userRoles UserRole[]
   posShiftsOpened PosShift[] @relation("PosShiftOpenedBy")
   posShiftsClosed PosShift[] @relation("PosShiftClosedBy")
+  posCashDropsRecorded PosCashDrop[] @relation("PosCashDropRecordedBy")
   stockAdjustmentsCreated StockAdjustment[]
   auditLogs AuditLog[]
   assignedServiceRequests ServiceRequest[] @relation("ServiceRequestAssignedTo")
@@ -827,6 +860,8 @@ model Order {
   discountAmount Decimal @default(0) @db.Decimal(12, 2) @map("discount_amount")
   taxAmount      Decimal @default(0) @db.Decimal(12, 2) @map("tax_amount")
   shippingAmount Decimal @default(0) @db.Decimal(12, 2) @map("shipping_amount")
+  paidAmount     Decimal @default(0) @db.Decimal(12, 2) @map("paid_amount")
+  paymentStatus  String  @default("unpaid") @map("payment_status")
   currency     String
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @default(now()) @map("updated_at")
@@ -839,6 +874,7 @@ model Order {
   items      OrderItem[]
   invoices   Invoice[]
   payments   PaymentIntent[]
+  orderPayments OrderPayment[]
   returnRecords ReturnRecord[]
   shipments  Shipment[]
 
@@ -908,9 +944,37 @@ model PaymentIntent {
   subsidiary Subsidiary  @relation(fields: [subsidiaryId], references: [id])
   order      Order       @relation(fields: [orderId], references: [id])
   refunds    Refund[]
+  orderPayments OrderPayment[]
 
   @@index([orderId])
   @@map("payment_intents")
+}
+
+model OrderPayment {
+  id              String   @id @default(uuid()) @db.Uuid
+  groupId         String   @db.Uuid @map("group_id")
+  subsidiaryId    String   @db.Uuid @map("subsidiary_id")
+  orderId         String   @db.Uuid @map("order_id")
+  paymentIntentId String?  @db.Uuid @map("payment_intent_id")
+  method          String
+  paymentType     String   @default("full") @map("payment_type")
+  amount          Decimal  @db.Decimal(12, 2)
+  currency        String
+  status          String   @default("captured")
+  provider        String?
+  reference       String?
+  pointsRedeemed  Int?     @map("points_redeemed")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @default(now()) @map("updated_at")
+
+  group         TenantGroup   @relation(fields: [groupId], references: [id])
+  subsidiary    Subsidiary    @relation(fields: [subsidiaryId], references: [id])
+  order         Order         @relation(fields: [orderId], references: [id])
+  paymentIntent PaymentIntent? @relation(fields: [paymentIntentId], references: [id])
+
+  @@index([orderId])
+  @@index([paymentIntentId])
+  @@map("order_payments")
 }
 
 model PaymentProviderConfig {

@@ -4,6 +4,7 @@ import { ListQueryDto } from "../common/dto/list-query.dto";
 import { CreateCustomerDto } from "./dto/create-customer.dto";
 import { CreateLoyaltyAccountDto } from "./dto/create-loyalty-account.dto";
 import { IssuePointsDto } from "./dto/issue-points.dto";
+import { RedeemPointsDto } from "./dto/redeem-points.dto";
 
 @Injectable()
 export class LoyaltyService {
@@ -18,10 +19,26 @@ export class LoyaltyService {
       subsidiaryId,
       ...(query.q
         ? {
-            name: {
-              contains: query.q,
-              mode: "insensitive" as const,
-            },
+            OR: [
+              {
+                name: {
+                  contains: query.q,
+                  mode: "insensitive" as const,
+                },
+              },
+              {
+                email: {
+                  contains: query.q,
+                  mode: "insensitive" as const,
+                },
+              },
+              {
+                phone: {
+                  contains: query.q,
+                  mode: "insensitive" as const,
+                },
+              },
+            ],
           }
         : {}),
     };
@@ -111,11 +128,21 @@ export class LoyaltyService {
     if (!groupId) throw new BadRequestException("X-Group-Id header is required");
     if (!subsidiaryId) throw new BadRequestException("X-Subsidiary-Id header is required");
 
-    const account = await this.prisma.loyaltyAccount.findFirst({
-      where: { customerId: body.customer_id, groupId, subsidiaryId },
+    const customer = await this.prisma.customer.findFirst({
+      where: { id: body.customer_id, groupId, subsidiaryId },
     });
 
-    if (!account) throw new NotFoundException("Loyalty account not found");
+    if (!customer) throw new NotFoundException("Customer not found");
+
+    const account = await this.prisma.loyaltyAccount.upsert({
+      where: { customerId: body.customer_id },
+      create: {
+        groupId,
+        subsidiaryId,
+        customerId: body.customer_id,
+      },
+      update: {},
+    });
 
     const [updated] = await this.prisma.$transaction([
       this.prisma.loyaltyAccount.update({
@@ -129,6 +156,45 @@ export class LoyaltyService {
           loyaltyAccountId: account.id,
           points: body.points,
           reason: body.reason,
+        },
+      }),
+    ]);
+
+    return {
+      id: updated.id,
+      customer_id: updated.customerId,
+      points_balance: updated.pointsBalance,
+    };
+  }
+
+  async redeemPoints(groupId: string, subsidiaryId: string, body: RedeemPointsDto) {
+    if (!groupId) throw new BadRequestException("X-Group-Id header is required");
+    if (!subsidiaryId) throw new BadRequestException("X-Subsidiary-Id header is required");
+
+    const account = await this.prisma.loyaltyAccount.findFirst({
+      where: { customerId: body.customer_id, groupId, subsidiaryId },
+    });
+
+    if (!account) {
+      throw new NotFoundException("Loyalty account not found");
+    }
+
+    if (account.pointsBalance < body.points) {
+      throw new BadRequestException("Insufficient points balance");
+    }
+
+    const [updated] = await this.prisma.$transaction([
+      this.prisma.loyaltyAccount.update({
+        where: { id: account.id },
+        data: { pointsBalance: { decrement: body.points } },
+      }),
+      this.prisma.pointsLedger.create({
+        data: {
+          groupId,
+          subsidiaryId,
+          loyaltyAccountId: account.id,
+          points: -body.points,
+          reason: body.reason ?? "Points redemption",
         },
       }),
     ]);

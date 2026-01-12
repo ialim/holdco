@@ -2,6 +2,7 @@ import { Injectable } from "@nestjs/common";
 import { FlutterwaveGateway } from "./gateways/flutterwave.gateway";
 import { InterswitchGateway } from "./gateways/interswitch.gateway";
 import { ManualGateway } from "./gateways/manual.gateway";
+import { MoniepointGateway } from "./gateways/moniepoint.gateway";
 import { MonnifyGateway } from "./gateways/monnify.gateway";
 import { PaystackGateway } from "./gateways/paystack.gateway";
 import { PaymentGateway } from "./gateways/payment-gateway";
@@ -13,11 +14,12 @@ export class PaymentGatewayFactory {
   constructor(
     private readonly paystack: PaystackGateway,
     private readonly flutterwave: FlutterwaveGateway,
+    private readonly moniepoint: MoniepointGateway,
     private readonly monnify: MonnifyGateway,
     private readonly interswitch: InterswitchGateway,
     private readonly manual: ManualGateway,
   ) {
-    this.gateways = [paystack, flutterwave, monnify, interswitch, manual];
+    this.gateways = [paystack, flutterwave, moniepoint, monnify, interswitch, manual];
   }
 
   get(provider?: string): PaymentGateway {

@@ -47,12 +47,43 @@ export class PaymentsWebhookService {
       return false;
     }
 
-    await this.prisma.paymentIntent.update({
+    const updated = await this.prisma.paymentIntent.update({
       where: { id: intent.id },
       data: { status: event.status },
     });
 
+    await this.prisma.orderPayment.updateMany({
+      where: { paymentIntentId: updated.id },
+      data: { status: updated.status },
+    });
+
+    await this.refreshOrderPaymentSummary(updated.groupId, updated.subsidiaryId, updated.orderId);
+
     return true;
+  }
+
+  private async refreshOrderPaymentSummary(groupId: string, subsidiaryId: string, orderId: string) {
+    const order = await this.prisma.order.findFirst({
+      where: { id: orderId, groupId, subsidiaryId },
+    });
+    if (!order) return;
+
+    const captured = await this.prisma.orderPayment.aggregate({
+      where: { orderId, groupId, subsidiaryId, status: "captured" },
+      _sum: { amount: true },
+    });
+    const paidAmount = Number(captured._sum.amount ?? 0);
+    const paymentStatus =
+      paidAmount >= Number(order.totalAmount)
+        ? "paid"
+        : paidAmount > 0
+          ? "partial"
+          : "unpaid";
+
+    await this.prisma.order.update({
+      where: { id: order.id },
+      data: { paidAmount, paymentStatus },
+    });
   }
 
   private buildVerifyParams(headers: Record<string, string | string[] | undefined>, rawBody: string): WebhookVerifyParams {

@@ -56,6 +56,16 @@ try {
   api.cacheDelete = () => null;
 }
 
+try {
+  const printer = require(path.join(__dirname, "peripherals", "receipt-printer"));
+  api.printReceipt = printer.printReceipt;
+  api.testPrinter = printer.testPrinter;
+} catch (error) {
+  warnings.push(`printer disabled: ${error.message || error}`);
+  api.printReceipt = async () => ({ ok: false, error: "Printer not available" });
+  api.testPrinter = async () => ({ ok: false, error: "Printer not available" });
+}
+
 contextBridge.exposeInMainWorld("pos", {
   ...api,
   error: preloadError ? String(preloadError.message || preloadError) : null,

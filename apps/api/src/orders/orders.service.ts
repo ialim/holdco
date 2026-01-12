@@ -95,6 +95,8 @@ export class OrdersService {
         discountAmount,
         taxAmount,
         shippingAmount,
+        paidAmount: 0,
+        paymentStatus: "unpaid",
         currency,
         items: { create: items },
       },
@@ -154,6 +156,78 @@ export class OrdersService {
     return this.mapOrder(order);
   }
 
+  async recordOrderPayment(params: {
+    groupId: string;
+    subsidiaryId: string;
+    orderId: string;
+    amount: number;
+    currency: string;
+    method: string;
+    status: string;
+    provider?: string;
+    reference?: string;
+    paymentIntentId?: string;
+    paymentType?: string;
+    pointsRedeemed?: number;
+  }) {
+    const order = await this.prisma.order.findFirst({
+      where: { id: params.orderId, groupId: params.groupId, subsidiaryId: params.subsidiaryId },
+    });
+    if (!order) throw new NotFoundException("Order not found");
+
+    const payment = await this.prisma.orderPayment.create({
+      data: {
+        groupId: params.groupId,
+        subsidiaryId: params.subsidiaryId,
+        orderId: params.orderId,
+        paymentIntentId: params.paymentIntentId,
+        method: params.method,
+        paymentType: params.paymentType ?? "full",
+        amount: params.amount,
+        currency: params.currency,
+        status: params.status,
+        provider: params.provider,
+        reference: params.reference,
+        pointsRedeemed: params.pointsRedeemed,
+      },
+    });
+
+    const updated = await this.refreshOrderPaymentSummary(
+      params.groupId,
+      params.subsidiaryId,
+      params.orderId,
+    );
+
+    return { payment, order: updated };
+  }
+
+  async refreshOrderPaymentSummary(groupId: string, subsidiaryId: string, orderId: string) {
+    const order = await this.prisma.order.findFirst({
+      where: { id: orderId, groupId, subsidiaryId },
+    });
+    if (!order) throw new NotFoundException("Order not found");
+
+    const captured = await this.prisma.orderPayment.aggregate({
+      where: { orderId, groupId, subsidiaryId, status: "captured" },
+      _sum: { amount: true },
+    });
+    const paidAmount = Number(captured._sum.amount ?? 0);
+    const paymentStatus =
+      paidAmount >= Number(order.totalAmount)
+        ? "paid"
+        : paidAmount > 0
+          ? "partial"
+          : "unpaid";
+
+    const updated = await this.prisma.order.update({
+      where: { id: order.id },
+      data: { paidAmount, paymentStatus },
+      include: { items: true },
+    });
+
+    return this.mapOrder(updated);
+  }
+
   private mapOrder(order: {
     id: string;
     orderNo: string;
@@ -164,6 +238,8 @@ export class OrdersService {
     discountAmount?: any;
     taxAmount?: any;
     shippingAmount?: any;
+    paidAmount?: any;
+    paymentStatus?: string | null;
     currency: string;
     items: Array<{
       productId: string;
@@ -183,6 +259,9 @@ export class OrdersService {
       discount_amount: Number(order.discountAmount ?? 0),
       tax_amount: Number(order.taxAmount ?? 0),
       shipping_amount: Number(order.shippingAmount ?? 0),
+      paid_amount: Number(order.paidAmount ?? 0),
+      payment_status: order.paymentStatus ?? "unpaid",
+      balance_due: Math.max(0, Number(order.totalAmount) - Number(order.paidAmount ?? 0)),
       currency: order.currency,
       items: order.items.map((item) => ({
         product_id: item.productId,

@@ -11,6 +11,12 @@ export class AuditService {
     return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
   }
 
+  private async resolveActorId(actorId?: string) {
+    if (!this.isUuid(actorId)) return undefined;
+    const exists = await this.prisma.user.findUnique({ where: { id: actorId }, select: { id: true } });
+    return exists ? actorId : undefined;
+  }
+
   async record(params: {
     groupId: string;
     subsidiaryId?: string;
@@ -20,7 +26,7 @@ export class AuditService {
     entityId?: string;
     payload?: Record<string, unknown>;
   }) {
-    const actorId = this.isUuid(params.actorId) ? params.actorId : undefined;
+    const actorId = await this.resolveActorId(params.actorId);
     const payload = params.payload
       ? (JSON.parse(JSON.stringify(params.payload)) as Prisma.InputJsonValue)
       : undefined;

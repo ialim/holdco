@@ -14,6 +14,8 @@ import { ClosePosShiftDto } from "./dto/close-pos-shift.dto";
 import { PosCashierLoginDto } from "./dto/pos-cashier-login.dto";
 import { PosCashierPinDto } from "./dto/pos-cashier-pin.dto";
 import { ActivatePosDeviceDto } from "./dto/activate-pos-device.dto";
+import { PosCashierPinByEmployeeDto } from "./dto/pos-cashier-pin-by-employee.dto";
+import { CreatePosCashDropDto } from "./dto/create-pos-cash-drop.dto";
 import { ListQueryDto } from "../common/dto/list-query.dto";
 
 const scryptAsync = promisify(scrypt);
@@ -37,7 +39,9 @@ const DEVICE_TOKEN_PERMISSIONS = [
   "inventory.stock.reserve",
   "inventory.stock.read",
   "loyalty.customer.read",
+  "loyalty.customer.write",
   "loyalty.points.issue",
+  "loyalty.points.redeem",
 ];
 
 @Injectable()
@@ -303,6 +307,40 @@ export class PosService {
     return { id: updated.id, status: "set" };
   }
 
+  async setCashierPinByEmployee(groupId: string, subsidiaryId: string, body: PosCashierPinByEmployeeDto) {
+    if (!groupId) throw new BadRequestException("X-Group-Id header is required");
+    if (!subsidiaryId) throw new BadRequestException("X-Subsidiary-Id header is required");
+
+    const employee = await this.prisma.employee.findFirst({
+      where: { groupId, subsidiaryId, employeeNo: body.employee_no.trim() },
+      include: { user: { include: { userRoles: true } } },
+    });
+
+    if (!employee || employee.status !== "active" || !employee.user) {
+      throw new NotFoundException("Employee not found");
+    }
+
+    const user = employee.user;
+    if (user.status !== "active") {
+      throw new BadRequestException("User is not active");
+    }
+
+    const hasSubsidiaryRole = user.userRoles.some(
+      (role) => !role.subsidiaryId || role.subsidiaryId === subsidiaryId,
+    );
+    if (!hasSubsidiaryRole) {
+      throw new BadRequestException("User is not assigned to the subsidiary");
+    }
+
+    const pinHash = await this.hashPin(body.pin.trim());
+    const updated = await this.prisma.user.update({
+      where: { id: user.id },
+      data: { posPinHash: pinHash },
+    });
+
+    return { id: updated.id, employee_no: employee.employeeNo, status: "set" };
+  }
+
   async listShifts(groupId: string, query: ListPosShiftsDto) {
     if (!groupId) throw new BadRequestException("X-Group-Id header is required");
 
@@ -349,6 +387,110 @@ export class PosService {
     if (!shift) throw new NotFoundException("Shift not found");
 
     return this.mapShift(shift);
+  }
+
+  async getShiftSummary(groupId: string, subsidiaryId: string, shiftId: string) {
+    if (!groupId) throw new BadRequestException("X-Group-Id header is required");
+    if (!subsidiaryId) throw new BadRequestException("X-Subsidiary-Id header is required");
+
+    const shift = await this.prisma.posShift.findFirst({
+      where: { id: shiftId, groupId, subsidiaryId },
+      include: { posDevice: true },
+    });
+
+    if (!shift) throw new NotFoundException("Shift not found");
+
+    const openedAt = shift.openedAt;
+    const closedAt = shift.closedAt ?? new Date();
+    const orderWhereBase = {
+      groupId,
+      subsidiaryId,
+      locationId: shift.locationId,
+      channel: "retail",
+      createdAt: { gte: openedAt, lte: closedAt },
+    };
+
+    const [fulfilledAgg, pendingCount, cashAgg] = await this.prisma.$transaction([
+      this.prisma.order.aggregate({
+        where: { ...orderWhereBase, status: "fulfilled" },
+        _count: true,
+        _sum: {
+          totalAmount: true,
+          discountAmount: true,
+          taxAmount: true,
+          shippingAmount: true,
+        },
+      }),
+      this.prisma.order.count({
+        where: { ...orderWhereBase, status: "pending" },
+      }),
+      this.prisma.posCashDrop.aggregate({
+        where: { groupId, subsidiaryId, posShiftId: shift.id },
+        _count: true,
+        _sum: { amount: true },
+      }),
+    ]);
+
+    const netSales = Number(fulfilledAgg._sum.totalAmount ?? 0);
+    const discounts = Number(fulfilledAgg._sum.discountAmount ?? 0);
+    const tax = Number(fulfilledAgg._sum.taxAmount ?? 0);
+    const shipping = Number(fulfilledAgg._sum.shippingAmount ?? 0);
+    const grossSales = netSales + discounts - tax - shipping;
+
+    return {
+      shift: this.mapShift(shift),
+      orders: {
+        fulfilled: fulfilledAgg._count,
+        pending: pendingCount,
+      },
+      totals: {
+        net_sales: netSales,
+        gross_sales: grossSales,
+        discounts,
+        tax,
+        shipping,
+      },
+      cash_drops: {
+        count: cashAgg._count,
+        total: Number(cashAgg._sum.amount ?? 0),
+      },
+    };
+  }
+
+  async listCashDrops(groupId: string, subsidiaryId: string, shiftId: string, query: ListQueryDto) {
+    if (!groupId) throw new BadRequestException("X-Group-Id header is required");
+    if (!subsidiaryId) throw new BadRequestException("X-Subsidiary-Id header is required");
+
+    const shift = await this.prisma.posShift.findFirst({
+      where: { id: shiftId, groupId, subsidiaryId },
+    });
+    if (!shift) throw new NotFoundException("Shift not found");
+
+    const createdAt: { gte?: Date; lte?: Date } = {};
+    if (query.start_date) createdAt.gte = new Date(query.start_date);
+    if (query.end_date) createdAt.lte = new Date(query.end_date);
+
+    const where = {
+      groupId,
+      subsidiaryId,
+      posShiftId: shiftId,
+      ...(createdAt.gte || createdAt.lte ? { createdAt } : {}),
+    };
+
+    const [total, drops] = await this.prisma.$transaction([
+      this.prisma.posCashDrop.count({ where }),
+      this.prisma.posCashDrop.findMany({
+        where,
+        orderBy: { createdAt: "desc" },
+        skip: query.offset ?? 0,
+        take: query.limit ?? 50,
+      }),
+    ]);
+
+    return {
+      data: drops.map((drop) => this.mapCashDrop(drop)),
+      meta: this.buildMeta(query, total),
+    };
   }
 
   async startShift(
@@ -401,6 +543,39 @@ export class PosService {
     });
 
     return this.mapShift(shift);
+  }
+
+  async createCashDrop(
+    groupId: string,
+    subsidiaryId: string,
+    shiftId: string,
+    body: CreatePosCashDropDto,
+    actorId?: string,
+  ) {
+    if (!groupId) throw new BadRequestException("X-Group-Id header is required");
+    if (!subsidiaryId) throw new BadRequestException("X-Subsidiary-Id header is required");
+
+    const shift = await this.prisma.posShift.findFirst({
+      where: { id: shiftId, groupId, subsidiaryId },
+    });
+    if (!shift) throw new NotFoundException("Shift not found");
+    if (shift.status !== "open") throw new BadRequestException("Shift is not open");
+
+    const drop = await this.prisma.posCashDrop.create({
+      data: {
+        groupId,
+        subsidiaryId,
+        locationId: shift.locationId,
+        posShiftId: shift.id,
+        posDeviceId: shift.posDeviceId,
+        recordedById: actorId,
+        amount: body.amount,
+        currency: body.currency ?? "NGN",
+        reason: body.reason,
+      },
+    });
+
+    return this.mapCashDrop(drop);
   }
 
   async closeShift(
@@ -508,6 +683,34 @@ export class PosService {
       closed_by_id: shift.closedById ?? undefined,
       created_at: shift.createdAt.toISOString(),
       updated_at: shift.updatedAt.toISOString(),
+    };
+  }
+
+  private mapCashDrop(drop: {
+    id: string;
+    groupId: string;
+    subsidiaryId: string;
+    locationId: string;
+    posShiftId: string;
+    posDeviceId: string;
+    recordedById: string | null;
+    amount: Prisma.Decimal;
+    currency: string;
+    reason: string | null;
+    createdAt: Date;
+  }) {
+    return {
+      id: drop.id,
+      group_id: drop.groupId,
+      subsidiary_id: drop.subsidiaryId,
+      location_id: drop.locationId,
+      pos_shift_id: drop.posShiftId,
+      pos_device_id: drop.posDeviceId,
+      recorded_by_id: drop.recordedById ?? undefined,
+      amount: Number(drop.amount),
+      currency: drop.currency,
+      reason: drop.reason ?? undefined,
+      created_at: drop.createdAt.toISOString(),
     };
   }
 

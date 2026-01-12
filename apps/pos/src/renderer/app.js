@@ -13,6 +13,8 @@ const toastEl = document.getElementById("toast");
 const configStatusEl = document.getElementById("configStatus");
 const configMissingMessage = document.getElementById("configMissingMessage");
 const configRawEl = document.getElementById("configRaw");
+const testPrinterButton = document.getElementById("testPrinter");
+const printerStatus = document.getElementById("printerStatus");
 const cashierStatusEl = document.getElementById("cashierStatus");
 const cashierLoginForm = document.getElementById("cashierLoginForm");
 const cashierEmployeeNoInput = document.getElementById("cashierEmployeeNo");
@@ -23,6 +25,15 @@ const managerActivateForm = document.getElementById("managerActivateForm");
 const managerEmployeeNoInput = document.getElementById("managerEmployeeNo");
 const managerPinInput = document.getElementById("managerPin");
 const managerInfo = document.getElementById("managerInfo");
+const managerUnlockForm = document.getElementById("managerUnlockForm");
+const managerUnlockEmployeeNoInput = document.getElementById("managerUnlockEmployeeNo");
+const managerUnlockPinInput = document.getElementById("managerUnlockPin");
+const managerUnlockInfo = document.getElementById("managerUnlockInfo");
+const cashierPinForm = document.getElementById("cashierPinForm");
+const cashierPinEmployeeNoInput = document.getElementById("cashierPinEmployeeNo");
+const cashierPinNewInput = document.getElementById("cashierPinNew");
+const cashierPinConfirmInput = document.getElementById("cashierPinConfirm");
+const cashierPinInfo = document.getElementById("cashierPinInfo");
 const offlineBanner = document.getElementById("offlineBanner");
 const deviceTokenStatus = document.getElementById("deviceTokenStatus");
 const deviceTokenExpiry = document.getElementById("deviceTokenExpiry");
@@ -34,9 +45,12 @@ const viewActivation = document.getElementById("viewActivation");
 const viewCashier = document.getElementById("viewCashier");
 const viewShift = document.getElementById("viewShift");
 const viewCheckout = document.getElementById("viewCheckout");
+const managerUnlockCard = document.getElementById("managerUnlockCard");
+const managerOnlyGrid = document.getElementById("managerOnlyGrid");
 const navShiftButton = document.getElementById("navShift");
 const navCheckoutButton = document.getElementById("navCheckout");
 const navSignOutButton = document.getElementById("navSignOut");
+const navActivationButton = document.getElementById("navActivation");
 const proceedCheckoutButton = document.getElementById("proceedCheckout");
 
 const configFields = {
@@ -58,6 +72,13 @@ const closeShiftForm = document.getElementById("closeShiftForm");
 const closingFloatInput = document.getElementById("closingFloat");
 const closeNotesInput = document.getElementById("closeNotes");
 const shiftInfo = document.getElementById("shiftInfo");
+const refreshSummaryButton = document.getElementById("refreshSummary");
+const shiftSummary = document.getElementById("shiftSummary");
+const cashDropForm = document.getElementById("cashDropForm");
+const cashDropAmountInput = document.getElementById("cashDropAmount");
+const cashDropCurrencyInput = document.getElementById("cashDropCurrency");
+const cashDropReasonInput = document.getElementById("cashDropReason");
+const cashDropInfo = document.getElementById("cashDropInfo");
 
 const searchProductsButton = document.getElementById("searchProducts");
 const productSearchInput = document.getElementById("productSearch");
@@ -69,6 +90,7 @@ const orderCurrencyInput = document.getElementById("orderCurrency");
 const orderNotesInput = document.getElementById("orderNotes");
 const submitOrderButton = document.getElementById("submitOrder");
 const clearCartButton = document.getElementById("clearCart");
+const printReceiptButton = document.getElementById("printReceipt");
 const orderStatus = document.getElementById("orderStatus");
 const checkoutDate = document.getElementById("checkoutDate");
 const checkoutLocation = document.getElementById("checkoutLocation");
@@ -79,8 +101,16 @@ const customerModal = document.getElementById("customerModal");
 const customerSearchInput = document.getElementById("customerSearch");
 const customerSearchButton = document.getElementById("customerSearchBtn");
 const customerResults = document.getElementById("customerResults");
+const customerNameInput = document.getElementById("customerName");
+const customerEmailInput = document.getElementById("customerEmail");
+const customerPhoneInput = document.getElementById("customerPhone");
+const createCustomerButton = document.getElementById("createCustomer");
 const closeCustomerModalButton = document.getElementById("closeCustomerModal");
 const setWalkInButton = document.getElementById("setWalkIn");
+const variantModal = document.getElementById("variantModal");
+const variantModalTitle = document.getElementById("variantModalTitle");
+const variantList = document.getElementById("variantList");
+const closeVariantModalButton = document.getElementById("closeVariantModal");
 const categoryTabs = document.getElementById("categoryTabs");
 const brandTabs = document.getElementById("brandTabs");
 const featuredHint = document.getElementById("featuredHint");
@@ -109,6 +139,8 @@ const payInstallmentButton = document.getElementById("payInstallment");
 const payDepositButton = document.getElementById("payDeposit");
 const payPointsButton = document.getElementById("payPoints");
 const payDraftButton = document.getElementById("payDraft");
+const payDraftsButton = document.getElementById("payDrafts");
+const draftCountEl = document.getElementById("draftCount");
 const payCancelButton = document.getElementById("payCancel");
 const payRecentButton = document.getElementById("payRecent");
 const paymentModal = document.getElementById("paymentModal");
@@ -123,6 +155,19 @@ const paymentCapture = document.getElementById("paymentCapture");
 const paymentHint = document.getElementById("paymentHint");
 const closePaymentModalButton = document.getElementById("closePaymentModal");
 const cancelPaymentButton = document.getElementById("cancelPayment");
+const multiPaymentModal = document.getElementById("multiPaymentModal");
+const multiPaymentForm = document.getElementById("multiPaymentForm");
+const multiPaymentTitle = document.getElementById("multiPaymentTitle");
+const multiPaymentTotal = document.getElementById("multiPaymentTotal");
+const multiPaymentRemaining = document.getElementById("multiPaymentRemaining");
+const multiPaymentLines = document.getElementById("multiPaymentLines");
+const addPaymentLineButton = document.getElementById("addPaymentLine");
+const multiPaymentCustomerEmail = document.getElementById("multiPaymentCustomerEmail");
+const closeMultiPaymentModalButton = document.getElementById("closeMultiPaymentModal");
+const cancelMultiPaymentButton = document.getElementById("cancelMultiPayment");
+const multiPaymentReleaseRow = document.getElementById("multiPaymentReleaseRow");
+const multiPaymentReleaseToggle = document.getElementById("multiPaymentReleaseToggle");
+const multiPaymentHint = document.getElementById("multiPaymentHint");
 const refundModal = document.getElementById("refundModal");
 const refundForm = document.getElementById("refundForm");
 const refundPaymentId = document.getElementById("refundPaymentId");
@@ -135,6 +180,10 @@ const recentModal = document.getElementById("recentModal");
 const closeRecentModalButton = document.getElementById("closeRecentModal");
 const refreshRecentButton = document.getElementById("refreshRecent");
 const recentOrders = document.getElementById("recentOrders");
+const draftModal = document.getElementById("draftModal");
+const closeDraftModalButton = document.getElementById("closeDraftModal");
+const clearDraftsButton = document.getElementById("clearDrafts");
+const draftList = document.getElementById("draftList");
 
 const state = {
   config: null,
@@ -142,6 +191,9 @@ const state = {
   openShift: null,
   cashierToken: null,
   cashier: null,
+  managerToken: null,
+  manager: null,
+  managerSessionExpiresAt: null,
   online: false,
   view: "loading",
   deviceTokenValid: false,
@@ -172,6 +224,7 @@ const state = {
   },
   lastOrder: null,
   lastPaymentIntent: null,
+  lastReceipt: null,
   stockLoaded: false,
   stockByProduct: new Map(),
   stockByVariant: new Map(),
@@ -181,8 +234,13 @@ const state = {
   appliedPromotion: null,
   manualDiscount: 0,
   taxRate: 0,
-  shippingAmount: 0
+  shippingAmount: 0,
+  loyaltySpendPerPoint: 0
 };
+
+let managerSessionTimer = null;
+const DRAFT_STORAGE_KEY = "posDrafts";
+const MAX_DRAFTS = 20;
 
 function showToast(message, tone = "neutral") {
   toastEl.textContent = message;
@@ -201,6 +259,14 @@ function formatDate(value) {
     return new Intl.DateTimeFormat("en-GB", { day: "2-digit", month: "2-digit", year: "numeric" }).format(value);
   } catch (error) {
     return value.toISOString().slice(0, 10);
+  }
+}
+
+function formatDateTime(value) {
+  try {
+    return new Intl.DateTimeFormat("en-GB", { dateStyle: "medium", timeStyle: "short" }).format(value);
+  } catch (error) {
+    return value.toISOString();
   }
 }
 
@@ -292,6 +358,47 @@ function clearCashierSession() {
   evaluateAppState();
 }
 
+function setManagerSession(token, user) {
+  state.managerToken = token;
+  state.manager = user || null;
+  state.managerSessionExpiresAt = Date.now() + MANAGER_SESSION_TTL_MS;
+  if (managerSessionTimer) {
+    clearTimeout(managerSessionTimer);
+  }
+  managerSessionTimer = setTimeout(() => {
+    clearManagerSession();
+    showToast("Manager session expired.", "error");
+  }, MANAGER_SESSION_TTL_MS);
+  if (managerInfo) {
+    if (state.manager) {
+      managerInfo.textContent = `Manager authenticated: ${state.manager.name || state.manager.email}`;
+    } else {
+      managerInfo.textContent = "Manager token loaded.";
+    }
+  }
+  if (managerUnlockInfo) {
+    managerUnlockInfo.textContent = "Manager access granted.";
+  }
+  updateManagerAccess();
+}
+
+function clearManagerSession() {
+  state.managerToken = null;
+  state.manager = null;
+  state.managerSessionExpiresAt = null;
+  if (managerSessionTimer) {
+    clearTimeout(managerSessionTimer);
+    managerSessionTimer = null;
+  }
+  if (managerInfo) {
+    managerInfo.textContent = "Manager session cleared.";
+  }
+  if (managerUnlockInfo) {
+    managerUnlockInfo.textContent = "Manager access required.";
+  }
+  updateManagerAccess();
+}
+
 async function checkHealth() {
   try {
     const response = await window.pos.request({ method: "GET", path: "/health", skipAuth: true });
@@ -365,6 +472,13 @@ function loadConfig() {
   state.selectedLocationId = state.config.locationId || null;
   state.cashierToken = state.config.cashierToken || null;
   state.cashier = state.config.cashierUser || null;
+  state.managerToken = null;
+  state.manager = null;
+  state.managerSessionExpiresAt = null;
+  if (managerSessionTimer) {
+    clearTimeout(managerSessionTimer);
+    managerSessionTimer = null;
+  }
   state.priceListId = state.config.priceListId || null;
   state.priceRulesLoaded = false;
   state.priceRulesByProduct = new Map();
@@ -378,6 +492,9 @@ function loadConfig() {
   state.manualDiscount = 0;
   state.taxRate = Number(state.config.taxRate ?? 0) || 0;
   state.shippingAmount = Number(state.config.shippingAmount ?? 0) || 0;
+  const loyaltySpend =
+    Number(state.config.loyaltySpendPerPoint ?? state.config.loyalty_spend_per_point ?? 0) || 0;
+  state.loyaltySpendPerPoint = loyaltySpend > 0 ? loyaltySpend : 0;
   state.filtersLoaded = false;
   state.categories = [];
   state.brands = [];
@@ -386,9 +503,13 @@ function loadConfig() {
   state.filterMode = "category";
   state.featuredOnly = false;
   state.customer = null;
+  state.lastReceipt = null;
   hydrateFiltersFromCache();
   hydrateStockFromCache();
   renderCashier();
+  updateReceiptActions();
+  updatePrinterActions();
+  updateManagerAccess();
   if (discountInput) {
     discountInput.value = state.manualDiscount.toFixed(2);
     discountInput.disabled = false;
@@ -406,6 +527,7 @@ function loadConfig() {
     couponStatus.textContent = "";
   }
   configRawEl.textContent = JSON.stringify(maskConfig(state.config), null, 2);
+  updateDraftCount();
   updateTokenStatus();
   updateNav();
   updateCheckoutHeader();
@@ -414,6 +536,15 @@ function loadConfig() {
 
 function getDefaultPaymentProvider() {
   return state.config?.paymentProvider || "paystack";
+}
+
+function getMoniepointTerminalSerial() {
+  return (
+    state.config?.moniepointTerminalSerial ||
+    state.config?.terminalSerial ||
+    state.config?.terminal_serial ||
+    ""
+  );
 }
 
 function hydrateFiltersFromCache() {
@@ -461,6 +592,7 @@ const VIEWS = {
 
 const TOKEN_EXPIRY_GRACE_MS = 60 * 1000;
 const IDLE_TIMEOUT_MS = 10 * 60 * 1000;
+const MANAGER_SESSION_TTL_MS = 15 * 60 * 1000;
 const CACHE_TTL_MS = 15 * 60 * 1000;
 const PRODUCT_CACHE_TTL_MS = 60 * 60 * 1000;
 const STOCK_CACHE_TTL_MS = 5 * 60 * 1000;
@@ -501,6 +633,12 @@ function setView(next) {
     el.classList.toggle("active", key === next);
   });
   updateNav();
+  if (next === "activation") {
+    updateManagerAccess();
+    if (!state.managerToken && managerUnlockEmployeeNoInput) {
+      managerUnlockEmployeeNoInput.focus();
+    }
+  }
   if (next === "checkout") {
     updateCheckoutHeader();
     if (!state.catalogResults.length) {
@@ -515,8 +653,8 @@ function updateNav() {
   if (navSignOutButton) navSignOutButton.style.display = hasCashier ? "inline-flex" : "none";
   if (navShiftButton) navShiftButton.style.display = canManageShift ? "inline-flex" : "none";
   if (navCheckoutButton) navCheckoutButton.style.display = state.openShift ? "inline-flex" : "none";
-  if (navCheckoutButton) navCheckoutButton.disabled = !state.openShift;
-  if (proceedCheckoutButton) proceedCheckoutButton.disabled = !state.openShift;
+  if (navCheckoutButton) navCheckoutButton.disabled = !state.openShift || !hasCashier;
+  if (proceedCheckoutButton) proceedCheckoutButton.disabled = !state.openShift || !hasCashier;
 }
 
 function setOfflineBanner(online) {
@@ -703,6 +841,75 @@ function startIdleTimer() {
   startIdleTimer.reset = resetTimer;
 }
 
+const SCAN_MAX_GAP_MS = 60;
+const SCAN_IDLE_MS = 120;
+const SCAN_MIN_LENGTH = 3;
+const scannerState = {
+  buffer: "",
+  lastKeyAt: 0,
+  timer: null
+};
+
+function canCaptureScan(target) {
+  if (!target) return true;
+  if (target === productSearchInput) return true;
+  const tag = target.tagName;
+  if (!tag) return true;
+  return tag === "BODY" || tag === "HTML";
+}
+
+function triggerBarcodeSearch(code) {
+  if (!productSearchInput) return;
+  productSearchInput.value = code;
+  productSearchInput.focus();
+  loadProducts();
+}
+
+function finalizeScan() {
+  if (scannerState.timer) {
+    clearTimeout(scannerState.timer);
+    scannerState.timer = null;
+  }
+  if (scannerState.buffer.length < SCAN_MIN_LENGTH) {
+    scannerState.buffer = "";
+    return;
+  }
+  const code = scannerState.buffer;
+  scannerState.buffer = "";
+  triggerBarcodeSearch(code);
+}
+
+function handleScannerKey(event) {
+  if (state.view !== "checkout") return;
+  if (!canCaptureScan(event.target)) return;
+  if (event.ctrlKey || event.metaKey || event.altKey) return;
+
+  const key = event.key;
+  if (!key) return;
+  if (key === "Shift" || key === "Tab" || key === "Escape") return;
+
+  const now = Date.now();
+  if (now - scannerState.lastKeyAt > SCAN_MAX_GAP_MS) {
+    scannerState.buffer = "";
+  }
+  scannerState.lastKeyAt = now;
+
+  if (key === "Enter") {
+    finalizeScan();
+    return;
+  }
+
+  if (key.length === 1) {
+    scannerState.buffer += key;
+    if (scannerState.timer) clearTimeout(scannerState.timer);
+    scannerState.timer = setTimeout(finalizeScan, SCAN_IDLE_MS);
+  }
+}
+
+function setupScanner() {
+  window.addEventListener("keydown", handleScannerKey);
+}
+
 function renderQueue() {
   const queue = window.pos.readQueue();
   const meta = window.pos.getQueueMeta ? window.pos.getQueueMeta() : null;
@@ -839,6 +1046,99 @@ function setCustomer(customer) {
   updateCheckoutHeader();
 }
 
+function clearCustomerCreateForm() {
+  if (customerNameInput) customerNameInput.value = "";
+  if (customerEmailInput) customerEmailInput.value = "";
+  if (customerPhoneInput) customerPhoneInput.value = "";
+}
+
+async function createCustomer() {
+  if (!state.online) {
+    showToast("Customer creation requires an online connection.", "error");
+    return;
+  }
+  const name = customerNameInput?.value?.trim();
+  if (!name) {
+    showToast("Customer name is required.", "error");
+    return;
+  }
+  const email = customerEmailInput?.value?.trim();
+  const phone = customerPhoneInput?.value?.trim();
+
+  const response = await window.pos.request({
+    method: "POST",
+    path: "/customers",
+    body: {
+      name,
+      email: email || undefined,
+      phone: phone || undefined
+    },
+    extraHeaders: getRequestHeaders()
+  });
+
+  if (!response.ok) {
+    const message = response.data?.message || "Unable to create customer.";
+    showToast(message, "error");
+    return;
+  }
+
+  setCustomer(response.data);
+  clearCustomerCreateForm();
+  showToast(`Customer ${response.data?.name || "created"}.`);
+  closeCustomerModal();
+}
+
+async function submitCashierPin(event) {
+  event.preventDefault();
+  if (!state.managerToken) {
+    const message = "Manager sign-in required.";
+    showToast(message, "error");
+    if (cashierPinInfo) cashierPinInfo.textContent = message;
+    return;
+  }
+
+  const employeeNo = cashierPinEmployeeNoInput?.value?.trim();
+  const pin = cashierPinNewInput?.value?.trim();
+  const confirmPin = cashierPinConfirmInput?.value?.trim();
+  if (!employeeNo || !pin || !confirmPin) {
+    const message = "Employee number and PIN are required.";
+    showToast(message, "error");
+    if (cashierPinInfo) cashierPinInfo.textContent = message;
+    return;
+  }
+  if (pin !== confirmPin) {
+    const message = "PIN confirmation does not match.";
+    showToast(message, "error");
+    if (cashierPinInfo) cashierPinInfo.textContent = message;
+    return;
+  }
+
+  const response = await window.pos.request({
+    method: "POST",
+    path: "/pos/cashiers/pin",
+    body: {
+      employee_no: employeeNo,
+      pin
+    },
+    extraHeaders: getRequestHeaders({ authToken: state.managerToken, includeCashier: false })
+  });
+
+  if (!response.ok) {
+    const message = response.data?.message || "Unable to set cashier PIN.";
+    showToast(message, "error");
+    if (cashierPinInfo) cashierPinInfo.textContent = message;
+    return;
+  }
+
+  if (cashierPinInfo) {
+    cashierPinInfo.textContent = `PIN set for ${employeeNo}.`;
+  }
+  cashierPinEmployeeNoInput.value = "";
+  cashierPinNewInput.value = "";
+  cashierPinConfirmInput.value = "";
+  showToast("Cashier PIN updated.");
+}
+
 function openCustomerModal() {
   if (!customerModal) return;
   if (!state.online) {
@@ -850,6 +1150,7 @@ function openCustomerModal() {
     customerSearchInput.value = "";
     customerSearchInput.focus();
   }
+  clearCustomerCreateForm();
   loadCustomers();
 }
 
@@ -908,6 +1209,212 @@ function updatePaymentFormState() {
   paymentHint.textContent = "Payment intent will be created with the selected provider.";
 }
 
+let multiPaymentPlan = "split";
+
+function requiresOnlineForPayments(payments) {
+  return payments.some((payment) => !["cash", "points"].includes(payment.method));
+}
+
+function updateMultiPaymentSummary() {
+  if (!multiPaymentLines) return;
+  const totalDue = state.orderTotals.grandTotal;
+  let total = 0;
+  multiPaymentLines.querySelectorAll(".payment-line").forEach((row) => {
+    const amountInput = row.querySelector(".line-amount");
+    const amount = Number(amountInput?.value ?? 0);
+    if (Number.isFinite(amount)) total += amount;
+  });
+  const remaining = Math.max(0, totalDue - total);
+  if (multiPaymentTotal) multiPaymentTotal.textContent = formatMoney(totalDue);
+  if (multiPaymentRemaining) multiPaymentRemaining.textContent = formatMoney(remaining);
+}
+
+function updatePaymentLineVisibility(row) {
+  const methodSelect = row.querySelector(".line-method");
+  const providerWrap = row.querySelector(".line-provider");
+  const providerSelect = row.querySelector(".line-provider-select");
+  const pointsWrap = row.querySelector(".line-points");
+  const pointsInput = row.querySelector(".line-points-input");
+  const captureWrap = row.querySelector(".line-capture");
+  const amountInput = row.querySelector(".line-amount");
+  const method = methodSelect?.value || "cash";
+
+  if (method === "points") {
+    pointsWrap?.classList.remove("hidden");
+    providerWrap?.classList.add("hidden");
+    captureWrap?.classList.add("hidden");
+    if (providerSelect) providerSelect.value = "manual";
+    if (amountInput) {
+      amountInput.readOnly = true;
+      const points = Number(pointsInput?.value ?? 0);
+      const amount = points * (Number(state.loyaltySpendPerPoint) || 0);
+      amountInput.value = Number.isFinite(amount) ? amount.toFixed(2) : "0.00";
+    }
+  } else {
+    pointsWrap?.classList.add("hidden");
+    if (amountInput) {
+      amountInput.readOnly = false;
+    }
+    if (method === "cash") {
+      providerWrap?.classList.add("hidden");
+      captureWrap?.classList.add("hidden");
+      if (providerSelect) providerSelect.value = "manual";
+    } else {
+      providerWrap?.classList.remove("hidden");
+      captureWrap?.classList.remove("hidden");
+      if (providerSelect && providerSelect.value === "manual") {
+        providerSelect.value = getDefaultPaymentProvider();
+      }
+    }
+  }
+}
+
+function addPaymentLine(options = {}) {
+  if (!multiPaymentLines) return;
+  const row = document.createElement("div");
+  row.className = "payment-line";
+  row.innerHTML = `
+    <div class="form-row">
+      <label>Method</label>
+      <select class="line-method">
+        <option value="cash">Cash</option>
+        <option value="card">Card</option>
+        <option value="transfer">Transfer</option>
+        <option value="ussd">USSD</option>
+        <option value="points">Points</option>
+      </select>
+    </div>
+    <div class="form-row line-provider">
+      <label>Provider</label>
+      <select class="line-provider-select">
+        <option value="paystack">Paystack</option>
+        <option value="flutterwave">Flutterwave</option>
+        <option value="moniepoint">Moniepoint</option>
+        <option value="monnify">Monnify</option>
+        <option value="interswitch">Interswitch</option>
+        <option value="manual">Manual</option>
+      </select>
+    </div>
+    <div class="form-row">
+      <label>Amount</label>
+      <input class="line-amount" type="number" min="0" step="0.01" />
+    </div>
+    <div class="form-row line-points hidden">
+      <label>Points</label>
+      <input class="line-points-input" type="number" min="0" step="1" />
+    </div>
+    <div class="form-row line-capture">
+      <label>Capture</label>
+      <select class="line-capture-select">
+        <option value="true">Yes</option>
+        <option value="false">No</option>
+      </select>
+    </div>
+    <button type="button" class="ghost line-remove">Remove</button>
+  `;
+
+  const methodSelect = row.querySelector(".line-method");
+  const providerSelect = row.querySelector(".line-provider-select");
+  const amountInput = row.querySelector(".line-amount");
+  const pointsInput = row.querySelector(".line-points-input");
+  const captureSelect = row.querySelector(".line-capture-select");
+  const removeButton = row.querySelector(".line-remove");
+
+  if (methodSelect && options.method) methodSelect.value = options.method;
+  if (providerSelect && options.provider) providerSelect.value = options.provider;
+  if (amountInput && options.amount !== undefined) amountInput.value = Number(options.amount).toFixed(2);
+  if (pointsInput && options.points !== undefined) pointsInput.value = String(options.points);
+  if (captureSelect && options.capture !== undefined) captureSelect.value = options.capture ? "true" : "false";
+
+  const onChange = () => {
+    updatePaymentLineVisibility(row);
+    updateMultiPaymentSummary();
+  };
+
+  methodSelect?.addEventListener("change", onChange);
+  providerSelect?.addEventListener("change", updateMultiPaymentSummary);
+  amountInput?.addEventListener("input", updateMultiPaymentSummary);
+  pointsInput?.addEventListener("input", onChange);
+  captureSelect?.addEventListener("change", updateMultiPaymentSummary);
+  removeButton?.addEventListener("click", () => {
+    row.remove();
+    updateMultiPaymentSummary();
+  });
+
+  multiPaymentLines.appendChild(row);
+  updatePaymentLineVisibility(row);
+  updateMultiPaymentSummary();
+}
+
+function openMultiPaymentModal(plan) {
+  if (!multiPaymentModal || !multiPaymentForm) return;
+  if (!canCheckout()) return;
+  multiPaymentPlan = plan;
+  if (multiPaymentTitle) {
+    const labels = {
+      split: "Split Payment",
+      deposit: "Deposit Payment",
+      installment: "Installment Payment",
+      points: "Points Redemption",
+    };
+    multiPaymentTitle.textContent = labels[plan] ?? "Split Payment";
+  }
+  if (multiPaymentCustomerEmail) {
+    multiPaymentCustomerEmail.value = state.customer?.email || "";
+  }
+  if (multiPaymentLines) {
+    multiPaymentLines.innerHTML = "";
+  }
+  if (multiPaymentReleaseRow) {
+    multiPaymentReleaseRow.classList.toggle("hidden", plan !== "deposit");
+  }
+  if (multiPaymentReleaseToggle) {
+    multiPaymentReleaseToggle.checked = plan === "deposit";
+  }
+  if (multiPaymentHint) {
+    multiPaymentHint.textContent =
+      plan === "split"
+        ? "Split must cover the full amount."
+        : plan === "deposit"
+          ? "Deposits can be partial. Release goods is optional."
+          : plan === "installment"
+            ? "Installments record a partial payment."
+            : "Redeem points and add other tenders if needed.";
+  }
+
+  if (plan === "points") {
+    addPaymentLine({ method: "points", points: 0 });
+  } else {
+    const amount = plan === "split" ? state.orderTotals.grandTotal : 0;
+    addPaymentLine({ method: "cash", amount });
+  }
+  multiPaymentModal.classList.remove("hidden");
+}
+
+function closeMultiPaymentModal() {
+  if (!multiPaymentModal) return;
+  multiPaymentModal.classList.add("hidden");
+}
+
+function collectMultiPaymentLines() {
+  if (!multiPaymentLines) return [];
+  const lines = [];
+  multiPaymentLines.querySelectorAll(".payment-line").forEach((row) => {
+    const method = row.querySelector(".line-method")?.value || "cash";
+    const amount = Number(row.querySelector(".line-amount")?.value ?? 0);
+    const provider = row.querySelector(".line-provider-select")?.value;
+    const capture = row.querySelector(".line-capture-select")?.value === "true";
+    const points = Number(row.querySelector(".line-points-input")?.value ?? 0);
+    lines.push({
+      method,
+      amount,
+      provider,
+      capture,
+      points,
+    });
+  });
+  return lines;
+}
 function buildPaymentPayload() {
   const method = paymentMethod?.value || "card";
   if (method === "manual") {
@@ -924,6 +1431,7 @@ function buildPaymentPayload() {
   }
   const provider = paymentProvider?.value || getDefaultPaymentProvider();
   const capturePayment = paymentCapture?.value === "true";
+  const terminalSerial = provider === "moniepoint" ? getMoniepointTerminalSerial() : "";
 
   return {
     payment: {
@@ -932,7 +1440,8 @@ function buildPaymentPayload() {
       provider,
       capture_method: capturePayment ? "automatic" : "manual",
       payment_method: method,
-      customer_email: email
+      customer_email: email,
+      terminal_serial: terminalSerial || undefined
     },
     capturePayment,
     method
@@ -951,10 +1460,114 @@ async function handlePaymentSubmit(event) {
 
   const result = await submitOrder({
     payment: payload.payment,
-    capturePayment: payload.capturePayment
+    capturePayment: payload.capturePayment,
+    paymentMethod: payload.method,
+    paymentProvider: payload.payment?.provider
   });
   if (!result) return;
   closePaymentModal();
+}
+
+async function handleMultiPaymentSubmit(event) {
+  event.preventDefault();
+  if (!canCheckout()) return;
+
+  const lines = collectMultiPaymentLines();
+  if (!lines.length) {
+    showToast("Add at least one tender line.", "error");
+    return;
+  }
+
+  const totalDue = state.orderTotals.grandTotal;
+  const pointsRate = Number(state.loyaltySpendPerPoint) || 0;
+  const currency = orderCurrencyInput?.value?.trim().toUpperCase() || "NGN";
+  const email = multiPaymentCustomerEmail?.value?.trim() || state.customer?.email;
+  const payments = [];
+  let totalPaid = 0;
+
+  for (const line of lines) {
+    const method = line.method;
+    if (method === "points") {
+      if (!state.customer) {
+        showToast("Select a customer to redeem points.", "error");
+        return;
+      }
+      if (pointsRate <= 0) {
+        showToast("Points redemption value is not configured.", "error");
+        return;
+      }
+      if (!line.points || line.points <= 0) {
+        showToast("Points amount is required.", "error");
+        return;
+      }
+      const amount = line.points * pointsRate;
+      totalPaid += amount;
+      payments.push({
+        method,
+        amount,
+        currency,
+        payment_type: multiPaymentPlan,
+        points: line.points
+      });
+      continue;
+    }
+
+    if (!line.amount || line.amount <= 0) {
+      showToast("Payment amounts must be greater than zero.", "error");
+      return;
+    }
+
+    if (["card", "transfer", "ussd"].includes(method) && !email) {
+      showToast("Customer email is required for card or transfer payments.", "error");
+      return;
+    }
+
+    const provider = ["card", "transfer", "ussd"].includes(method) ? line.provider : "manual";
+    const terminalSerial = provider === "moniepoint" ? getMoniepointTerminalSerial() : "";
+    totalPaid += line.amount;
+    payments.push({
+      method,
+      amount: line.amount,
+      currency,
+      provider,
+      capture_method: line.capture ? "automatic" : "manual",
+      payment_type: multiPaymentPlan,
+      customer_email: email,
+      terminal_serial: terminalSerial || undefined,
+    });
+  }
+
+  if (multiPaymentPlan === "split" || multiPaymentPlan === "points") {
+    if (Math.abs(totalPaid - totalDue) > 0.01) {
+      showToast("Split payments must cover the full amount.", "error");
+      return;
+    }
+  } else {
+    if (totalPaid <= 0) {
+      showToast("Payment amount must be greater than zero.", "error");
+      return;
+    }
+    if (totalPaid > totalDue) {
+      showToast("Payment cannot exceed the amount due.", "error");
+      return;
+    }
+  }
+
+  if (requiresOnlineForPayments(payments) && !state.online) {
+    showToast("Online connection required for card/transfer payments.", "error");
+    return;
+  }
+
+  const releaseOnPartial = multiPaymentPlan === "deposit" ? Boolean(multiPaymentReleaseToggle?.checked) : undefined;
+  const result = await submitOrder({
+    payments,
+    paymentPlan: multiPaymentPlan,
+    releaseOnPartial,
+    paymentMethod: multiPaymentPlan,
+    paymentProvider: payments[0]?.provider,
+  });
+  if (!result) return;
+  closeMultiPaymentModal();
 }
 
 function openRefundModal() {
@@ -1125,6 +1738,263 @@ function closeRecentModal() {
   recentModal.classList.add("hidden");
 }
 
+function readDrafts() {
+  try {
+    const raw = localStorage.getItem(DRAFT_STORAGE_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (error) {
+    return [];
+  }
+}
+
+function writeDrafts(drafts) {
+  try {
+    localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(drafts));
+  } catch (error) {
+    showToast("Unable to save drafts on this device.", "error");
+  }
+}
+
+function updateDraftCount(drafts) {
+  if (!draftCountEl) return;
+  const list = Array.isArray(drafts) ? drafts : readDrafts();
+  const count = list.length;
+  draftCountEl.textContent = String(count);
+  draftCountEl.classList.toggle("hidden", count === 0);
+}
+
+function generateDraftId() {
+  if (typeof crypto?.randomUUID === "function") {
+    return crypto.randomUUID();
+  }
+  return `draft-${Date.now()}-${Math.random().toString(16).slice(2, 10)}`;
+}
+
+function calculateDraftTotals(draft) {
+  const cart = Array.isArray(draft.cart) ? draft.cart : [];
+  const itemCount = cart.reduce((sum, item) => sum + Number(item.quantity || 0), 0);
+  const total = cart.reduce((sum, item) => sum + Number(item.quantity || 0) * Number(item.unitPrice || 0), 0);
+  let discount = 0;
+  if (draft.appliedPromotion) {
+    const promoType = String(draft.appliedPromotion.type || "").toLowerCase();
+    const value = Number(draft.appliedPromotion.value) || 0;
+    if (promoType.includes("percent")) {
+      discount = total * (value / 100);
+    } else if (promoType.includes("fixed") || promoType.includes("amount") || promoType.includes("flat")) {
+      discount = value;
+    }
+  } else {
+    discount = Number(draft.manualDiscount) || 0;
+  }
+  discount = Math.max(0, Math.min(discount, total));
+  const taxRate = Number(draft.taxRate) || 0;
+  const shipping = Number(draft.shippingAmount) || 0;
+  const taxable = Math.max(0, total - discount);
+  const tax = taxable * (taxRate / 100);
+  const grandTotal = taxable + tax + shipping;
+  return { itemCount, total, discount, tax, shipping, grandTotal };
+}
+
+function buildDraftSnapshot() {
+  const now = new Date().toISOString();
+  const customer = state.customer
+    ? {
+        id: state.customer.id,
+        name: state.customer.name,
+        email: state.customer.email,
+        phone: state.customer.phone
+      }
+    : null;
+
+  return {
+    id: generateDraftId(),
+    createdAt: now,
+    updatedAt: now,
+    cart: state.cart.map((item) => ({
+      productId: item.productId,
+      variantId: item.variantId ?? null,
+      name: item.name,
+      variantLabel: item.variantLabel ?? null,
+      sku: item.sku ?? null,
+      barcode: item.barcode ?? null,
+      quantity: Number(item.quantity) || 1,
+      unitPrice: Number(item.unitPrice) || 0
+    })),
+    customer,
+    notes: orderNotesInput?.value?.trim() || "",
+    currency: orderCurrencyInput?.value?.trim().toUpperCase() || "NGN",
+    manualDiscount: Number(state.manualDiscount) || 0,
+    taxRate: Number(state.taxRate) || 0,
+    shippingAmount: Number(state.shippingAmount) || 0,
+    appliedPromotion: state.appliedPromotion,
+    couponCode: couponCodeInput?.value?.trim() || "",
+    locationId: state.selectedLocationId || null
+  };
+}
+
+function formatDraftTitle(draft) {
+  const cart = Array.isArray(draft.cart) ? draft.cart : [];
+  if (!cart.length) return "Empty draft";
+  const first = cart[0]?.name || "Draft";
+  const count = cart.length;
+  if (count <= 1) return first;
+  return `${first} +${count - 1} more`;
+}
+
+function renderDrafts(drafts) {
+  if (!draftList) return;
+  draftList.innerHTML = "";
+  updateDraftCount(drafts);
+  if (!drafts.length) {
+    draftList.textContent = "No drafts saved on this device.";
+    return;
+  }
+
+  drafts.forEach((draft) => {
+    const row = document.createElement("div");
+    row.className = "draft-item";
+
+    const info = document.createElement("div");
+    const title = document.createElement("div");
+    title.textContent = formatDraftTitle(draft);
+    const meta = document.createElement("div");
+    meta.className = "draft-meta";
+    const totals = calculateDraftTotals(draft);
+    const customerLabel = draft.customer?.name ? ` | ${draft.customer.name}` : "";
+    const timeLabel = draft.updatedAt ? formatDateTime(new Date(draft.updatedAt)) : "";
+    meta.textContent = `${totals.itemCount} items | ${totals.grandTotal.toFixed(2)} ${draft.currency || "NGN"}${customerLabel}${timeLabel ? ` | ${timeLabel}` : ""}`;
+    info.appendChild(title);
+    info.appendChild(meta);
+
+    const actions = document.createElement("div");
+    actions.className = "draft-actions";
+    const restoreButton = document.createElement("button");
+    restoreButton.type = "button";
+    restoreButton.className = "primary";
+    restoreButton.textContent = "Restore";
+    restoreButton.addEventListener("click", () => restoreDraft(draft));
+    const deleteButton = document.createElement("button");
+    deleteButton.type = "button";
+    deleteButton.className = "ghost";
+    deleteButton.textContent = "Delete";
+    deleteButton.addEventListener("click", () => deleteDraft(draft.id));
+    actions.appendChild(restoreButton);
+    actions.appendChild(deleteButton);
+
+    row.appendChild(info);
+    row.appendChild(actions);
+    draftList.appendChild(row);
+  });
+}
+
+function openDraftModal() {
+  if (!draftModal) return;
+  draftModal.classList.remove("hidden");
+  renderDrafts(readDrafts());
+}
+
+function closeDraftModal() {
+  if (!draftModal) return;
+  draftModal.classList.add("hidden");
+}
+
+function saveDraft() {
+  if (!state.cart.length) {
+    showToast("Cart is empty.", "error");
+    return null;
+  }
+  const draft = buildDraftSnapshot();
+  const drafts = readDrafts();
+  drafts.unshift(draft);
+  const trimmed = drafts.slice(0, MAX_DRAFTS);
+  writeDrafts(trimmed);
+  updateDraftCount(trimmed);
+  state.cart = [];
+  state.customer = null;
+  state.appliedPromotion = null;
+  state.manualDiscount = 0;
+  state.taxRate = Number(state.config?.taxRate ?? 0) || 0;
+  state.shippingAmount = Number(state.config?.shippingAmount ?? 0) || 0;
+  if (discountInput) {
+    discountInput.value = state.manualDiscount.toFixed(2);
+    discountInput.disabled = false;
+  }
+  if (taxRateInput) {
+    taxRateInput.value = state.taxRate.toFixed(2);
+  }
+  if (shippingInput) {
+    shippingInput.value = state.shippingAmount.toFixed(2);
+  }
+  if (couponCodeInput) {
+    couponCodeInput.value = "";
+  }
+  if (couponStatus) {
+    couponStatus.textContent = "";
+  }
+  if (orderNotesInput) {
+    orderNotesInput.value = "";
+  }
+  orderStatus.textContent = "Draft saved.";
+  renderCart();
+  updateCheckoutHeader();
+  showToast("Draft saved.");
+  return draft;
+}
+
+function restoreDraft(draft) {
+  if (!draft) return;
+  state.cart = Array.isArray(draft.cart)
+    ? draft.cart.map((item) => ({
+        productId: item.productId,
+        variantId: item.variantId || null,
+        variantLabel: item.variantLabel || undefined,
+        name: item.name || "Item",
+        sku: item.sku || undefined,
+        barcode: item.barcode || undefined,
+        quantity: Number(item.quantity) || 1,
+        unitPrice: Number(item.unitPrice) || 0
+      }))
+    : [];
+  state.customer = draft.customer || null;
+  state.manualDiscount = Number(draft.manualDiscount) || 0;
+  state.taxRate = Number(draft.taxRate) || 0;
+  state.shippingAmount = Number(draft.shippingAmount) || 0;
+  state.appliedPromotion = draft.appliedPromotion || null;
+  if (couponCodeInput) {
+    couponCodeInput.value = draft.couponCode || draft.appliedPromotion?.code || "";
+  }
+  if (discountInput) {
+    discountInput.disabled = Boolean(state.appliedPromotion);
+  }
+  if (orderNotesInput) {
+    orderNotesInput.value = draft.notes || "";
+  }
+  if (orderCurrencyInput) {
+    orderCurrencyInput.value = draft.currency || "NGN";
+  }
+  if (draft.locationId && state.selectedLocationId && draft.locationId !== state.selectedLocationId) {
+    showToast("Draft was created for a different location.", "error");
+  }
+  updateCheckoutHeader();
+  renderCart();
+  closeDraftModal();
+  updateDraftCount();
+  showToast("Draft restored.");
+}
+
+function deleteDraft(draftId) {
+  const drafts = readDrafts().filter((draft) => draft.id !== draftId);
+  writeDrafts(drafts);
+  renderDrafts(drafts);
+}
+
+function clearDrafts() {
+  writeDrafts([]);
+  renderDrafts([]);
+}
+
 function renderCustomerResults(customers) {
   if (!customerResults) return;
   customerResults.innerHTML = "";
@@ -1275,6 +2145,29 @@ function getStockForProduct(productId) {
   const stock = state.stockByProduct.get(productId);
   if (!stock) return null;
   return Number.isFinite(stock.available) ? stock.available : null;
+}
+
+function getStockForVariant(variantId) {
+  if (!variantId) return null;
+  const stock = state.stockByVariant.get(variantId);
+  if (!stock) return null;
+  return Number.isFinite(stock.available) ? stock.available : null;
+}
+
+function formatVariantLabel(variant) {
+  const parts = [];
+  if (variant.size) {
+    const size = variant.unit ? `${variant.size} ${variant.unit}` : `${variant.size}`;
+    parts.push(size);
+  }
+  if (Array.isArray(variant.facets) && variant.facets.length) {
+    const facetText = variant.facets.map((facet) => `${facet.key}:${facet.value}`).join(", ");
+    parts.push(facetText);
+  }
+  if (!parts.length && variant.barcode) {
+    parts.push(`Barcode ${variant.barcode}`);
+  }
+  return parts.join(" · ") || "Variant";
 }
 
 async function loadBrandFilters() {
@@ -1524,6 +2417,7 @@ async function refreshOpenShift() {
     if (openShiftForm) openShiftForm.classList.add("hidden");
     if (closeShiftForm) closeShiftForm.classList.add("hidden");
     updateShiftSummary();
+    refreshShiftSummary();
     return;
   }
 
@@ -1548,6 +2442,7 @@ async function refreshOpenShift() {
     if (openShiftForm) openShiftForm.classList.remove("hidden");
     if (closeShiftForm) closeShiftForm.classList.add("hidden");
     updateShiftSummary();
+    refreshShiftSummary();
     updateNav();
     return;
   }
@@ -1561,7 +2456,120 @@ async function refreshOpenShift() {
   if (openShiftForm) openShiftForm.classList.add("hidden");
   if (closeShiftForm) closeShiftForm.classList.remove("hidden");
   updateShiftSummary();
+  await refreshShiftSummary();
   updateNav();
+}
+
+function renderShiftSummary(summary) {
+  if (!shiftSummary) return;
+  if (!summary) {
+    shiftSummary.textContent = "No summary available.";
+    return;
+  }
+
+  const totals = summary.totals || {};
+  const orders = summary.orders || {};
+  const cash = summary.cash_drops || {};
+  const lines = [
+    `Orders: ${orders.fulfilled ?? 0} fulfilled, ${orders.pending ?? 0} pending`,
+    `Net sales: ${formatMoney(totals.net_sales ?? 0)}`,
+    `Discounts: ${formatMoney(totals.discounts ?? 0)}`,
+    `Tax: ${formatMoney(totals.tax ?? 0)}`,
+    `Shipping: ${formatMoney(totals.shipping ?? 0)}`,
+    `Gross sales: ${formatMoney(totals.gross_sales ?? 0)}`,
+    `Cash drops: ${cash.count ?? 0} (${formatMoney(cash.total ?? 0)})`
+  ];
+  shiftSummary.textContent = lines.join("\n");
+}
+
+async function refreshShiftSummary() {
+  if (!shiftSummary) return;
+  if (!state.openShift) {
+    shiftSummary.textContent = "No open shift.";
+    return;
+  }
+  if (!state.online) {
+    shiftSummary.textContent = "Shift summary requires an online connection.";
+    return;
+  }
+
+  const response = await window.pos.request({
+    method: "GET",
+    path: `/pos/shifts/${state.openShift.id}/summary`,
+    extraHeaders: getRequestHeaders()
+  });
+
+  if (!response.ok) {
+    shiftSummary.textContent = "Unable to load shift summary.";
+    return;
+  }
+
+  renderShiftSummary(response.data);
+}
+
+async function submitCashDrop(event) {
+  event.preventDefault();
+  if (!state.openShift) {
+    const message = "No open shift.";
+    showToast(message, "error");
+    if (cashDropInfo) cashDropInfo.textContent = message;
+    return;
+  }
+  if (!state.managerToken) {
+    const message = "Manager sign-in required.";
+    showToast(message, "error");
+    if (cashDropInfo) cashDropInfo.textContent = message;
+    return;
+  }
+  if (!cashDropAmountInput?.value) {
+    const message = "Amount is required.";
+    showToast(message, "error");
+    if (cashDropInfo) cashDropInfo.textContent = message;
+    return;
+  }
+
+  const amount = Number(cashDropAmountInput.value);
+  if (!Number.isFinite(amount) || amount <= 0) {
+    const message = "Amount must be greater than zero.";
+    showToast(message, "error");
+    if (cashDropInfo) cashDropInfo.textContent = message;
+    return;
+  }
+
+  const currency = cashDropCurrencyInput?.value?.trim().toUpperCase() || "NGN";
+  const reason = cashDropReasonInput?.value?.trim();
+
+  const result = await safeWrite({
+    method: "POST",
+    path: `/pos/shifts/${state.openShift.id}/cash-drops`,
+    body: {
+      amount,
+      currency,
+      reason: reason || undefined
+    },
+    scope: `pos.cashdrop:${state.openShift.id}:${Date.now()}`,
+    authToken: state.managerToken || undefined,
+    includeCashier: false
+  });
+
+  if (result.queued) {
+    if (cashDropInfo) cashDropInfo.textContent = "Cash drop queued (offline).";
+    return;
+  }
+
+  if (!result.response?.ok) {
+    const message = result.response?.data?.message || "Cash drop failed.";
+    showToast(message, "error");
+    if (cashDropInfo) cashDropInfo.textContent = message;
+    return;
+  }
+
+  if (cashDropInfo) {
+    cashDropInfo.textContent = `Cash drop recorded: ${formatMoney(amount)}.`;
+  }
+  cashDropAmountInput.value = "";
+  cashDropReasonInput.value = "";
+  await refreshShiftSummary();
 }
 
 
@@ -1569,6 +2577,149 @@ function formatMoney(amount) {
   const currency = orderCurrencyInput?.value?.trim().toUpperCase() || "NGN";
   if (!Number.isFinite(amount)) return "-";
   return `${currency} ${amount.toFixed(2)}`;
+}
+
+function getPrinterConfig() {
+  const config = state.config?.printer;
+  if (!config || !config.type || config.type === "none") return null;
+  return config;
+}
+
+function shouldAutoPrintReceipt(receipt) {
+  const printer = getPrinterConfig();
+  if (!printer || !printer.autoPrint) return false;
+  if (receipt?.meta?.offline && !printer.printOnOffline) return false;
+  return true;
+}
+
+function updateReceiptActions() {
+  if (!printReceiptButton) return;
+  const hasPrinter = Boolean(getPrinterConfig());
+  printReceiptButton.disabled = !state.lastReceipt || !hasPrinter;
+  updatePrinterActions();
+}
+
+function updatePrinterActions() {
+  if (!testPrinterButton) return;
+  testPrinterButton.disabled = !getPrinterConfig();
+}
+
+function setPrinterStatus(message) {
+  if (!printerStatus) return;
+  printerStatus.textContent = message;
+}
+
+function updateManagerAccess() {
+  if (state.managerSessionExpiresAt && Date.now() >= state.managerSessionExpiresAt) {
+    clearManagerSession();
+    return;
+  }
+  const hasManager = Boolean(state.managerToken);
+  if (managerUnlockCard) managerUnlockCard.classList.toggle("hidden", hasManager);
+  if (managerOnlyGrid) managerOnlyGrid.classList.toggle("hidden", !hasManager);
+}
+
+async function authenticateManager(employeeNo, pin) {
+  if (!state.config) {
+    return { ok: false, message: "Config not loaded. Reload the app." };
+  }
+  if (!state.online) {
+    return { ok: false, message: "Manager login requires an online connection." };
+  }
+  if (!employeeNo || !pin) {
+    return { ok: false, message: "Employee number and PIN are required." };
+  }
+
+  const response = await window.pos.request({
+    method: "POST",
+    path: "/pos/cashiers/login",
+    body: { employee_no: employeeNo, pin },
+    extraHeaders: getRequestHeaders({ includeCashier: false }),
+    skipAuth: true
+  });
+
+  if (!response.ok) {
+    return { ok: false, message: response.data?.message || "Manager login failed." };
+  }
+
+  const permissions = response.data?.user?.permissions ?? [];
+  const isManager = permissions.includes("*") || permissions.includes("pos.devices.manage");
+  if (!isManager) {
+    return { ok: false, message: "Manager permission required to access configuration." };
+  }
+
+  const token = response.data?.access_token;
+  if (!token) {
+    return { ok: false, message: "Manager token missing." };
+  }
+
+  setManagerSession(token, response.data?.user);
+  return { ok: true, token, user: response.data?.user };
+}
+
+function buildReceiptSnapshot({ order, paymentIntent, paymentMethod, paymentProvider, offline }) {
+  const currency = order?.currency || orderCurrencyInput?.value?.trim().toUpperCase() || "NGN";
+  const items = state.cart.map((item) => ({
+    name: item.name,
+    variant: item.variantLabel,
+    qty: item.quantity,
+    unitPrice: Number(item.unitPrice) || 0,
+    total: (Number(item.unitPrice) || 0) * item.quantity,
+    sku: item.sku || item.barcode || undefined
+  }));
+  const totals = {
+    subtotal: Number(state.orderTotals.total) || 0,
+    discount: Number(state.orderTotals.discount) || 0,
+    tax: Number(state.orderTotals.tax) || 0,
+    shipping: Number(state.orderTotals.shipping) || 0,
+    total: Number(state.orderTotals.grandTotal) || 0
+  };
+  const orderNo = order?.order_no || order?.orderNo || order?.id || "PENDING";
+
+  return {
+    header: [],
+    meta: {
+      orderNo,
+      date: new Date().toISOString(),
+      location: state.config?.locationName || state.selectedLocationId || state.config?.locationId || undefined,
+      cashier: state.cashier?.name || state.cashier?.email || undefined,
+      customer: state.customer?.name || undefined,
+      status: order?.status || (offline ? "pending" : undefined),
+      offline: Boolean(offline)
+    },
+    items,
+    totals,
+    payment: paymentMethod
+      ? {
+          method: paymentMethod,
+          provider: paymentProvider || "manual",
+          amount: totals.total,
+          reference: paymentIntent?.id || undefined,
+          status: paymentIntent?.status || undefined
+        }
+      : null,
+    footer: []
+  };
+}
+
+async function printReceiptNow(receipt) {
+  if (!window.pos?.printReceipt) {
+    showToast("Printer bridge unavailable.", "error");
+    return { ok: false };
+  }
+  const printer = getPrinterConfig();
+  if (!printer) {
+    showToast("Printer not configured.", "error");
+    return { ok: false };
+  }
+
+  const result = await window.pos.printReceipt(receipt, printer);
+  if (result?.ok) {
+    showToast("Receipt printed.");
+  } else {
+    showToast(result?.error || "Receipt print failed.", "error");
+  }
+  return result;
 }
 
 function getProductInitials(name) {
@@ -1674,13 +2825,108 @@ function renderProducts() {
     const action = document.createElement("button");
     action.className = "ghost";
     action.textContent = "Add";
-    action.addEventListener("click", () => addToCart(product));
+    action.addEventListener("click", () => handleAddProduct(product));
 
     card.appendChild(image);
     card.appendChild(info);
     card.appendChild(action);
     productResults.appendChild(card);
   });
+}
+
+async function fetchVariantsForProduct(productId) {
+  const cacheKey = `variants:${productId}`;
+  if (!state.online) {
+    const cached = readCache(cacheKey, PRODUCT_CACHE_TTL_MS);
+    if (cached) return cached;
+    showToast("Offline: no cached variants for this product.", "error");
+    return null;
+  }
+
+  const response = await window.pos.request({
+    method: "GET",
+    path: `/variants${buildQuery({ product_id: productId, limit: 200 })}`,
+    extraHeaders: getRequestHeaders()
+  });
+
+  if (!response.ok) {
+    const message = response.data?.message || "Unable to load variants.";
+    showToast(message, "error");
+    return null;
+  }
+
+  const variants = response.data?.data || [];
+  writeCache(cacheKey, variants);
+  return variants;
+}
+
+function openVariantModal(product, variants) {
+  if (!variantModal || !variantList) return;
+  if (variantModalTitle) {
+    variantModalTitle.textContent = `Select Variant · ${product.name}`;
+  }
+  variantList.innerHTML = "";
+
+  if (!variants.length) {
+    variantList.textContent = "No variants available.";
+    variantModal.classList.remove("hidden");
+    return;
+  }
+
+  variants.forEach((variant) => {
+    const row = document.createElement("div");
+    row.className = "variant-item";
+
+    const info = document.createElement("div");
+    const title = document.createElement("div");
+    title.textContent = formatVariantLabel(variant);
+    const meta = document.createElement("div");
+    meta.className = "variant-meta";
+    const stock = getStockForVariant(variant.id);
+    const price = getPriceForItem(variant.product_id, variant.id);
+    const metaParts = [];
+    if (variant.barcode) metaParts.push(`Barcode ${variant.barcode}`);
+    if (Number.isFinite(stock)) metaParts.push(`Qty: ${stock}`);
+    if (price !== null) metaParts.push(`Price ${price.toFixed(2)}`);
+    meta.textContent = metaParts.join(" · ");
+
+    info.appendChild(title);
+    if (meta.textContent) info.appendChild(meta);
+
+    const action = document.createElement("button");
+    action.type = "button";
+    action.className = "ghost";
+    action.textContent = "Add";
+    action.addEventListener("click", () => {
+      addToCart(product, variant);
+      closeVariantModal();
+    });
+
+    row.appendChild(info);
+    row.appendChild(action);
+    variantList.appendChild(row);
+  });
+
+  variantModal.classList.remove("hidden");
+}
+
+function closeVariantModal() {
+  if (!variantModal) return;
+  variantModal.classList.add("hidden");
+}
+
+async function handleAddProduct(product) {
+  const variants = await fetchVariantsForProduct(product.id);
+  if (!variants) return;
+  if (!variants.length) {
+    addToCart(product);
+    return;
+  }
+  if (variants.length === 1) {
+    addToCart(product, variants[0]);
+    return;
+  }
+  openVariantModal(product, variants);
 }
 
 function updateCartSummary() {
@@ -1743,6 +2989,14 @@ function buildAdjustmentNote() {
   return `Adjustments: ${parts.join(", ")}`;
 }
 
+function calculateLoyaltyPoints() {
+  if (!state.customer) return 0;
+  const spendPerPoint = Number(state.loyaltySpendPerPoint) || 0;
+  if (spendPerPoint <= 0) return 0;
+  const eligible = Math.max(0, state.orderTotals.total - state.orderTotals.discount);
+  return Math.floor(eligible / spendPerPoint);
+}
+
 function updatePaymentSummary() {
   if (paymentTotal) {
     paymentTotal.textContent = formatMoney(state.orderTotals.grandTotal);
@@ -1755,6 +3009,7 @@ function updatePaymentSummary() {
       paymentCurrency.value = orderCurrencyInput?.value?.trim().toUpperCase() || "NGN";
     }
   }
+  updateMultiPaymentSummary();
 }
 
 function getLowStockThreshold() {
@@ -1938,6 +3193,12 @@ function renderCart() {
     const name = document.createElement("div");
     name.className = "item-name";
     name.textContent = item.name;
+    if (item.variantLabel) {
+      const meta = document.createElement("div");
+      meta.className = "item-meta";
+      meta.textContent = item.variantLabel;
+      name.appendChild(meta);
+    }
 
     const price = document.createElement("input");
     price.type = "number";
@@ -2004,15 +3265,22 @@ function renderCart() {
 
   updateCartSummary();
 }
-function addToCart(product) {
-  const existing = state.cart.find((item) => item.productId === product.id);
-  const price = getPriceForProduct(product.id);
+
+function addToCart(product, variant) {
+  const variantId = variant?.id;
+  const existing = state.cart.find((item) => item.productId === product.id && item.variantId === variantId);
+  const price = getPriceForItem(product.id, variantId);
+  const variantLabel = variant ? formatVariantLabel(variant) : undefined;
   if (existing) {
     existing.quantity += 1;
   } else {
     state.cart.push({
       productId: product.id,
+      variantId,
+      variantLabel,
       name: product.name,
+      sku: product.sku || undefined,
+      barcode: variant?.barcode || undefined,
       quantity: 1,
       unitPrice: price ?? 0
     });
@@ -2023,10 +3291,18 @@ function addToCart(product) {
   renderCart();
 }
 
-function getPriceForProduct(productId) {
+function getPriceForItem(productId, variantId) {
   if (!state.priceRulesLoaded) return null;
+  if (variantId && state.priceRulesByVariant.has(variantId)) {
+    const price = state.priceRulesByVariant.get(variantId);
+    return typeof price === "number" ? price : null;
+  }
   const price = state.priceRulesByProduct.get(productId);
   return typeof price === "number" ? price : null;
+}
+
+function getPriceForProduct(productId) {
+  return getPriceForItem(productId, undefined);
 }
 
 async function loadProducts() {
@@ -2092,7 +3368,12 @@ async function submitOrder(options = {}) {
   if (!canCheckout()) {
     return null;
   }
-  if (options.payment && !state.online) {
+  const onlineCheckPayments = options.payments?.length
+    ? options.payments
+    : options.payment
+      ? [{ method: options.payment.payment_method ?? "card" }]
+      : [];
+  if (onlineCheckPayments.length && requiresOnlineForPayments(onlineCheckPayments) && !state.online) {
     showToast("Online connection required for card/transfer payments.", "error");
     return null;
   }
@@ -2102,11 +3383,15 @@ async function submitOrder(options = {}) {
   const adjustmentNote = buildAdjustmentNote();
   const notes = [baseNotes, adjustmentNote].filter(Boolean).join(" | ") || undefined;
   const { discount, tax, shipping } = state.orderTotals;
+  const loyaltyPoints = calculateLoyaltyPoints();
   const items = state.cart.map((item) => ({
     product_id: item.productId,
+    variant_id: item.variantId || undefined,
     quantity: item.quantity,
     unit_price: item.unitPrice
   }));
+  const paymentMethod = options.paymentMethod ?? options.payment?.payment_method;
+  const paymentProvider = options.paymentProvider ?? options.payment?.provider;
   const payload = {
     order: {
       currency,
@@ -2119,11 +3404,27 @@ async function submitOrder(options = {}) {
     },
     reserve_stock: true
   };
-  if (options.payment) {
+  if (state.customer && loyaltyPoints > 0) {
+    payload.loyalty = {
+      customer_id: state.customer.id,
+      points: loyaltyPoints,
+      reason: "POS checkout"
+    };
+  }
+  if (options.payment && !options.payments?.length) {
     payload.payment = options.payment;
+  }
+  if (options.payments?.length) {
+    payload.payments = options.payments;
   }
   if (typeof options.capturePayment === "boolean") {
     payload.capture_payment = options.capturePayment;
+  }
+  if (options.paymentPlan) {
+    payload.payment_plan = options.paymentPlan;
+  }
+  if (typeof options.releaseOnPartial === "boolean") {
+    payload.release_on_partial = options.releaseOnPartial;
   }
 
   orderStatus.textContent = "Submitting order...";
@@ -2136,6 +3437,18 @@ async function submitOrder(options = {}) {
 
   if (result.queued) {
     orderStatus.textContent = "Order queued (offline).";
+    const receipt = buildReceiptSnapshot({
+      order: null,
+      paymentIntent: null,
+      paymentMethod,
+      paymentProvider,
+      offline: true
+    });
+    state.lastReceipt = receipt;
+    updateReceiptActions();
+    if (shouldAutoPrintReceipt(receipt)) {
+      await printReceiptNow(receipt);
+    }
     return result;
   }
 
@@ -2147,26 +3460,55 @@ async function submitOrder(options = {}) {
 
   const responseData = result.response.data;
   const order = responseData?.order ?? responseData;
-  const paymentIntent = responseData?.payment_intent;
-  const capturedPayment = responseData?.captured_payment;
+  const paymentIntent = responseData?.payment_intent ?? responseData?.payment_intents?.[0];
+  const capturedPayment = responseData?.captured_payment ?? responseData?.captured_payments?.[0];
+  const paymentIntents = responseData?.payment_intents ?? (paymentIntent ? [paymentIntent] : []);
+  const capturedPayments = responseData?.captured_payments ?? (capturedPayment ? [capturedPayment] : []);
+  const loyaltyRedemption = responseData?.loyalty_redemption;
+  const loyalty = responseData?.loyalty;
   if (order) {
     orderStatus.textContent = `Order created: ${order.order_no} (${order.total_amount} ${order.currency})`;
   } else {
     orderStatus.textContent = "Order created.";
   }
-  if (paymentIntent) {
-    const status = paymentIntent.status ? ` (${paymentIntent.status})` : "";
-    const intentLabel = paymentIntent.id ? ` ${paymentIntent.id}` : "";
-    orderStatus.textContent += ` | Payment intent${intentLabel}${status}`;
-    if (paymentIntent.checkout_url) {
-      orderStatus.textContent += ` | Checkout: ${paymentIntent.checkout_url}`;
+  if (paymentIntents.length) {
+    const first = paymentIntents[0];
+    const status = first.status ? ` (${first.status})` : "";
+    const intentLabel = first.id ? ` ${first.id}` : "";
+    const countLabel = paymentIntents.length > 1 ? ` x${paymentIntents.length}` : "";
+    orderStatus.textContent += ` | Payment intent${intentLabel}${status}${countLabel}`;
+    if (first.checkout_url) {
+      orderStatus.textContent += ` | Checkout: ${first.checkout_url}`;
     }
   }
-  if (capturedPayment) {
+  if (capturedPayments.length) {
     orderStatus.textContent += " | Payment captured.";
   }
+  if (loyaltyRedemption) {
+    const balance = loyaltyRedemption.points_balance ?? loyaltyRedemption.pointsBalance;
+    const balanceLabel = Number.isFinite(Number(balance)) ? ` (Balance ${balance})` : "";
+    orderStatus.textContent += ` | Points redeemed${balanceLabel}`;
+  }
+  if (loyalty) {
+    const balance = loyalty.points_balance ?? loyalty.pointsBalance;
+    const pointsLabel = loyaltyPoints > 0 ? `+${loyaltyPoints}` : "issued";
+    const balanceLabel = Number.isFinite(Number(balance)) ? ` (Balance ${balance})` : "";
+    orderStatus.textContent += ` | Points ${pointsLabel}${balanceLabel}`;
+  }
+  const receipt = buildReceiptSnapshot({
+    order,
+    paymentIntent,
+    paymentMethod,
+    paymentProvider,
+    offline: false
+  });
   state.lastOrder = order || null;
   state.lastPaymentIntent = paymentIntent || null;
+  state.lastReceipt = receipt;
+  updateReceiptActions();
+  if (shouldAutoPrintReceipt(receipt)) {
+    await printReceiptNow(receipt);
+  }
   state.cart = [];
   renderCart();
   return result;
@@ -2260,6 +3602,7 @@ if (cashierLoginForm) {
 if (cashierLogoutButton) {
   cashierLogoutButton.addEventListener("click", () => {
     clearCashierSession();
+    clearManagerSession();
     showToast("Cashier signed out.");
   });
 }
@@ -2286,32 +3629,10 @@ if (managerActivateForm) {
 
     const employeeNo = managerEmployeeNoInput.value.trim();
     const pin = managerPinInput.value.trim();
-    if (!employeeNo || !pin) {
-      showToast("Manager employee number and PIN are required.", "error");
-      return;
-    }
-
-    const loginResponse = await window.pos.request({
-      method: "POST",
-      path: "/pos/cashiers/login",
-      body: { employee_no: employeeNo, pin },
-      extraHeaders: getRequestHeaders({ includeCashier: false }),
-      skipAuth: true
-    });
-
-    if (!loginResponse.ok) {
-      const message = loginResponse.data?.message || "Manager login failed.";
-      showToast(message, "error");
-      if (managerInfo) managerInfo.textContent = message;
-      return;
-    }
-
-    const permissions = loginResponse.data?.user?.permissions ?? [];
-    const isManager = permissions.includes("*") || permissions.includes("pos.devices.manage");
-    if (!isManager) {
-      const message = "Manager permission required to activate device.";
-      showToast(message, "error");
-      if (managerInfo) managerInfo.textContent = message;
+    const auth = await authenticateManager(employeeNo, pin);
+    if (!auth.ok) {
+      showToast(auth.message, "error");
+      if (managerInfo) managerInfo.textContent = auth.message;
       return;
     }
 
@@ -2324,7 +3645,7 @@ if (managerActivateForm) {
       },
       extraHeaders: {
         ...getRequestHeaders({ includeCashier: false }),
-        Authorization: `Bearer ${loginResponse.data?.access_token}`
+        Authorization: `Bearer ${auth.token}`
       },
       skipAuth: true
     });
@@ -2353,6 +3674,30 @@ if (managerActivateForm) {
     updateTokenStatus();
     clearCashierSession();
   });
+}
+
+if (managerUnlockForm) {
+  managerUnlockForm.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const employeeNo = managerUnlockEmployeeNoInput?.value?.trim();
+    const pin = managerUnlockPinInput?.value?.trim();
+    const auth = await authenticateManager(employeeNo, pin);
+    if (!auth.ok) {
+      showToast(auth.message, "error");
+      if (managerUnlockInfo) managerUnlockInfo.textContent = auth.message;
+      return;
+    }
+    if (managerUnlockInfo) {
+      managerUnlockInfo.textContent = "Manager access granted.";
+    }
+    if (managerUnlockEmployeeNoInput) managerUnlockEmployeeNoInput.value = "";
+    if (managerUnlockPinInput) managerUnlockPinInput.value = "";
+    updateManagerAccess();
+  });
+}
+
+if (cashierPinForm) {
+  cashierPinForm.addEventListener("submit", (event) => submitCashierPin(event));
 }
 
 openShiftForm.addEventListener("submit", async (event) => {
@@ -2441,6 +3786,9 @@ if (addCustomerButton) {
 if (closeCustomerModalButton) {
   closeCustomerModalButton.addEventListener("click", () => closeCustomerModal());
 }
+if (closeVariantModalButton) {
+  closeVariantModalButton.addEventListener("click", () => closeVariantModal());
+}
 if (setWalkInButton) {
   setWalkInButton.addEventListener("click", () => {
     setCustomer(null);
@@ -2457,6 +3805,9 @@ if (customerSearchInput) {
       loadCustomers();
     }
   });
+}
+if (createCustomerButton) {
+  createCustomerButton.addEventListener("click", () => createCustomer());
 }
 
 if (discountInput) {
@@ -2486,6 +3837,42 @@ clearCartButton.addEventListener("click", () => {
   orderStatus.textContent = "Cart cleared.";
   renderCart();
 });
+if (printReceiptButton) {
+  printReceiptButton.addEventListener("click", async () => {
+    if (!state.lastReceipt) {
+      showToast("No receipt available yet.", "error");
+      return;
+    }
+    await printReceiptNow(state.lastReceipt);
+  });
+}
+if (testPrinterButton) {
+  testPrinterButton.addEventListener("click", async () => {
+    const printer = getPrinterConfig();
+    if (!printer) {
+      const message = "Printer not configured.";
+      showToast(message, "error");
+      setPrinterStatus(message);
+      return;
+    }
+    if (!window.pos?.testPrinter) {
+      const message = "Printer bridge unavailable.";
+      showToast(message, "error");
+      setPrinterStatus(message);
+      return;
+    }
+    setPrinterStatus("Sending test receipt...");
+    const result = await window.pos.testPrinter(printer);
+    if (result?.ok) {
+      setPrinterStatus("Test receipt sent.");
+      showToast("Test receipt sent.");
+    } else {
+      const message = result?.error || "Test receipt failed.";
+      setPrinterStatus(`Test failed: ${message}`);
+      showToast(message, "error");
+    }
+  });
+}
 
 if (payCardButton) {
   payCardButton.addEventListener("click", () => openPaymentModal("card"));
@@ -2497,19 +3884,24 @@ if (payTransferButton) {
   payTransferButton.addEventListener("click", () => openPaymentModal("transfer"));
 }
 if (paySplitButton) {
-  paySplitButton.addEventListener("click", () => showToast("Split payments are coming soon."));
+  paySplitButton.addEventListener("click", () => openMultiPaymentModal("split"));
 }
 if (payInstallmentButton) {
-  payInstallmentButton.addEventListener("click", () => showToast("Installments are coming soon."));
+  payInstallmentButton.addEventListener("click", () => openMultiPaymentModal("installment"));
 }
 if (payDepositButton) {
-  payDepositButton.addEventListener("click", () => showToast("Deposits are coming soon."));
+  payDepositButton.addEventListener("click", () => openMultiPaymentModal("deposit"));
 }
 if (payPointsButton) {
-  payPointsButton.addEventListener("click", () => showToast("Points redemption is coming soon."));
+  payPointsButton.addEventListener("click", () => openMultiPaymentModal("points"));
 }
 if (payDraftButton) {
-  payDraftButton.addEventListener("click", () => submitOrder());
+  payDraftButton.addEventListener("click", () => {
+    saveDraft();
+  });
+}
+if (payDraftsButton) {
+  payDraftsButton.addEventListener("click", () => openDraftModal());
 }
 if (payCancelButton) {
   payCancelButton.addEventListener("click", () => {
@@ -2534,6 +3926,18 @@ if (closePaymentModalButton) {
 if (cancelPaymentButton) {
   cancelPaymentButton.addEventListener("click", () => closePaymentModal());
 }
+if (multiPaymentForm) {
+  multiPaymentForm.addEventListener("submit", handleMultiPaymentSubmit);
+}
+if (closeMultiPaymentModalButton) {
+  closeMultiPaymentModalButton.addEventListener("click", () => closeMultiPaymentModal());
+}
+if (cancelMultiPaymentButton) {
+  cancelMultiPaymentButton.addEventListener("click", () => closeMultiPaymentModal());
+}
+if (addPaymentLineButton) {
+  addPaymentLineButton.addEventListener("click", () => addPaymentLine({ method: "cash", amount: 0 }));
+}
 if (refundForm) {
   refundForm.addEventListener("submit", handleRefundSubmit);
 }
@@ -2549,13 +3953,25 @@ if (closeRecentModalButton) {
 if (refreshRecentButton) {
   refreshRecentButton.addEventListener("click", () => loadRecentOrders());
 }
+if (closeDraftModalButton) {
+  closeDraftModalButton.addEventListener("click", () => closeDraftModal());
+}
+if (clearDraftsButton) {
+  clearDraftsButton.addEventListener("click", () => clearDrafts());
+}
 if (closeFilterDrawerButton) {
   closeFilterDrawerButton.addEventListener("click", () => closeFilterDrawer());
 }
 
 refreshDeviceButton.addEventListener("click", refreshDevice);
 refreshShiftButton.addEventListener("click", refreshOpenShift);
+if (refreshSummaryButton) {
+  refreshSummaryButton.addEventListener("click", refreshShiftSummary);
+}
 refreshQueueButton.addEventListener("click", renderQueue);
+if (cashDropForm) {
+  cashDropForm.addEventListener("submit", (event) => submitCashDrop(event));
+}
 if (reloadConfigButton) {
   reloadConfigButton.addEventListener("click", () => {
     loadConfig();
@@ -2580,8 +3996,23 @@ if (navShiftButton) {
   });
 }
 
+if (navActivationButton) {
+  navActivationButton.addEventListener("click", () => {
+    if (!state.config || !isConfigComplete(state.config)) {
+      setConfigMissing("Missing required config. Provision device in Admin-Ops.");
+      return;
+    }
+    setView("activation");
+  });
+}
+
 if (navCheckoutButton) {
   navCheckoutButton.addEventListener("click", () => {
+    if (!state.cashierToken) {
+      showToast("Biller sign-in required.", "error");
+      setView("cashier");
+      return;
+    }
     if (!state.openShift) return;
     setView("checkout");
   });
@@ -2590,12 +4021,18 @@ if (navCheckoutButton) {
 if (navSignOutButton) {
   navSignOutButton.addEventListener("click", () => {
     clearCashierSession();
+    clearManagerSession();
     showToast("Cashier signed out.");
   });
 }
 
 if (proceedCheckoutButton) {
   proceedCheckoutButton.addEventListener("click", () => {
+    if (!state.cashierToken) {
+      showToast("Biller sign-in required.", "error");
+      setView("cashier");
+      return;
+    }
     if (!state.openShift) {
       showToast("Open a shift first.", "error");
       return;
@@ -2622,6 +4059,7 @@ async function bootstrap() {
   loadConfig();
   renderCashier();
   updateTokenStatus();
+  setupScanner();
   await evaluateAppState();
   renderQueue();
   renderCart();

@@ -50,6 +50,9 @@ const POS_ALL = [
   "pos.shifts.manage",
   TENANCY_LOCATIONS_READ,
   "orders.read",
+  "loyalty.customer.read",
+  "loyalty.customer.write",
+  "loyalty.points.redeem",
 ];
 
 const POS_OPERATOR = [
@@ -68,7 +71,10 @@ const POS_OPERATOR = [
   "payments.intent.create",
   "payments.capture",
   "inventory.stock.reserve",
+  "loyalty.customer.read",
+  "loyalty.customer.write",
   "loyalty.points.issue",
+  "loyalty.points.redeem",
 ];
 
 const ADVISORY_ALL = ["advisory.engagement.manage", "advisory.deliverable.manage"];

@@ -16,6 +16,7 @@
         <div class="header-actions">
           <span id="apiStatus" class="status-pill">Offline</span>
           <button id="checkHealth" class="ghost">Check API</button>
+          <button id="navActivation" class="ghost">Activation</button>
           <button id="navShift" class="ghost">Shift</button>
           <button id="navCheckout" class="ghost">Checkout</button>
           <button id="navSignOut" class="ghost">Sign out</button>
@@ -66,7 +67,26 @@
         </section>
 
         <section id="viewActivation" class="view">
-          <div class="grid">
+          <div id="managerUnlockCard" class="card">
+            <div class="card-header">
+              <h2>Manager Access</h2>
+            </div>
+            <form id="managerUnlockForm" class="stack">
+              <div class="form-row">
+                <label for="managerUnlockEmployeeNo">Manager Employee No</label>
+                <input id="managerUnlockEmployeeNo" type="text" placeholder="MGR-001" required />
+              </div>
+              <div class="form-row">
+                <label for="managerUnlockPin">Manager PIN</label>
+                <input id="managerUnlockPin" type="password" inputmode="numeric" required />
+              </div>
+              <button type="submit" class="primary">Unlock Configuration</button>
+            </form>
+            <div id="managerUnlockInfo" class="info-panel"></div>
+            <div class="helper">Manager access is required to view device configuration.</div>
+          </div>
+
+          <div id="managerOnlyGrid" class="grid hidden">
             <div class="card">
               <div class="card-header">
                 <h2>Configuration</h2>
@@ -103,6 +123,11 @@
                   <div id="configDevice" class="mono"></div>
                 </div>
               </div>
+              <div class="actions">
+                <button id="testPrinter" class="ghost" type="button">Print Test</button>
+              </div>
+              <div id="printerStatus" class="info-panel"></div>
+              <div class="helper">Prints a test receipt using the configured printer.</div>
               <pre id="configRaw"></pre>
             </div>
 
@@ -123,6 +148,29 @@
               </form>
               <div id="managerInfo" class="info-panel"></div>
               <div class="helper">Activation refreshes the device token for 24 hours.</div>
+            </div>
+
+            <div class="card">
+              <div class="card-header">
+                <h2>Set Cashier PIN</h2>
+              </div>
+              <form id="cashierPinForm" class="stack">
+                <div class="form-row">
+                  <label for="cashierPinEmployeeNo">Cashier Employee No</label>
+                  <input id="cashierPinEmployeeNo" type="text" placeholder="EMP-001" required />
+                </div>
+                <div class="form-row">
+                  <label for="cashierPinNew">New PIN</label>
+                  <input id="cashierPinNew" type="password" inputmode="numeric" required />
+                </div>
+                <div class="form-row">
+                  <label for="cashierPinConfirm">Confirm PIN</label>
+                  <input id="cashierPinConfirm" type="password" inputmode="numeric" required />
+                </div>
+                <button type="submit" class="primary">Set PIN</button>
+              </form>
+              <div id="cashierPinInfo" class="info-panel"></div>
+              <div class="helper">Requires manager permission.</div>
             </div>
 
             <div class="card">
@@ -193,6 +241,35 @@
                 </div>
                 <button type="submit" class="danger">Close Shift</button>
               </form>
+            </div>
+            <div class="card">
+              <div class="card-header">
+                <h2>Shift Summary</h2>
+                <button id="refreshSummary" class="ghost">Refresh</button>
+              </div>
+              <div id="shiftSummary" class="info-panel"></div>
+            </div>
+            <div class="card">
+              <div class="card-header">
+                <h2>Cash Drop</h2>
+              </div>
+              <form id="cashDropForm" class="stack">
+                <div class="form-row">
+                  <label for="cashDropAmount">Amount</label>
+                  <input id="cashDropAmount" type="number" min="0" step="0.01" required />
+                </div>
+                <div class="form-row">
+                  <label for="cashDropCurrency">Currency</label>
+                  <input id="cashDropCurrency" type="text" maxlength="3" value="NGN" />
+                </div>
+                <div class="form-row">
+                  <label for="cashDropReason">Reason</label>
+                  <input id="cashDropReason" type="text" placeholder="Bank deposit" />
+                </div>
+                <button type="submit" class="primary">Record Cash Drop</button>
+              </form>
+              <div id="cashDropInfo" class="info-panel"></div>
+              <div class="helper">Only available during an open shift.</div>
             </div>
           </div>
           <div class="actions">
@@ -308,6 +385,7 @@
                 <div class="actions checkout-actions">
                   <button id="submitOrder" class="primary">Submit Order</button>
                   <button id="clearCart" class="ghost">Clear Cart</button>
+                  <button id="printReceipt" class="ghost" type="button">Print Receipt</button>
                 </div>
                 <div id="orderStatus" class="helper"></div>
               </div>
@@ -341,7 +419,11 @@
               <button id="payDeposit" type="button" class="payment-button">Deposit</button>
               <button id="payPoints" type="button" class="payment-button">Points</button>
               <div class="payment-spacer"></div>
-              <button id="payDraft" type="button" class="payment-button ghost">Draft</button>
+              <button id="payDraft" type="button" class="payment-button ghost">Save Draft</button>
+              <button id="payDrafts" type="button" class="payment-button ghost">
+                Drafts
+                <span id="draftCount" class="badge hidden">0</span>
+              </button>
               <button id="payCancel" type="button" class="payment-button danger">Cancel</button>
               <button id="payRecent" type="button" class="payment-button ghost">Recent</button>
             </div>
@@ -367,13 +449,41 @@
         </div>
         <div class="modal-body">
           <div class="search-box modal-search">
-            <input id="customerSearch" type="text" placeholder="Search by name" />
+            <input id="customerSearch" type="text" placeholder="Search by name, email, or phone" />
             <button id="customerSearchBtn" class="primary icon-button" type="button">Search</button>
           </div>
           <div id="customerResults" class="list"></div>
+          <div class="divider"></div>
+          <div class="form-row">
+            <label for="customerName">New customer</label>
+            <input id="customerName" type="text" placeholder="Customer name" />
+          </div>
+          <div class="form-row">
+            <label for="customerEmail">Email</label>
+            <input id="customerEmail" type="email" placeholder="customer@example.com" />
+          </div>
+          <div class="form-row">
+            <label for="customerPhone">Phone</label>
+            <input id="customerPhone" type="text" placeholder="+234..." />
+          </div>
+          <div class="actions">
+            <button id="createCustomer" class="primary" type="button">Create &amp; Select</button>
+          </div>
         </div>
         <div class="modal-actions">
           <button id="setWalkIn" class="ghost" type="button">Walk in customer</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="variantModal" class="modal hidden">
+      <div class="modal-card">
+        <div class="modal-header">
+          <h3 id="variantModalTitle">Select Variant</h3>
+          <button id="closeVariantModal" class="ghost" type="button">Close</button>
+        </div>
+        <div class="modal-body">
+          <div id="variantList" class="list"></div>
         </div>
       </div>
     </div>
@@ -403,6 +513,7 @@
             <select id="paymentProvider">
               <option value="paystack">Paystack</option>
               <option value="flutterwave">Flutterwave</option>
+              <option value="moniepoint">Moniepoint</option>
               <option value="monnify">Monnify</option>
               <option value="interswitch">Interswitch</option>
               <option value="manual">Manual</option>
@@ -431,6 +542,42 @@
           <div class="actions">
             <button type="submit" class="primary">Proceed</button>
             <button id="cancelPayment" type="button" class="ghost">Cancel</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <div id="multiPaymentModal" class="modal hidden">
+      <div class="modal-card wide">
+        <div class="modal-header">
+          <h3 id="multiPaymentTitle">Split Payment</h3>
+          <button id="closeMultiPaymentModal" class="ghost" type="button">Close</button>
+        </div>
+        <form id="multiPaymentForm" class="stack">
+          <div class="summary-item">
+            <span class="summary-label">Amount due</span>
+            <span id="multiPaymentTotal" class="summary-value">0.00</span>
+          </div>
+          <div class="summary-item">
+            <span class="summary-label">Remaining</span>
+            <span id="multiPaymentRemaining" class="summary-value">0.00</span>
+          </div>
+          <div class="form-row">
+            <label for="multiPaymentCustomerEmail">Customer email</label>
+            <input id="multiPaymentCustomerEmail" type="email" placeholder="customer@example.com" />
+          </div>
+          <div id="multiPaymentLines" class="stack"></div>
+          <button id="addPaymentLine" type="button" class="ghost">Add Tender</button>
+          <div id="multiPaymentReleaseRow" class="form-row hidden">
+            <label class="checkbox">
+              <input id="multiPaymentReleaseToggle" type="checkbox" />
+              Release goods on deposit
+            </label>
+          </div>
+          <div id="multiPaymentHint" class="helper"></div>
+          <div class="actions">
+            <button type="submit" class="primary">Proceed</button>
+            <button id="cancelMultiPayment" type="button" class="ghost">Cancel</button>
           </div>
         </form>
       </div>
@@ -475,6 +622,21 @@
             <button id="refreshRecent" class="ghost" type="button">Refresh</button>
           </div>
           <div id="recentOrders" class="list"></div>
+        </div>
+      </div>
+    </div>
+
+    <div id="draftModal" class="modal hidden">
+      <div class="modal-card">
+        <div class="modal-header">
+          <h3>Draft Orders</h3>
+          <button id="closeDraftModal" class="ghost" type="button">Close</button>
+        </div>
+        <div class="modal-body">
+          <div class="actions">
+            <button id="clearDrafts" class="ghost" type="button">Clear All</button>
+          </div>
+          <div id="draftList" class="list"></div>
         </div>
       </div>
     </div>

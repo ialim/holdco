@@ -12,6 +12,7 @@ import { PaymentProviderConfigService } from "./payment-provider-config.service"
 import { FlutterwaveGateway } from "./gateways/flutterwave.gateway";
 import { InterswitchGateway } from "./gateways/interswitch.gateway";
 import { ManualGateway } from "./gateways/manual.gateway";
+import { MoniepointGateway } from "./gateways/moniepoint.gateway";
 import { MonnifyGateway } from "./gateways/monnify.gateway";
 import { PaystackGateway } from "./gateways/paystack.gateway";
 
@@ -26,6 +27,7 @@ import { PaystackGateway } from "./gateways/paystack.gateway";
     PaymentGatewayFactory,
     PaystackGateway,
     FlutterwaveGateway,
+    MoniepointGateway,
     MonnifyGateway,
     InterswitchGateway,
     ManualGateway,

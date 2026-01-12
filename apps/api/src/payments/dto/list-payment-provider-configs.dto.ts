@@ -1,7 +1,7 @@
 import { IsIn, IsOptional, IsUUID } from "class-validator";
 import { ListQueryDto } from "../../common/dto/list-query.dto";
 
-const PROVIDERS = ["paystack", "flutterwave", "monnify", "interswitch"] as const;
+const PROVIDERS = ["paystack", "flutterwave", "moniepoint", "monnify", "interswitch"] as const;
 const ENVIRONMENTS = ["test", "live"] as const;
 const STATUSES = ["draft", "submitted", "approved", "rejected"] as const;
 

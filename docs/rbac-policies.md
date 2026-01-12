@@ -73,6 +73,7 @@ Loyalty
 - `loyalty.account.read`
 - `loyalty.account.write`
 - `loyalty.points.issue`
+- `loyalty.points.redeem`
 
 Logistics
 - `logistics.shipment.read`

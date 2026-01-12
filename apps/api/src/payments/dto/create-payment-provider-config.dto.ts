@@ -1,6 +1,6 @@
 import { IsDateString, IsEmail, IsIn, IsOptional, IsString, IsUUID, Matches } from "class-validator";
 
-const PROVIDERS = ["paystack", "flutterwave", "monnify", "interswitch"] as const;
+const PROVIDERS = ["paystack", "flutterwave", "moniepoint", "monnify", "interswitch"] as const;
 const ENVIRONMENTS = ["test", "live"] as const;
 const STATUSES = ["draft", "submitted", "approved", "rejected"] as const;
 

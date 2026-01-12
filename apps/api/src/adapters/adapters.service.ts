@@ -14,6 +14,11 @@ import { CreateImportShipmentDto } from "../procurement/dto/create-import-shipme
 import { ReceiveImportShipmentDto } from "../procurement/dto/receive-import-shipment.dto";
 import { ListQueryDto } from "../common/dto/list-query.dto";
 
+const PAYMENT_INTENT_METHODS = new Set(["card", "transfer", "ussd"] as const);
+type PaymentIntentMethod = "card" | "transfer" | "ussd";
+const isPaymentIntentMethod = (method: string): method is PaymentIntentMethod =>
+  PAYMENT_INTENT_METHODS.has(method as PaymentIntentMethod);
+
 type CheckoutParams = {
   groupId: string;
   subsidiaryId: string;
@@ -128,7 +133,11 @@ export class AdaptersService {
     let reservations: any[] = [];
     let paymentIntent: any;
     let capturedPayment: any;
+    const paymentIntents: any[] = [];
+    const capturedPayments: any[] = [];
+    const orderPayments: any[] = [];
     let loyalty: any;
+    let loyaltyRedemption: any;
     let finalOrder = order;
 
     try {
@@ -137,25 +146,112 @@ export class AdaptersService {
         ? await this.reserveStock(params.groupId, params.subsidiaryId, params.locationId, order)
         : [];
 
-      if (params.body.payment) {
-        const amount = params.body.payment.amount ?? order.total_amount;
-        const currency = params.body.payment.currency ?? order.currency;
-        paymentIntent = await this.paymentsService.createPaymentIntent(params.groupId, params.subsidiaryId, {
-          order_id: order.id,
-          amount,
-          currency,
-          provider: params.body.payment.provider,
-          capture_method: params.body.payment.capture_method,
-          payment_method: params.body.payment.payment_method,
-          customer_email: params.body.payment.customer_email,
-        });
+      const payments = this.normalizePayments(params.body);
+      const paymentPlan = params.body.payment_plan ?? (payments.length > 1 ? "split" : "full");
+      const releaseOnPartial = params.body.release_on_partial ?? paymentPlan === "deposit";
 
-        if (params.body.capture_payment) {
-          capturedPayment = await this.paymentsService.capturePaymentIntent(
-            params.groupId,
-            params.subsidiaryId,
-            paymentIntent.id,
-          );
+      if (payments.length) {
+        for (const payment of payments) {
+          const amount =
+            payment.amount ?? (payments.length === 1 ? Number(order.total_amount) : undefined);
+          if (!amount || amount <= 0) {
+            throw new BadRequestException("Payment amount is required");
+          }
+          const currency = payment.currency ?? order.currency;
+          const paymentType = payment.paymentType ?? paymentPlan;
+          const method = payment.method;
+
+          if (method === "cash") {
+            const recorded = await this.ordersService.recordOrderPayment({
+              groupId: params.groupId,
+              subsidiaryId: params.subsidiaryId,
+              orderId: order.id,
+              amount,
+              currency,
+              method,
+              status: "captured",
+              provider: "manual",
+              paymentType,
+            });
+            orderPayments.push(recorded.payment);
+            finalOrder = recorded.order;
+            continue;
+          }
+
+          if (method === "points") {
+            if (!order.customer_id) {
+              throw new BadRequestException("Customer is required for points redemption");
+            }
+            if (!payment.points || payment.points <= 0) {
+              throw new BadRequestException("Points amount is required for redemption");
+            }
+            loyaltyRedemption = await this.loyaltyService.redeemPoints(params.groupId, params.subsidiaryId, {
+              customer_id: order.customer_id,
+              points: payment.points,
+              reason: "POS redemption",
+            });
+            const recorded = await this.ordersService.recordOrderPayment({
+              groupId: params.groupId,
+              subsidiaryId: params.subsidiaryId,
+              orderId: order.id,
+              amount,
+              currency,
+              method,
+              status: "captured",
+              provider: "loyalty",
+              paymentType,
+              pointsRedeemed: payment.points,
+            });
+            orderPayments.push(recorded.payment);
+            finalOrder = recorded.order;
+            continue;
+          }
+
+          if (!isPaymentIntentMethod(method)) {
+            throw new BadRequestException(`Unsupported payment method for online processing: ${method}`);
+          }
+
+          paymentIntent = await this.paymentsService.createPaymentIntent(params.groupId, params.subsidiaryId, {
+            order_id: order.id,
+            amount,
+            currency,
+            provider: payment.provider,
+            capture_method: payment.captureMethod,
+            payment_method: method,
+            customer_email: payment.customerEmail ?? params.body.payment?.customer_email,
+            terminal_serial: payment.terminalSerial,
+            transaction_type: payment.transactionType,
+          });
+          paymentIntents.push(paymentIntent);
+
+          const capture =
+            payment.capturePayment ??
+            (payment.captureMethod ? payment.captureMethod === "automatic" : params.body.capture_payment);
+          if (capture) {
+            capturedPayment = await this.paymentsService.capturePaymentIntent(
+              params.groupId,
+              params.subsidiaryId,
+              paymentIntent.id,
+            );
+            capturedPayments.push(capturedPayment);
+          }
+
+          const status = capturedPayment?.status ?? paymentIntent.status ?? "requires_capture";
+          const recorded = await this.ordersService.recordOrderPayment({
+            groupId: params.groupId,
+            subsidiaryId: params.subsidiaryId,
+            orderId: order.id,
+            amount,
+            currency,
+            method,
+            status,
+            provider: paymentIntent.provider,
+            reference: paymentIntent.reference,
+            paymentIntentId: paymentIntent.id,
+            paymentType,
+          });
+          orderPayments.push(recorded.payment);
+          finalOrder = recorded.order;
         }
       }
 
@@ -167,9 +263,12 @@ export class AdaptersService {
         });
       }
 
+      const paidAmount = Number(finalOrder?.paid_amount ?? 0);
       const shouldFulfill =
         params.channel === "retail" &&
-        (!params.body.payment || capturedPayment?.status === "captured");
+        (!payments.length ||
+          paidAmount >= Number(finalOrder.total_amount) ||
+          (releaseOnPartial && paidAmount > 0));
 
       if (shouldFulfill) {
         finalOrder = await this.ordersService.fulfillOrder(params.groupId, params.subsidiaryId, order.id);
@@ -179,8 +278,12 @@ export class AdaptersService {
         order: finalOrder,
         reservations,
         payment_intent: paymentIntent,
+        payment_intents: paymentIntents.length ? paymentIntents : undefined,
         captured_payment: capturedPayment,
+        captured_payments: capturedPayments.length ? capturedPayments : undefined,
+        order_payments: orderPayments.length ? orderPayments : undefined,
         loyalty,
+        loyalty_redemption: loyaltyRedemption,
       };
     } catch (error) {
       if (reservations.length) {
@@ -203,6 +306,62 @@ export class AdaptersService {
 
       throw error;
     }
+  }
+
+  private normalizePayments(body: AdapterCheckoutDto) {
+    const payments: Array<{
+      method: string;
+      amount?: number;
+      currency?: string;
+      provider?: string;
+      captureMethod?: string;
+      capturePayment?: boolean;
+      paymentType?: string;
+      points?: number;
+      customerEmail?: string;
+      terminalSerial?: string;
+      transactionType?: string;
+    }> = [];
+
+    if (Array.isArray(body.payments) && body.payments.length) {
+      for (const payment of body.payments) {
+        const method = payment.method ?? payment.payment_method;
+        if (!method) {
+          throw new BadRequestException("Payment method is required");
+        }
+        payments.push({
+          method,
+          amount: payment.amount,
+          currency: payment.currency,
+          provider: payment.provider,
+          captureMethod: payment.capture_method,
+          paymentType: payment.payment_type,
+          points: payment.points,
+          customerEmail: payment.customer_email,
+          terminalSerial: payment.terminal_serial,
+          transactionType: payment.transaction_type,
+        });
+      }
+      return payments;
+    }
+
+    if (body.payment) {
+      const method = body.payment.method ?? body.payment.payment_method ?? "card";
+      payments.push({
+        method,
+        amount: body.payment.amount,
+        currency: body.payment.currency,
+        provider: body.payment.provider,
+        captureMethod: body.payment.capture_method,
+        paymentType: body.payment.payment_type,
+        points: body.payment.points,
+        customerEmail: body.payment.customer_email,
+        terminalSerial: body.payment.terminal_serial,
+        transactionType: body.payment.transaction_type,
+      });
+    }
+
+    return payments;
   }
 
   private async reserveStock(

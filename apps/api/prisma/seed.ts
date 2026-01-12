@@ -659,7 +659,7 @@ async function main() {
     }
   }
 
-  const paymentProviders = ["paystack", "flutterwave"];
+  const paymentProviders = ["paystack", "flutterwave", "moniepoint"];
   const paymentEnvironments = ["test", "live"];
   for (const subsidiary of recipientSubsidiaries) {
     for (const provider of paymentProviders) {

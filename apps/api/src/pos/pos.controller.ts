@@ -11,8 +11,11 @@ import { StartPosShiftDto } from "./dto/start-pos-shift.dto";
 import { ClosePosShiftDto } from "./dto/close-pos-shift.dto";
 import { PosCashierLoginDto } from "./dto/pos-cashier-login.dto";
 import { PosCashierPinDto } from "./dto/pos-cashier-pin.dto";
+import { PosCashierPinByEmployeeDto } from "./dto/pos-cashier-pin-by-employee.dto";
+import { CreatePosCashDropDto } from "./dto/create-pos-cash-drop.dto";
 import { ActivatePosDeviceDto } from "./dto/activate-pos-device.dto";
 import { PosService } from "./pos.service";
+import { ListQueryDto } from "../common/dto/list-query.dto";
 
 @Controller("v1/pos")
 @UseGuards(PermissionsGuard)
@@ -83,6 +86,16 @@ export class PosController {
     return this.posService.setCashierPin(groupId, subsidiaryId, userId, body);
   }
 
+  @Permissions("pos.cashiers.manage")
+  @Post("cashiers/pin")
+  setCashierPinByEmployee(
+    @Headers("x-group-id") groupId: string,
+    @Headers("x-subsidiary-id") subsidiaryId: string,
+    @Body() body: PosCashierPinByEmployeeDto,
+  ) {
+    return this.posService.setCashierPinByEmployee(groupId, subsidiaryId, body);
+  }
+
   @Permissions("pos.shifts.read")
   @Get("shifts")
   listShifts(
@@ -102,6 +115,27 @@ export class PosController {
     return this.posService.getShift(groupId, subsidiaryId, shiftId);
   }
 
+  @Permissions("pos.shifts.read")
+  @Get("shifts/:shift_id/summary")
+  getShiftSummary(
+    @Headers("x-group-id") groupId: string,
+    @Headers("x-subsidiary-id") subsidiaryId: string,
+    @Param("shift_id", new ParseUUIDPipe()) shiftId: string,
+  ) {
+    return this.posService.getShiftSummary(groupId, subsidiaryId, shiftId);
+  }
+
+  @Permissions("pos.shifts.read")
+  @Get("shifts/:shift_id/cash-drops")
+  listCashDrops(
+    @Headers("x-group-id") groupId: string,
+    @Headers("x-subsidiary-id") subsidiaryId: string,
+    @Param("shift_id", new ParseUUIDPipe()) shiftId: string,
+    @Query() query: ListQueryDto,
+  ) {
+    return this.posService.listCashDrops(groupId, subsidiaryId, shiftId, query);
+  }
+
   @Permissions("pos.shifts.manage")
   @Post("shifts")
   startShift(
@@ -115,6 +149,21 @@ export class PosController {
       | string
       | undefined;
     return this.posService.startShift(groupId, subsidiaryId, locationId, body, actorId);
+  }
+
+  @Permissions("pos.cashiers.manage")
+  @Post("shifts/:shift_id/cash-drops")
+  createCashDrop(
+    @Headers("x-group-id") groupId: string,
+    @Headers("x-subsidiary-id") subsidiaryId: string,
+    @Param("shift_id", new ParseUUIDPipe()) shiftId: string,
+    @Body() body: CreatePosCashDropDto,
+    @Req() req: Request,
+  ) {
+    const actorId = ((req as any).cashier?.sub ?? (req as any).user?.sub ?? (req as any).user?.id ?? (req as any).user?.userId) as
+      | string
+      | undefined;
+    return this.posService.createCashDrop(groupId, subsidiaryId, shiftId, body, actorId);
   }
 
   @Permissions("pos.shifts.manage")

@@ -16,6 +16,7 @@ Required fields:
 
 Optional fields:
 - categoryFacetKey (default: `category`)
+- printer (connection details for ESC/POS receipts)
 
 ## Locations
 The app now loads locations from `GET /v1/locations` using the configured `subsidiaryId`.
@@ -43,3 +44,14 @@ Categories are loaded from `GET /v1/categories` (subsidiary-scoped). If none exi
 ## Next steps
 - Add local cache tables for promotions and receipts.
 - Expand checkout with pricing rules and customer lookups.
+
+## Receipts + peripherals
+Receipts use ESC/POS via USB, network (TCP), or Bluetooth. Set the `printer` block in `config.json`:
+- `type`: `usb`, `network`, `bluetooth`, or `none`
+- `network.host` + `network.port` (default 9100)
+- `usb.vendorId` + `usb.productId` (hex like `0x04b8`)
+- `bluetooth.address` (MAC)
+
+Barcode scanners are HID keyboards; the POS listens for fast key bursts ending with Enter and runs a product search automatically.
+
+USB/Bluetooth adapters are optional dependencies. If you need them on Windows, install Visual Studio Build Tools (Desktop development with C++) and rerun `npm install`.

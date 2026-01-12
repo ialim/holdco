@@ -30,4 +30,12 @@ export class CreatePaymentIntentDto {
   @IsOptional()
   @IsEmail()
   customer_email?: string;
+
+  @IsOptional()
+  @IsString()
+  terminal_serial?: string;
+
+  @IsOptional()
+  @IsString()
+  transaction_type?: string;
 }

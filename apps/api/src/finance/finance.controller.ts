@@ -191,6 +191,12 @@ export class FinanceController {
   }
 
   @Permissions("finance.intercompany.agreements.manage")
+  @Get("intercompany-agreements")
+  listIntercompanyAgreements(@Headers("x-group-id") groupId: string, @Query() query: ListQueryDto) {
+    return this.intercompanyAgreementsService.listAgreements(groupId, query);
+  }
+
+  @Permissions("finance.intercompany.agreements.manage")
   @Post("intercompany-agreements")
   createIntercompanyAgreement(
     @Headers("x-group-id") groupId: string,

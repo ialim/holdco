@@ -25,33 +25,33 @@ describe("JwtAuthMiddleware", () => {
     delete process.env.JWT_SECRET_PREVIOUS;
   });
 
-  it("accepts tokens signed with the primary secret", () => {
+  it("accepts tokens signed with the primary secret", async () => {
     setSecrets(primarySecret, previousSecret);
     const token = sign({ sub: "user-1" }, primarySecret);
     const req: any = buildReq(token);
 
-    middleware.use(req, {} as any, next);
+    await middleware.use(req, {} as any, next);
 
     expect(next).toHaveBeenCalled();
     expect(req.user.sub).toBe("user-1");
   });
 
-  it("accepts tokens signed with the previous secret", () => {
+  it("accepts tokens signed with the previous secret", async () => {
     setSecrets(primarySecret, previousSecret);
     const token = sign({ sub: "user-2" }, previousSecret);
     const req: any = buildReq(token);
 
-    middleware.use(req, {} as any, next);
+    await middleware.use(req, {} as any, next);
 
     expect(next).toHaveBeenCalled();
     expect(req.user.sub).toBe("user-2");
   });
 
-  it("rejects tokens missing sub/id claims", () => {
+  it("rejects tokens missing sub/id claims", async () => {
     setSecrets(primarySecret, previousSecret);
     const token = sign({ permissions: ["orders.read"] }, primarySecret);
     const req: any = buildReq(token);
 
-    expect(() => middleware.use(req, {} as any, next)).toThrow(UnauthorizedException);
+    await expect(middleware.use(req, {} as any, next)).rejects.toThrow(UnauthorizedException);
   });
 });

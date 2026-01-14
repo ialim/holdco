@@ -182,6 +182,17 @@ export class CatalogController {
     return this.catalogService.getProduct(groupId, subsidiaryId, productId);
   }
 
+  @Permissions("catalog.variant.read")
+  @Get("products/:product_id/variants")
+  listProductVariants(
+    @Headers("x-group-id") groupId: string,
+    @Headers("x-subsidiary-id") subsidiaryId: string,
+    @Param("product_id", new ParseUUIDPipe()) productId: string,
+    @Query() query: ListQueryDto,
+  ) {
+    return this.catalogService.listProductVariantsById(groupId, subsidiaryId, productId, query);
+  }
+
   @Permissions("catalog.product.write")
   @Patch("products/:product_id")
   updateProduct(

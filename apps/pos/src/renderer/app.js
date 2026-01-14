@@ -285,6 +285,71 @@ function updateCheckoutHeader() {
   if (checkoutCustomer) {
     checkoutCustomer.textContent = state.customer ? safeText(state.customer.name) : "Walk in customer";
   }
+  updateCreditButtonState();
+}
+
+function getCustomerCreditMeta(customer) {
+  if (!customer) return { limit: null, currency: null };
+  const directLimit =
+    customer.credit_limit ??
+    customer.creditLimit ??
+    customer.credit_limit_amount ??
+    customer.creditLimitAmount;
+  const creditAccount = customer.credit_account ?? customer.creditAccount ?? null;
+  const accountLimit = creditAccount?.limit_amount ?? creditAccount?.limitAmount;
+  const limitValue = directLimit ?? accountLimit;
+  const parsedLimit = Number(limitValue);
+  const limit = Number.isFinite(parsedLimit) && parsedLimit > 0 ? parsedLimit : null;
+  const currency =
+    customer.credit_currency ??
+    customer.creditCurrency ??
+    creditAccount?.credit_currency ??
+    creditAccount?.creditCurrency ??
+    null;
+  return { limit, currency };
+}
+
+function getCreditEligibility() {
+  if (!state.cart.length) {
+    return { ok: false, message: "Add items before using credit." };
+  }
+  if (!state.openShift) {
+    return { ok: false, message: "Open a shift before using credit." };
+  }
+  if (!state.cashierToken) {
+    return { ok: false, message: "Cashier sign-in required." };
+  }
+  if (!state.managerToken) {
+    return { ok: false, message: "Manager sign-in required for credit sales." };
+  }
+  if (state.managerSessionExpiresAt && Date.now() >= state.managerSessionExpiresAt) {
+    return { ok: false, message: "Manager session expired." };
+  }
+  if (!state.customer) {
+    return { ok: false, message: "Select a customer with a credit limit." };
+  }
+  const credit = getCustomerCreditMeta(state.customer);
+  if (!credit.limit) {
+    return { ok: false, message: "Customer credit limit is not set." };
+  }
+  const currency = orderCurrencyInput?.value?.trim().toUpperCase() || "NGN";
+  if (credit.currency && credit.currency.toUpperCase() !== currency) {
+    return { ok: false, message: "Customer credit limit currency does not match order currency." };
+  }
+  const total = Number(state.orderTotals?.grandTotal ?? 0);
+  if (total > credit.limit) {
+    return { ok: false, message: "Order total exceeds customer credit limit." };
+  }
+  return { ok: true, limit: credit.limit };
+}
+
+function updateCreditButtonState() {
+  if (!submitOrderButton) return;
+  const eligibility = getCreditEligibility();
+  submitOrderButton.disabled = !eligibility.ok;
+  submitOrderButton.title = eligibility.ok
+    ? "Create a credit order for the selected customer."
+    : eligibility.message;
 }
 
 function maskConfig(config) {
@@ -1945,6 +2010,9 @@ function saveDraft() {
 
 function restoreDraft(draft) {
   if (!draft) return;
+  const remainingDrafts = readDrafts().filter((item) => item.id !== draft.id);
+  writeDrafts(remainingDrafts);
+  updateDraftCount(remainingDrafts);
   state.cart = Array.isArray(draft.cart)
     ? draft.cart.map((item) => ({
         productId: item.productId,
@@ -1980,7 +2048,6 @@ function restoreDraft(draft) {
   updateCheckoutHeader();
   renderCart();
   closeDraftModal();
-  updateDraftCount();
   showToast("Draft restored.");
 }
 
@@ -2617,6 +2684,7 @@ function updateManagerAccess() {
   const hasManager = Boolean(state.managerToken);
   if (managerUnlockCard) managerUnlockCard.classList.toggle("hidden", hasManager);
   if (managerOnlyGrid) managerOnlyGrid.classList.toggle("hidden", !hasManager);
+  updateCreditButtonState();
 }
 
 async function authenticateManager(employeeNo, pin) {
@@ -2835,6 +2903,10 @@ function renderProducts() {
 }
 
 async function fetchVariantsForProduct(productId) {
+  if (!productId) {
+    showToast("Product id missing for variant lookup.", "error");
+    return null;
+  }
   const cacheKey = `variants:${productId}`;
   if (!state.online) {
     const cached = readCache(cacheKey, PRODUCT_CACHE_TTL_MS);
@@ -2845,7 +2917,7 @@ async function fetchVariantsForProduct(productId) {
 
   const response = await window.pos.request({
     method: "GET",
-    path: `/variants${buildQuery({ product_id: productId, limit: 200 })}`,
+    path: `/products/${productId}/variants${buildQuery({ limit: 200 })}`,
     extraHeaders: getRequestHeaders()
   });
 
@@ -2856,8 +2928,12 @@ async function fetchVariantsForProduct(productId) {
   }
 
   const variants = response.data?.data || [];
-  writeCache(cacheKey, variants);
-  return variants;
+  const filtered = variants.filter((variant) => {
+    const id = variant.product_id ?? variant.productId;
+    return !id || id === productId;
+  });
+  writeCache(cacheKey, filtered);
+  return filtered;
 }
 
 function openVariantModal(product, variants) {
@@ -2916,7 +2992,12 @@ function closeVariantModal() {
 }
 
 async function handleAddProduct(product) {
-  const variants = await fetchVariantsForProduct(product.id);
+  const productId = product?.id ?? product?.product_id ?? product?.productId;
+  if (!productId) {
+    showToast("Unable to load variants: product id missing.", "error");
+    return;
+  }
+  const variants = await fetchVariantsForProduct(productId);
   if (!variants) return;
   if (!variants.length) {
     addToCart(product);
@@ -2966,11 +3047,12 @@ function updateCartSummary() {
   if (taxRateInput) {
     taxRateInput.value = taxRate.toFixed(2);
   }
-  if (shippingInput) {
-    shippingInput.value = shipping.toFixed(2);
+    if (shippingInput) {
+      shippingInput.value = shipping.toFixed(2);
+    }
+    updatePaymentSummary();
+    updateCreditButtonState();
   }
-  updatePaymentSummary();
-}
 
 function buildAdjustmentNote() {
   const parts = [];
@@ -3364,6 +3446,19 @@ async function loadProducts() {
   renderProducts();
 }
 
+async function submitCreditOrder() {
+  const eligibility = getCreditEligibility();
+  if (!eligibility.ok) {
+    showToast(eligibility.message, "error");
+    return null;
+  }
+  const result = await submitOrder({ noteSuffix: "Credit sale" });
+  if (result?.queued) {
+    orderStatus.textContent = "Credit order queued (offline).";
+  }
+  return result;
+}
+
 async function submitOrder(options = {}) {
   if (!canCheckout()) {
     return null;
@@ -3381,7 +3476,8 @@ async function submitOrder(options = {}) {
   const currency = orderCurrencyInput.value.trim().toUpperCase() || "NGN";
   const baseNotes = orderNotesInput.value.trim();
   const adjustmentNote = buildAdjustmentNote();
-  const notes = [baseNotes, adjustmentNote].filter(Boolean).join(" | ") || undefined;
+  const noteSuffix = options.noteSuffix?.trim();
+  const notes = [baseNotes, adjustmentNote, noteSuffix].filter(Boolean).join(" | ") || undefined;
   const { discount, tax, shipping } = state.orderTotals;
   const loyaltyPoints = calculateLoyaltyPoints();
   const items = state.cart.map((item) => ({
@@ -3831,7 +3927,7 @@ if (couponCodeInput) {
   });
 }
 
-submitOrderButton.addEventListener("click", () => submitOrder());
+submitOrderButton.addEventListener("click", () => submitCreditOrder());
 clearCartButton.addEventListener("click", () => {
   state.cart = [];
   orderStatus.textContent = "Cart cleared.";

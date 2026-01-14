@@ -1,7 +1,8 @@
 import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
-import { IntercompanyAgreement, SubsidiaryRole } from "@prisma/client";
+import { IntercompanyAgreement, Prisma, SubsidiaryRole } from "@prisma/client";
 import { Decimal } from "@prisma/client/runtime/library";
 import { PrismaService } from "../prisma/prisma.service";
+import { ListQueryDto } from "../common/dto/list-query.dto";
 import { AgreementType, PricingModel } from "./finance.enums";
 import { assertCompanyInGroup, requireGroupId } from "./finance-tenancy";
 
@@ -235,6 +236,69 @@ function normalizeAgreementInput(input: AgreementInput) {
 @Injectable()
 export class IntercompanyAgreementsService {
   constructor(private readonly prisma: PrismaService) {}
+
+  async listAgreements(groupId: string, query: ListQueryDto) {
+    requireGroupId(groupId);
+
+    const where: Prisma.IntercompanyAgreementWhereInput = {
+      OR: [{ providerCompany: { groupId } }, { recipientCompany: { groupId } }],
+    };
+
+    if (query.q) {
+      where.AND = [
+        {
+          OR: [
+            { type: { contains: query.q, mode: "insensitive" as const } },
+            { providerCompany: { name: { contains: query.q, mode: "insensitive" as const } } },
+            { recipientCompany: { name: { contains: query.q, mode: "insensitive" as const } } },
+          ],
+        },
+      ];
+    }
+
+    const [total, agreements] = await this.prisma.$transaction([
+      this.prisma.intercompanyAgreement.count({ where }),
+      this.prisma.intercompanyAgreement.findMany({
+        where,
+        orderBy: { createdAt: "desc" },
+        skip: query.offset ?? 0,
+        take: query.limit ?? 50,
+        include: {
+          providerCompany: { select: { id: true, name: true, role: true } },
+          recipientCompany: { select: { id: true, name: true, role: true } },
+        },
+      }),
+    ]);
+
+    return {
+      data: agreements.map((agreement) => ({
+        id: agreement.id,
+        provider_company_id: agreement.providerCompanyId,
+        provider_company_name: agreement.providerCompany?.name ?? undefined,
+        provider_company_role: agreement.providerCompany?.role ?? undefined,
+        recipient_company_id: agreement.recipientCompanyId,
+        recipient_company_name: agreement.recipientCompany?.name ?? undefined,
+        recipient_company_role: agreement.recipientCompany?.role ?? undefined,
+        type: agreement.type,
+        pricing_model: agreement.pricingModel,
+        markup_rate: agreement.markupRate ? agreement.markupRate.toString() : undefined,
+        fixed_fee_amount: agreement.fixedFeeAmount ? agreement.fixedFeeAmount.toString() : undefined,
+        vat_applies: agreement.vatApplies,
+        vat_rate: agreement.vatRate.toString(),
+        wht_applies: agreement.whtApplies,
+        wht_rate: agreement.whtRate.toString(),
+        wht_tax_type: agreement.whtTaxType ?? undefined,
+        effective_from: agreement.effectiveFrom.toISOString(),
+        effective_to: agreement.effectiveTo ? agreement.effectiveTo.toISOString() : undefined,
+        created_at: agreement.createdAt.toISOString(),
+      })),
+      meta: {
+        limit: query.limit ?? 50,
+        offset: query.offset ?? 0,
+        total,
+      },
+    };
+  }
 
   async createAgreement(groupId: string, input: AgreementInput) {
     requireGroupId(groupId);

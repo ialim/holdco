@@ -508,6 +508,16 @@ export class CatalogService {
     return this.listProducts(groupId, subsidiaryId, listQuery);
   }
 
+  async listProductVariantsById(
+    groupId: string,
+    subsidiaryId: string,
+    productId: string,
+    query: ListQueryDto,
+  ) {
+    const listQuery: ListQueryDto = { ...query, product_id: productId };
+    return this.listVariants(groupId, subsidiaryId, listQuery);
+  }
+
   async createProduct(groupId: string, subsidiaryId: string, body: CreateProductDto) {
     if (!groupId) throw new BadRequestException("X-Group-Id header is required");
     if (!subsidiaryId) throw new BadRequestException("X-Subsidiary-Id header is required");
@@ -661,14 +671,17 @@ export class CatalogService {
     };
 
     const andFilters: Prisma.VariantWhereInput[] = [];
-    if (this.isTradingSubsidiary(subsidiary)) {
-      andFilters.push({ OR: [{ subsidiaryId }, { subsidiaryId: null }] });
-    } else {
-      andFilters.push({ assortments: { some: { subsidiaryId, status: "active" } } });
-    }
-    const facetFilters = this.parseFacetFilters(query.facets);
-    for (const filter of facetFilters) {
-      andFilters.push({
+      if (this.isTradingSubsidiary(subsidiary)) {
+        andFilters.push({ OR: [{ subsidiaryId }, { subsidiaryId: null }] });
+      } else {
+        andFilters.push({ assortments: { some: { subsidiaryId, status: "active" } } });
+      }
+      if (query.product_id) {
+        andFilters.push({ productId: query.product_id });
+      }
+      const facetFilters = this.parseFacetFilters(query.facets);
+      for (const filter of facetFilters) {
+        andFilters.push({
         facets: {
           some: {
             facetValue: {

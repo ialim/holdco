@@ -29,6 +29,14 @@ export class ListQueryDto {
 
   @IsOptional()
   @IsString()
+  sort?: string;
+
+  @IsOptional()
+  @IsString()
+  order?: string;
+
+  @IsOptional()
+  @IsString()
   channel?: string;
 
   @IsOptional()

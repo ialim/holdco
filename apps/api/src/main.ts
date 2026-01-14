@@ -21,6 +21,28 @@ for (const envPath of envCandidates) {
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+  const corsOrigins = (process.env.CORS_ORIGINS ?? "http://localhost:3001")
+    .split(",")
+    .map((origin) => origin.trim())
+    .filter(Boolean);
+  app.enableCors({
+    origin: (origin, callback) => {
+      if (!origin) return callback(null, true);
+      if (!corsOrigins.length || corsOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+      return callback(new Error(`Origin not allowed: ${origin}`), false);
+    },
+    methods: "GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS",
+    allowedHeaders: [
+      "Content-Type",
+      "Authorization",
+      "X-Group-Id",
+      "X-Subsidiary-Id",
+      "X-Location-Id",
+      "X-Channel",
+    ],
+  });
   await app.listen(process.env.PORT ? Number(process.env.PORT) : 3000);
 }
 

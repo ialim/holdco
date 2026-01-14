@@ -3,7 +3,9 @@ finance_module_pack/
 shared_services_module_pack/
 .env
 apps/api/.env
+apps/admin/.env.local
 apps/api/dist/
+apps/admin/.next/
 apps/api/scripts/erp/config.json
 apps/api/scripts/erp/output/
 apps/api/scripts/warehouse/output/

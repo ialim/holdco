@@ -1,5 +1,32 @@
-import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
+import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
+
+const ROLE_LEVELS: Record<string, number> = {
+  SUPER_ADMIN: 3,
+  HOLDCO_ADMIN: 2,
+  GROUP_ADMIN: 1,
+};
+
+const PRIVILEGED_ROLES = new Set(Object.keys(ROLE_LEVELS));
+
+function normalizeRoleName(role: string) {
+  const normalized = role.trim().toUpperCase().replace(/[^A-Z0-9]+/g, "_");
+  return normalized.startsWith("ROLE_") ? normalized.slice(5) : normalized;
+}
+
+function resolveActorLevel(roles: string[], permissions: string[]) {
+  const normalizedRoles = roles.map(normalizeRoleName);
+  if (normalizedRoles.includes("SUPER_ADMIN")) return ROLE_LEVELS.SUPER_ADMIN;
+  if (normalizedRoles.includes("HOLDCO_ADMIN")) return ROLE_LEVELS.HOLDCO_ADMIN;
+  if (normalizedRoles.includes("GROUP_ADMIN")) return ROLE_LEVELS.GROUP_ADMIN;
+  if (permissions.includes("*")) return ROLE_LEVELS.GROUP_ADMIN;
+  return 0;
+}
+
+function requiredLevelForRole(roleName: string) {
+  const normalized = normalizeRoleName(roleName);
+  return ROLE_LEVELS[normalized] ?? 0;
+}
 
 @Injectable()
 export class RolesService {
@@ -31,11 +58,24 @@ export class RolesService {
     }));
   }
 
-  async createRole(params: { groupId: string; name: string; scope: string; permissions: string[] }) {
-    const { groupId, name, scope, permissions } = params;
+  async createRole(params: {
+    groupId: string;
+    name: string;
+    scope: string;
+    permissions: string[];
+    actorRoles?: string[];
+    actorPermissions?: string[];
+  }) {
+    const { groupId, name, scope, permissions, actorRoles = [], actorPermissions = [] } = params;
     if (!groupId) throw new BadRequestException("X-Group-Id header is required");
 
+    this.assertRoleMutationAllowed(name, actorRoles, actorPermissions);
+
     const permissionIds = await this.ensurePermissions(permissions);
+
+    if (permissions.includes("*") && resolveActorLevel(actorRoles, actorPermissions) < ROLE_LEVELS.SUPER_ADMIN) {
+      throw new ForbiddenException("Only SUPER_ADMIN can assign wildcard permissions");
+    }
 
     const role = await this.prisma.role.create({
       data: {
@@ -51,12 +91,24 @@ export class RolesService {
     return this.getRole(role.id);
   }
 
-  async setRolePermissions(params: { groupId: string; roleId: string; permissions: string[] }) {
-    const { groupId, roleId, permissions } = params;
+  async setRolePermissions(params: {
+    groupId: string;
+    roleId: string;
+    permissions: string[];
+    actorRoles?: string[];
+    actorPermissions?: string[];
+  }) {
+    const { groupId, roleId, permissions, actorRoles = [], actorPermissions = [] } = params;
     if (!groupId) throw new BadRequestException("X-Group-Id header is required");
 
     const role = await this.prisma.role.findFirst({ where: { id: roleId, groupId } });
     if (!role) throw new NotFoundException("Role not found");
+
+    this.assertRoleMutationAllowed(role.name, actorRoles, actorPermissions);
+
+    if (permissions.includes("*") && resolveActorLevel(actorRoles, actorPermissions) < ROLE_LEVELS.SUPER_ADMIN) {
+      throw new ForbiddenException("Only SUPER_ADMIN can assign wildcard permissions");
+    }
 
     const permissionIds = await this.ensurePermissions(permissions);
 
@@ -76,8 +128,10 @@ export class RolesService {
     roleId: string;
     subsidiaryId?: string;
     locationId?: string;
+    actorRoles?: string[];
+    actorPermissions?: string[];
   }) {
-    const { groupId, userId, roleId, subsidiaryId, locationId } = params;
+    const { groupId, userId, roleId, subsidiaryId, locationId, actorRoles = [], actorPermissions = [] } = params;
     if (!groupId) throw new BadRequestException("X-Group-Id header is required");
 
     const user = await this.prisma.user.findFirst({ where: { id: userId, groupId } });
@@ -85,6 +139,8 @@ export class RolesService {
 
     const role = await this.prisma.role.findFirst({ where: { id: roleId, groupId } });
     if (!role) throw new NotFoundException("Role not found");
+
+    this.assertRoleAssignmentAllowed(role.name, actorRoles, actorPermissions);
 
     if (subsidiaryId) {
       const subsidiary = await this.prisma.subsidiary.findFirst({ where: { id: subsidiaryId, groupId } });
@@ -151,6 +207,27 @@ export class RolesService {
       scope: role.scope,
       permissions: role.rolePermissions.map((rp: any) => rp.permission.code),
     };
+  }
+
+  private assertRoleAssignmentAllowed(roleName: string, actorRoles: string[], actorPermissions: string[]) {
+    const targetLevel = requiredLevelForRole(roleName);
+    if (!targetLevel) return;
+
+    const actorLevel = resolveActorLevel(actorRoles, actorPermissions);
+    if (actorLevel < targetLevel) {
+      throw new ForbiddenException(`Insufficient privileges to assign ${normalizeRoleName(roleName)}`);
+    }
+  }
+
+  private assertRoleMutationAllowed(roleName: string, actorRoles: string[], actorPermissions: string[]) {
+    const normalized = normalizeRoleName(roleName);
+    if (!PRIVILEGED_ROLES.has(normalized)) return;
+
+    const targetLevel = requiredLevelForRole(normalized);
+    const actorLevel = resolveActorLevel(actorRoles, actorPermissions);
+    if (actorLevel < targetLevel) {
+      throw new ForbiddenException(`Insufficient privileges to manage ${normalized}`);
+    }
   }
 
   private async ensurePermissions(codes: string[]) {

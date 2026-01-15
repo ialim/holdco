@@ -14,6 +14,7 @@ import { Request } from "express";
 import { Permissions } from "../auth/permissions.decorator";
 import { PermissionsGuard } from "../auth/permissions.guard";
 import { CreateLocationDto } from "./dto/create-location.dto";
+import { CreateAppUserDto } from "./dto/create-app-user.dto";
 import { CreateSubsidiaryDto } from "./dto/create-subsidiary.dto";
 import { ListQueryDto } from "./dto/list-query.dto";
 import { ListLocationsDto } from "./dto/list-locations.dto";
@@ -33,6 +34,20 @@ export class TenancyController {
     return this.tenancyService.listTenants(headerGroupId ?? tokenGroupId);
   }
 
+  @Permissions("tenancy.read")
+  @Get("tenant-groups")
+  listTenantGroups(@Req() req: Request, @Headers("x-group-id") groupId?: string) {
+    const tokenGroupId = (req as any).user?.groupId ?? (req as any).user?.group_id;
+    const roles = Array.isArray((req as any).user?.roles) ? (req as any).user.roles : [];
+    const permissions = Array.isArray((req as any).user?.permissions) ? (req as any).user.permissions : [];
+    return this.tenancyService.listTenantGroups({
+      groupId,
+      userGroupId: tokenGroupId,
+      roles,
+      permissions,
+    });
+  }
+
   @Permissions("tenancy.users.read")
   @Get("users")
   listUsers(
@@ -45,6 +60,32 @@ export class TenancyController {
       subsidiaryId,
       limit: query.limit ?? 50,
       offset: query.offset ?? 0,
+    });
+  }
+
+  @Permissions("rbac.roles.manage")
+  @Post("users")
+  createUser(
+    @Req() req: Request,
+    @Headers("x-group-id") groupId: string,
+    @Headers("x-subsidiary-id") headerSubsidiaryId: string | undefined,
+    @Headers("x-location-id") headerLocationId: string | undefined,
+    @Body() body: CreateAppUserDto,
+  ) {
+    const actorRoles = Array.isArray((req as any).user?.roles) ? (req as any).user.roles : [];
+    const actorPermissions = Array.isArray((req as any).user?.permissions)
+      ? (req as any).user.permissions
+      : [];
+    const subsidiaryId = body.subsidiary_id ?? headerSubsidiaryId;
+    const locationId = body.location_id ?? headerLocationId;
+
+    return this.tenancyService.createAppUser({
+      groupId,
+      body,
+      subsidiaryId,
+      locationId,
+      actorRoles,
+      actorPermissions,
     });
   }
 

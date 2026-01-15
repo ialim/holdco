@@ -37,6 +37,65 @@ export const dataProvider: DataProvider = {
     const { page, perPage } = params.pagination;
     const { field, order } = params.sort;
     const filter = params.filter || {};
+    if (resource === "users") {
+      const query = buildQuery({
+        limit: perPage,
+        offset: (page - 1) * perPage,
+        q: filter.q,
+        include_unscoped: filter.include_unscoped ? "true" : undefined
+      });
+      const response = await apiFetch(`/iam/users${query}`);
+      const { items, total } = normalizeList(response.data);
+      return { data: items, total };
+    }
+    if (resource === "app-users") {
+      const query = buildQuery({
+        limit: perPage,
+        offset: (page - 1) * perPage,
+        q: filter.q
+      });
+      const response = await apiFetch(`/users${query}`);
+      const { items, total } = normalizeList(response.data);
+      return { data: items, total };
+    }
+    if (resource === "roles") {
+      const response = await apiFetch(`/iam/roles`);
+      const { items } = normalizeList(response.data);
+      const query = (filter.q ?? "").toString().toLowerCase();
+      const filtered = query
+        ? items.filter((item: any) => String(item?.name ?? "").toLowerCase().includes(query))
+        : items;
+      const offset = (page - 1) * perPage;
+      const paged = filtered.slice(offset, offset + perPage);
+      return { data: paged, total: filtered.length };
+    }
+    if (resource === "app-roles") {
+      const response = await apiFetch(`/roles`);
+      const { items } = normalizeList(response.data);
+      const query = (filter.q ?? "").toString().toLowerCase();
+      const filtered = query
+        ? items.filter((item: any) => String(item?.name ?? "").toLowerCase().includes(query))
+        : items;
+      const offset = (page - 1) * perPage;
+      const paged = filtered.slice(offset, offset + perPage);
+      return { data: paged, total: filtered.length };
+    }
+    if (resource === "app-permissions") {
+      const response = await apiFetch(`/permissions`);
+      const { items } = normalizeList(response.data);
+      return { data: items, total: items.length };
+    }
+    if (resource === "subsidiaries") {
+      const response = await apiFetch(`/tenants`);
+      const { items } = normalizeList(response.data);
+      const query = (filter.q ?? "").toString().toLowerCase();
+      const filtered = query
+        ? items.filter((item: any) => String(item?.name ?? "").toLowerCase().includes(query))
+        : items;
+      const offset = (page - 1) * perPage;
+      const paged = filtered.slice(offset, offset + perPage);
+      return { data: paged, total: filtered.length };
+    }
     const query = buildQuery({
       limit: perPage,
       offset: (page - 1) * perPage,
@@ -103,6 +162,21 @@ export const dataProvider: DataProvider = {
         body: payload,
         headers: idempotencyHeaders()
       });
+      const record = (response.data as any)?.data ?? response.data;
+      return { data: record };
+    }
+    if (resource === "subsidiaries") {
+      const response = await apiFetch(`/subsidiaries`, { method: "POST", body: params.data, headers: idempotencyHeaders() });
+      const record = (response.data as any)?.subsidiary ?? response.data;
+      return { data: record };
+    }
+    if (resource === "app-users") {
+      const response = await apiFetch(`/users`, { method: "POST", body: params.data, headers: idempotencyHeaders() });
+      const record = (response.data as any)?.data ?? response.data;
+      return { data: record };
+    }
+    if (resource === "app-roles") {
+      const response = await apiFetch(`/roles`, { method: "POST", body: params.data, headers: idempotencyHeaders() });
       const record = (response.data as any)?.data ?? response.data;
       return { data: record };
     }

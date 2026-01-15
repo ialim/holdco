@@ -13,6 +13,7 @@ import { HealthModule } from "./health/health.module";
 import { HrModule } from "./hr/hr.module";
 import { MetricsModule } from "./metrics/metrics.module";
 import { InventoryModule } from "./inventory/inventory.module";
+import { IamModule } from "./iam/iam.module";
 import { LogisticsModule } from "./logistics/logistics.module";
 import { LoyaltyModule } from "./loyalty/loyalty.module";
 import { OrdersModule } from "./orders/orders.module";
@@ -37,6 +38,7 @@ import { TenancyModule } from "./tenancy/tenancy.module";
     SharedServicesModule,
     RolesModule,
     TenancyModule,
+    IamModule,
     CatalogModule,
     InventoryModule,
     PricingModule,

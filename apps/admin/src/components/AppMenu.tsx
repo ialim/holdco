@@ -2,10 +2,13 @@
 
 import { Box, Collapse, List, ListItemButton, Typography } from "@mui/material";
 import {
-  CategoryOutlined,
   AccountBalanceOutlined,
   BusinessCenterOutlined,
   CalendarMonthOutlined,
+  CategoryOutlined,
+  CorporateFareOutlined,
+  SecurityOutlined,
+  GroupOutlined,
   ExpandLess,
   ExpandMore,
   FileDownloadOutlined,
@@ -24,7 +27,7 @@ import {
   ScheduleOutlined,
   TuneOutlined
 } from "@mui/icons-material";
-import { MenuItemLink } from "react-admin";
+import { MenuItemLink, usePermissions } from "react-admin";
 import { useState } from "react";
 
 function CollapsibleSection({
@@ -58,6 +61,17 @@ function CollapsibleSection({
 }
 
 export function AppMenu() {
+  const { permissions } = usePermissions();
+  const permissionList = Array.isArray(permissions) ? permissions.map(String) : [];
+  const normalized = permissionList.map((value) => value.toUpperCase());
+  const canManageRbac =
+    permissionList.includes("*") ||
+    permissionList.includes("rbac.roles.manage") ||
+    normalized.includes("SUPER_ADMIN") ||
+    normalized.includes("HOLDCO_ADMIN") ||
+    normalized.includes("GROUP_ADMIN") ||
+    normalized.includes("RBAC_ADMIN");
+
   return (
     <Box sx={{ paddingTop: 1 }}>
       <CollapsibleSection title="Catalog" defaultOpen>
@@ -74,8 +88,26 @@ export function AppMenu() {
         <MenuItemLink to="/orders" primaryText="Orders & Payments" leftIcon={<ReceiptLongOutlined />} />
       </CollapsibleSection>
 
-      <CollapsibleSection title="POS" defaultOpen>
+      {canManageRbac && (
+        <CollapsibleSection title="Security" defaultOpen={false}>
+          <MenuItemLink to="/users" primaryText="IdP Users" leftIcon={<SecurityOutlined />} />
+          <MenuItemLink to="/roles" primaryText="IdP Roles" leftIcon={<SecurityOutlined />} />
+        </CollapsibleSection>
+      )}
+
+      {canManageRbac && (
+        <CollapsibleSection title="App Access" defaultOpen={false}>
+          <MenuItemLink to="/app-users" primaryText="App Users" leftIcon={<GroupOutlined />} />
+          <MenuItemLink to="/app-roles" primaryText="App Roles" leftIcon={<GroupOutlined />} />
+        </CollapsibleSection>
+      )}
+
+      <CollapsibleSection title="Tenancy" defaultOpen={false}>
+        <MenuItemLink to="/subsidiaries" primaryText="Subsidiaries" leftIcon={<CorporateFareOutlined />} />
         <MenuItemLink to="/locations" primaryText="Locations" leftIcon={<LocationOnOutlined />} />
+      </CollapsibleSection>
+
+      <CollapsibleSection title="POS" defaultOpen>
         <MenuItemLink to="/pos/devices" primaryText="Devices" leftIcon={<PointOfSaleOutlined />} />
         <MenuItemLink to="/pos/shifts" primaryText="Shifts" leftIcon={<ScheduleOutlined />} />
       </CollapsibleSection>

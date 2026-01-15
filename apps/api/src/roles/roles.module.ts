@@ -7,5 +7,6 @@ import { RolesService } from "./roles.service";
   imports: [PrismaModule],
   controllers: [RolesController],
   providers: [RolesService],
+  exports: [RolesService],
 })
 export class RolesModule {}

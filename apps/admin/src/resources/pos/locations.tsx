@@ -1,6 +1,6 @@
 "use client";
 
-import { Datagrid, DateField, List, TextField, TextInput } from "react-admin";
+import { Create, Datagrid, DateField, List, SimpleForm, TextField, TextInput, required } from "react-admin";
 
 const locationFilters = [
   <TextInput key="q" source="q" label="Search" alwaysOn />,
@@ -21,5 +21,22 @@ export function LocationList() {
         <DateField source="updated_at" showTime />
       </Datagrid>
     </List>
+  );
+}
+
+export function LocationCreate() {
+  return (
+    <Create>
+      <SimpleForm>
+        <TextInput source="subsidiary_id" label="Subsidiary ID" validate={[required()]} fullWidth />
+        <TextInput source="name" validate={[required()]} fullWidth />
+        <TextInput source="type" validate={[required()]} fullWidth />
+        <TextInput source="address_line1" label="Address line 1" fullWidth />
+        <TextInput source="address_line2" label="Address line 2" fullWidth />
+        <TextInput source="city" label="City" />
+        <TextInput source="state" label="State" />
+        <TextInput source="country" label="Country" />
+      </SimpleForm>
+    </Create>
   );
 }

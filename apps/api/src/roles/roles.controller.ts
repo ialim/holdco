@@ -6,10 +6,12 @@ import {
   Param,
   ParseUUIDPipe,
   Post,
+  Req,
   UseGuards,
   UsePipes,
   ValidationPipe,
 } from "@nestjs/common";
+import { Request } from "express";
 import { Permissions } from "../auth/permissions.decorator";
 import { PermissionsGuard } from "../auth/permissions.guard";
 import { AssignUserRoleDto } from "./dto/assign-user-role.dto";
@@ -31,12 +33,20 @@ export class RolesController {
 
   @Permissions("rbac.roles.manage")
   @Post("roles")
-  createRole(@Headers("x-group-id") groupId: string, @Body() body: CreateRoleDto) {
+  createRole(
+    @Headers("x-group-id") groupId: string,
+    @Body() body: CreateRoleDto,
+    @Req() req: Request,
+  ) {
+    const actorRoles = Array.isArray((req as any).user?.roles) ? (req as any).user.roles : [];
+    const actorPermissions = Array.isArray((req as any).user?.permissions) ? (req as any).user.permissions : [];
     return this.rolesService.createRole({
       groupId,
       name: body.name,
       scope: body.scope,
       permissions: body.permissions,
+      actorRoles,
+      actorPermissions,
     });
   }
 
@@ -46,11 +56,16 @@ export class RolesController {
     @Headers("x-group-id") groupId: string,
     @Param("role_id", new ParseUUIDPipe()) roleId: string,
     @Body() body: UpdateRolePermissionsDto,
+    @Req() req: Request,
   ) {
+    const actorRoles = Array.isArray((req as any).user?.roles) ? (req as any).user.roles : [];
+    const actorPermissions = Array.isArray((req as any).user?.permissions) ? (req as any).user.permissions : [];
     return this.rolesService.setRolePermissions({
       groupId,
       roleId,
       permissions: body.permissions,
+      actorRoles,
+      actorPermissions,
     });
   }
 
@@ -66,13 +81,18 @@ export class RolesController {
     @Headers("x-group-id") groupId: string,
     @Param("user_id", new ParseUUIDPipe()) userId: string,
     @Body() body: AssignUserRoleDto,
+    @Req() req: Request,
   ) {
+    const actorRoles = Array.isArray((req as any).user?.roles) ? (req as any).user.roles : [];
+    const actorPermissions = Array.isArray((req as any).user?.permissions) ? (req as any).user.permissions : [];
     return this.rolesService.assignUserRole({
       groupId,
       userId,
       roleId: body.role_id,
       subsidiaryId: body.subsidiary_id,
       locationId: body.location_id,
+      actorRoles,
+      actorPermissions,
     });
   }
 }

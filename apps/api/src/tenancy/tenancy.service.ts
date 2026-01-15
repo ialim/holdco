@@ -1,9 +1,23 @@
-import { BadRequestException, Injectable } from "@nestjs/common";
+import { BadRequestException, ForbiddenException, Injectable } from "@nestjs/common";
 import { Prisma, SubsidiaryRole } from "@prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
+import { RolesService } from "../roles/roles.service";
 import { CreateLocationDto } from "./dto/create-location.dto";
+import { CreateAppUserDto } from "./dto/create-app-user.dto";
 import { CreateSubsidiaryDto } from "./dto/create-subsidiary.dto";
 import { ListLocationsDto } from "./dto/list-locations.dto";
+
+const ADMIN_ROLES = new Set(["SUPER_ADMIN", "HOLDCO_ADMIN"]);
+
+function normalizeRoleName(role: string) {
+  const normalized = role.trim().toUpperCase().replace(/[^A-Z0-9]+/g, "_");
+  return normalized.startsWith("ROLE_") ? normalized.slice(5) : normalized;
+}
+
+function canListAllGroups(roles: string[], permissions: string[]) {
+  if (permissions.includes("*")) return true;
+  return roles.map(normalizeRoleName).some((role) => ADMIN_ROLES.has(role));
+}
 
 const DEFAULT_LOCATIONS: Record<SubsidiaryRole, { type: string; name: string } | null> = {
   [SubsidiaryRole.HOLDCO]: null,
@@ -16,7 +30,10 @@ const DEFAULT_LOCATIONS: Record<SubsidiaryRole, { type: string; name: string } |
 
 @Injectable()
 export class TenancyService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly rolesService: RolesService,
+  ) {}
 
   async listTenants(groupId?: string) {
     if (!groupId) {
@@ -31,8 +48,48 @@ export class TenancyService {
     return subsidiaries.map((subsidiary: any) => ({
       id: subsidiary.id,
       name: subsidiary.name,
+      role: subsidiary.role ?? undefined,
       status: subsidiary.status,
     }));
+  }
+
+  async listTenantGroups(params: {
+    groupId?: string;
+    userGroupId?: string;
+    roles?: string[];
+    permissions?: string[];
+  }) {
+    const { groupId, userGroupId, roles = [], permissions = [] } = params;
+    const resolvedGroupId = groupId || userGroupId;
+
+    if (resolvedGroupId) {
+      const group = await this.prisma.tenantGroup.findUnique({ where: { id: resolvedGroupId } });
+      if (!group) {
+        throw new BadRequestException("Group not found");
+      }
+      return {
+        data: [
+          {
+            id: group.id,
+            name: group.name,
+            created_at: group.createdAt.toISOString(),
+          },
+        ],
+      };
+    }
+
+    if (!canListAllGroups(roles, permissions)) {
+      throw new ForbiddenException("Insufficient privileges to list tenant groups");
+    }
+
+    const groups = await this.prisma.tenantGroup.findMany({ orderBy: { createdAt: "asc" } });
+    return {
+      data: groups.map((group) => ({
+        id: group.id,
+        name: group.name,
+        created_at: group.createdAt.toISOString(),
+      })),
+    };
   }
 
   async listUsers(params: { groupId: string; subsidiaryId: string; limit: number; offset: number }) {
@@ -94,6 +151,70 @@ export class TenancyService {
         offset,
         total,
       },
+    };
+  }
+
+  async createAppUser(params: {
+    groupId: string;
+    body: CreateAppUserDto;
+    subsidiaryId?: string;
+    locationId?: string;
+    actorRoles?: string[];
+    actorPermissions?: string[];
+  }) {
+    const { groupId, body, subsidiaryId, locationId, actorRoles = [], actorPermissions = [] } = params;
+    if (!groupId) {
+      throw new BadRequestException("Group id is required");
+    }
+
+    const email = body.email.trim().toLowerCase();
+    const name = body.name?.trim();
+    const status = body.status?.trim() || "active";
+
+    const existing = await this.prisma.user.findFirst({
+      where: { groupId, email },
+    });
+
+    const user = existing
+      ? await this.prisma.user.update({
+          where: { id: existing.id },
+          data: {
+            name: name ?? existing.name,
+            status,
+          },
+        })
+      : await this.prisma.user.create({
+          data: {
+            groupId,
+            email,
+            name,
+            status,
+          },
+        });
+
+    const assignment = await this.rolesService.assignUserRole({
+      groupId,
+      userId: user.id,
+      roleId: body.role_id,
+      subsidiaryId,
+      locationId,
+      actorRoles,
+      actorPermissions,
+    });
+
+    const role = await this.prisma.role.findUnique({ where: { id: assignment.role_id } });
+    const rolePermissions = await this.prisma.rolePermission.findMany({
+      where: { roleId: assignment.role_id },
+      include: { permission: true },
+    });
+
+    return {
+      id: user.id,
+      email: user.email,
+      name: user.name ?? undefined,
+      status: user.status,
+      roles: role?.name ? [role.name] : [],
+      permissions: rolePermissions.map((rp) => rp.permission.code),
     };
   }
 

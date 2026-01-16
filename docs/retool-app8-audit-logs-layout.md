@@ -7,6 +7,7 @@ This layout describes the Audit Logs viewer for Admin/Ops. It relies on `docs/re
   - Breadcrumb: Admin / Audit Logs
   - Date range filter
   - Subsidiary filter (optional)
+  - Action, entity type, and actor filters (from lookup queries)
 - Main split
   - Left: Audit log table
   - Right: Detail panel (payload)
@@ -26,6 +27,9 @@ This layout describes the Audit Logs viewer for Admin/Ops. It relies on `docs/re
 
 ## Component map (IDs -> queries)
 - `dateRange`, `selectSubsidiary`, `selectAction`, `selectEntityType`, `selectActor`, `searchEntityId` -> `qListAuditLogs`
+- `selectAction` options -> `qListAuditActions`
+- `selectEntityType` options -> `qListAuditEntityTypes`
+- `selectActor` options -> `qListAuditActors`
 - `tableAuditLogs` -> `qListAuditLogs`
 - `panelAuditDetail` -> bound to `tableAuditLogs.selectedRow`
 

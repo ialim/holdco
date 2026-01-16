@@ -197,15 +197,47 @@ Layout guide: `docs/retool-app8-audit-logs-layout.md`.
 
 Queries
 - [ ] Create list query: `qListAuditLogs`.
+- [ ] Create lookup queries: `qListAuditActions`, `qListAuditEntityTypes`, `qListAuditActors`.
 
 Components
-- [ ] Filters: `dateRange`, `selectSubsidiary`, `selectAction`, `selectEntityType`, `selectActor`, `searchEntityId`.
+- [ ] Filters: `dateRange`, `selectSubsidiary`, `selectAction`, `selectEntityType`, `selectActor`, `searchEntityId`, `searchActorEmail` (optional).
 - [ ] Table: `tableAuditLogs`.
 - [ ] Detail panel: `panelAuditDetail`.
 
 Bindings
 - [ ] Filter changes re-run `qListAuditLogs`.
 - [ ] Row select populates payload view.
+- [ ] Action/entity type/actor selects use their lookup queries.
 
 QA
 - [ ] Filter by `credit.limit.update` and confirm reason in payload.
+
+## App 9: Tenancy & IAM Admin
+Layout guide: `docs/retool-app9-tenancy-layout.md`.
+
+Queries
+- [ ] Create list queries: `qListTenantGroups`, `qListSubsidiaries`, `qListLocations`.
+- [ ] Create tenancy writes: `qCreateSubsidiary`, `qCreateLocation`.
+- [ ] Create app user queries: `qListAppUsers`, `qCreateAppUser`, `qAssignAppRole`.
+- [ ] Create app role queries: `qListRoles`, `qListPermissions`, `qCreateRole`, `qUpdateRolePermissions`.
+- [ ] Create IAM queries: `qListIamUsers`, `qListIamRoles`, `qAssignIamRoles`, `qUpdateIamAttributes`.
+- [ ] All write queries include `Idempotency-Key`.
+
+Components
+- [ ] Tabs: Groups, Subsidiaries, Locations, App Users, App Roles, IAM Users.
+- [ ] Tables: `tableGroups`, `tableSubsidiaries`, `tableLocations`, `tableUsers`, `tableRoles`, `tableIamUsers`.
+- [ ] Filters: `searchLocations`, `searchUsers`, `searchIamUsers`, `selectSubsidiary`.
+- [ ] Drawers: `drawerSubsidiary`, `drawerLocation`, `drawerAppUser`, `drawerRole`, `drawerRolePermissions`, `drawerAssignRoles`.
+
+Bindings
+- [ ] Group selection drives `qListSubsidiaries` and `qListLocations`.
+- [ ] Subsidiary selection drives location and app user lists.
+- [ ] Drawer submit -> write query -> refresh list + close drawer.
+- [ ] Role table select -> permissions editor + assign role form.
+
+QA
+- [ ] Create a subsidiary and confirm default location (when enabled).
+- [ ] Create a location for an existing subsidiary.
+- [ ] Create an app user and assign a role.
+- [ ] Update role permissions and verify changes in `qListRoles`.
+- [ ] Assign IAM roles and update attributes on an IAM user.

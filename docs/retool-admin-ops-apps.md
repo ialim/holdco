@@ -411,7 +411,10 @@ Layout guide: `docs/retool-app8-audit-logs-layout.md`.
 Implementation steps: `docs/retool-app8-audit-logs-implementation.md`.
 
 Queries checklist:
-- [ ] List audit logs: `GET /audit-logs?limit=50&offset={{tableAuditLogs.offset}}&subsidiary_id={{selectSubsidiary.value}}&actor_id={{selectActor.value}}&entity_id={{searchEntityId.value}}&entity_type={{selectEntityType.value}}&action={{selectAction.value}}&start_date={{dateRange.value.start}}&end_date={{dateRange.value.end}}`
+- [ ] List audit logs: `GET /audit-logs?limit=50&offset={{tableAuditLogs.offset}}&subsidiary_id={{selectSubsidiary.value}}&actor_id={{selectActor.value}}&actor_email={{searchActorEmail.value}}&entity_id={{searchEntityId.value}}&entity_type={{selectEntityType.value}}&action={{selectAction.value}}&start_date={{dateRange.value.start}}&end_date={{dateRange.value.end}}`
+- [ ] List audit actions: `GET /audit-logs/actions?limit=200&offset={{actionOptions.offset}}&q={{searchAction.value}}`
+- [ ] List audit entity types: `GET /audit-logs/entity-types?limit=200&offset={{entityTypeOptions.offset}}&q={{searchEntityType.value}}`
+- [ ] List audit actors: `GET /audit-logs/actors?limit=200&offset={{actorOptions.offset}}&q={{searchActor.value}}`
 
 Component checklist:
 - [ ] Filters: date range, subsidiary, action, entity type, actor, entity id search.
@@ -420,3 +423,62 @@ Component checklist:
 
 Notes:
 - Filter by `action=credit.limit.update` to confirm reason is recorded.
+- `searchActorEmail` is optional; use it if you don't want to load actor options.
+
+## App 9: Tenancy & IAM Admin
+Purpose: Manage tenant groups, subsidiaries, locations, app users, and IAM users/roles.
+Layout guide: `docs/retool-app9-tenancy-layout.md`.
+Implementation steps: `docs/retool-app9-tenancy-implementation.md`.
+
+Queries checklist:
+- [ ] List tenant groups: `GET /tenant-groups`
+- [ ] List subsidiaries: `GET /tenants`
+- [ ] Create subsidiary: `POST /subsidiaries` (Idempotency-Key)
+- [ ] List locations: `GET /locations?subsidiary_id={{selectSubsidiary.value}}&q={{searchLocations.value}}&limit=50&offset={{tableLocations.offset}}`
+- [ ] Create location: `POST /locations` (Idempotency-Key)
+- [ ] List app users: `GET /users?limit=50&offset={{tableUsers.offset}}`
+- [ ] Create app user: `POST /users` (Idempotency-Key)
+- [ ] List app roles: `GET /roles`
+- [ ] List app permissions: `GET /permissions`
+- [ ] Create app role: `POST /roles` (Idempotency-Key)
+- [ ] Update role permissions: `POST /roles/{{tableRoles.selectedRow.id}}/permissions` (Idempotency-Key)
+- [ ] Assign app role: `POST /users/{{tableUsers.selectedRow.id}}/roles` (Idempotency-Key)
+- [ ] List IAM users: `GET /iam/users?limit=50&offset={{tableIamUsers.offset}}&q={{searchIamUsers.value}}&include_unscoped={{toggleIncludeUnscoped.value}}`
+- [ ] List IAM roles: `GET /iam/roles`
+- [ ] Assign IAM roles: `POST /iam/users/{{tableIamUsers.selectedRow.id}}/roles`
+- [ ] Update IAM attributes: `POST /iam/users/{{tableIamUsers.selectedRow.id}}/attributes`
+
+Component checklist:
+- [ ] Tabs: Groups, Subsidiaries, Locations, App Users, App Roles, IAM Users.
+- [ ] Tables: `tableGroups`, `tableSubsidiaries`, `tableLocations`, `tableUsers`, `tableRoles`, `tableIamUsers`.
+- [ ] Filters: subsidiary selector, location search, user search.
+- [ ] Drawers: create subsidiary, create location, create app user, create role, update role permissions, assign roles.
+
+Field validation checklist:
+- Subsidiary
+  - [ ] `name`: required, min length 2.
+  - [ ] `role`: required enum `HOLDCO`, `PROCUREMENT_TRADING`, `RETAIL`, `RESELLER`, `DIGITAL_COMMERCE`, `LOGISTICS`.
+  - [ ] `status`: optional string (default `active`).
+  - [ ] `create_default_location`: optional boolean (default true).
+  - [ ] `location`: optional object (name/type/address fields).
+- Location
+  - [ ] `subsidiary_id`: required UUID.
+  - [ ] `name`: required, min length 2.
+  - [ ] `type`: required string (warehouse/retail_store/etc).
+- App user
+  - [ ] `email`: required email.
+  - [ ] `role_id`: required UUID.
+  - [ ] `subsidiary_id`: optional UUID.
+  - [ ] `location_id`: optional UUID.
+- App role
+  - [ ] `name`: required, min length 2.
+  - [ ] `scope`: required enum `group`, `subsidiary`, `location`.
+  - [ ] `permissions`: required array of permission codes.
+- IAM role assignment
+  - [ ] `roles`: required array of role names.
+- IAM attributes
+  - [ ] `group_id`, `subsidiary_id`, `location_id`: optional UUIDs.
+
+Notes:
+- `GET /tenant-groups` returns the current group unless the caller is SUPER_ADMIN/HOLDCO_ADMIN.
+- App users are stored in HoldCo DB; IAM users come from Keycloak. Treat them as separate lists.

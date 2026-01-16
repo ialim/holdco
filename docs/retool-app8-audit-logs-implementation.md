@@ -11,17 +11,28 @@ This is a step-by-step build guide for the Audit Logs viewer. It complements:
 ## 1) App setup
 1. Create a new Retool app: "Audit Logs".
 2. Add filters: `dateRange`, `selectSubsidiary`, `selectAction`, `selectEntityType`, `selectActor`, `searchEntityId`.
+3. Optional: add `searchActorEmail` if you prefer free-text actor filtering.
 
 ## 2) Queries
 All queries use the REST resource and headers from `{{buildHeaders.value}}`.
 
 `qListAuditLogs` (GET `/audit-logs`)
-- Params: `limit`, `offset`, `subsidiary_id`, `actor_id`, `entity_id`, `entity_type`, `action`, `start_date`, `end_date`.
+- Params: `limit`, `offset`, `subsidiary_id`, `actor_id`, `actor_email`, `entity_id`, `entity_type`, `action`, `start_date`, `end_date`.
+
+`qListAuditActions` (GET `/audit-logs/actions`)
+- Params: `limit`, `offset`, `q` (optional search).
+
+`qListAuditEntityTypes` (GET `/audit-logs/entity-types`)
+- Params: `limit`, `offset`, `q` (optional search).
+
+`qListAuditActors` (GET `/audit-logs/actors`)
+- Params: `limit`, `offset`, `q` (optional search).
 
 ## 3) Component wiring
 - Filter changes -> re-run `qListAuditLogs`.
 - `tableAuditLogs` row select -> populate `panelAuditDetail`.
 - Detail panel shows payload JSON and highlights credit limit changes.
+- `selectAction`, `selectEntityType`, `selectActor` option lists come from the lookup queries.
 
 ## 4) QA smoke tests
 - Filter by action `credit.limit.update` and confirm payload includes `reason`.

@@ -24,6 +24,10 @@ export class ListAuditLogsDto {
   actor_id?: string;
 
   @IsOptional()
+  @IsString()
+  actor_email?: string;
+
+  @IsOptional()
   @IsUUID()
   entity_id?: string;
 

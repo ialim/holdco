@@ -2069,6 +2069,10 @@ paths:
           schema:
             type: string
             format: uuid
+        - name: actor_email
+          in: query
+          schema:
+            type: string
         - name: entity_id
           in: query
           schema:
@@ -2099,6 +2103,81 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AuditLogListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /v1/audit-logs/actions:
+    parameters:
+      - $ref: '#/components/parameters/GroupId'
+    get:
+      tags: [Audit]
+      operationId: listAuditLogActions
+      summary: List audit log actions
+      x-rbac:
+        permissions: [audit.logs.read]
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Offset'
+        - name: q
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuditLogLookupResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /v1/audit-logs/entity-types:
+    parameters:
+      - $ref: '#/components/parameters/GroupId'
+    get:
+      tags: [Audit]
+      operationId: listAuditLogEntityTypes
+      summary: List audit log entity types
+      x-rbac:
+        permissions: [audit.logs.read]
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Offset'
+        - name: q
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuditLogLookupResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /v1/audit-logs/actors:
+    parameters:
+      - $ref: '#/components/parameters/GroupId'
+    get:
+      tags: [Audit]
+      operationId: listAuditLogActors
+      summary: List audit log actors
+      x-rbac:
+        permissions: [audit.logs.read]
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Offset'
+        - name: q
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuditLogActorListResponse'
         '401':
           $ref: '#/components/responses/Unauthorized'
   /v1/third-parties:
@@ -6976,6 +7055,31 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/AuditLog'
+        meta:
+          $ref: '#/components/schemas/PageMeta'
+    AuditLogLookupItem:
+      type: object
+      properties:
+        value:
+          type: string
+        label:
+          type: string
+    AuditLogLookupResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/AuditLogLookupItem'
+        meta:
+          $ref: '#/components/schemas/PageMeta'
+    AuditLogActorListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/AuditActor'
         meta:
           $ref: '#/components/schemas/PageMeta'
     ThirdParty:

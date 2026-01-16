@@ -1,6 +1,7 @@
 import { BadRequestException, Injectable } from "@nestjs/common";
 import { Prisma } from "@prisma/client";
 import { PrismaService } from "../prisma/prisma.service";
+import { ListAuditLogLookupDto } from "./dto/list-audit-log-lookup.dto";
 import { ListAuditLogsDto } from "./dto/list-audit-logs.dto";
 
 @Injectable()
@@ -64,6 +65,9 @@ export class AuditService {
       groupId,
       ...(query.subsidiary_id ? { subsidiaryId: query.subsidiary_id } : {}),
       ...(query.actor_id ? { actorId: query.actor_id } : {}),
+      ...(query.actor_email
+        ? { actor: { email: { contains: query.actor_email, mode: "insensitive" as const } } }
+        : {}),
       ...(query.entity_id ? { entityId: query.entity_id } : {}),
       ...(query.entity_type ? { entityType: query.entity_type } : {}),
       ...(query.action ? { action: query.action } : {}),
@@ -102,6 +106,130 @@ export class AuditService {
       meta: {
         limit: query.limit ?? 50,
         offset: query.offset ?? 0,
+        total,
+      },
+    };
+  }
+
+  async listAuditActions(groupId: string, query: ListAuditLogLookupDto) {
+    if (!groupId) {
+      throw new BadRequestException("X-Group-Id header is required");
+    }
+
+    const limit = query.limit ?? 200;
+    const offset = query.offset ?? 0;
+    const where: Prisma.AuditLogWhereInput = {
+      groupId,
+      ...(query.q ? { action: { contains: query.q, mode: "insensitive" as const } } : {}),
+    };
+
+    const [total, actions] = await this.prisma.$transaction([
+      this.prisma.auditLog.count({ where, distinct: ["action"] }),
+      this.prisma.auditLog.findMany({
+        where,
+        distinct: ["action"],
+        select: { action: true },
+        orderBy: { action: "asc" },
+        skip: offset,
+        take: limit,
+      }),
+    ]);
+
+    return {
+      data: actions.map((row) => ({ value: row.action, label: row.action })),
+      meta: {
+        limit,
+        offset,
+        total,
+      },
+    };
+  }
+
+  async listAuditEntityTypes(groupId: string, query: ListAuditLogLookupDto) {
+    if (!groupId) {
+      throw new BadRequestException("X-Group-Id header is required");
+    }
+
+    const limit = query.limit ?? 200;
+    const offset = query.offset ?? 0;
+    const where: Prisma.AuditLogWhereInput = {
+      groupId,
+      ...(query.q ? { entityType: { contains: query.q, mode: "insensitive" as const } } : {}),
+    };
+
+    const [total, types] = await this.prisma.$transaction([
+      this.prisma.auditLog.count({ where, distinct: ["entityType"] }),
+      this.prisma.auditLog.findMany({
+        where,
+        distinct: ["entityType"],
+        select: { entityType: true },
+        orderBy: { entityType: "asc" },
+        skip: offset,
+        take: limit,
+      }),
+    ]);
+
+    return {
+      data: types.map((row) => ({ value: row.entityType, label: row.entityType })),
+      meta: {
+        limit,
+        offset,
+        total,
+      },
+    };
+  }
+
+  async listAuditActors(groupId: string, query: ListAuditLogLookupDto) {
+    if (!groupId) {
+      throw new BadRequestException("X-Group-Id header is required");
+    }
+
+    const limit = query.limit ?? 200;
+    const offset = query.offset ?? 0;
+    const where: Prisma.AuditLogWhereInput = {
+      groupId,
+      actorId: { not: null },
+      ...(query.q
+        ? {
+            actor: {
+              OR: [
+                { email: { contains: query.q, mode: "insensitive" as const } },
+                { name: { contains: query.q, mode: "insensitive" as const } },
+              ],
+            },
+          }
+        : {}),
+    };
+
+    const [total, rows] = await this.prisma.$transaction([
+      this.prisma.auditLog.count({ where, distinct: ["actorId"] }),
+      this.prisma.auditLog.findMany({
+        where,
+        distinct: ["actorId"],
+        select: {
+          actorId: true,
+          actor: { select: { id: true, email: true, name: true } },
+        },
+        orderBy: { actorId: "asc" },
+        skip: offset,
+        take: limit,
+      }),
+    ]);
+
+    const data = rows
+      .map((row) => row.actor)
+      .filter((actor): actor is { id: string; email: string; name: string | null } => Boolean(actor))
+      .map((actor) => ({
+        id: actor.id,
+        email: actor.email,
+        name: actor.name ?? undefined,
+      }));
+
+    return {
+      data,
+      meta: {
+        limit,
+        offset,
         total,
       },
     };

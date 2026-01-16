@@ -37,6 +37,9 @@ Use `docs/retool-app-definition-of-done.md` to sign off each app.
 4. Procurement & Trading Ops
 5. Finance Ops
 6. Payments Config & KYC
+7. Reseller/Wholesale Portal (MVP)
+8. Audit Logs
+9. Tenancy & IAM Admin
 
 ## 5) Access control
 - Gate apps by role and permission (see `docs/rbac-policies.md`).

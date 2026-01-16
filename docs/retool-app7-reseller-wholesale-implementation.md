@@ -71,7 +71,7 @@ Optional `qGetReseller` (GET `/resellers/{{tableResellers.selectedRow.id}}`).
 {
   "reseller_id": "{{tableResellers.selectedRow.id}}",
   "items": {{tableOrderItems.data}},
-  "notes": "{{inputOrderNotes.value}}"
+  "notes": "{{toggleCreditOverride.value ? `CREDIT_OVERRIDE: true\\n${inputOrderNotes.value}` : inputOrderNotes.value}}"
 }
 ```
 
@@ -85,9 +85,13 @@ Optional `qGetReseller` (GET `/resellers/{{tableResellers.selectedRow.id}}`).
 - `drawerRepayment` submit -> `qCreateRepayment` -> refresh credit report.
 - `drawerWholesaleOrder` submit -> `qCreateWholesaleOrder` -> refresh orders list.
 - `btnFulfillOrder` -> `qFulfillWholesaleOrder` -> refresh selected order.
+- Show available credit in the order drawer using `qListCreditAccounts` for the selected reseller.
+- Disable submit when `available_amount` < order total unless `toggleCreditOverride` is enabled.
+- Show the override toggle only if the current user has `credit.limit.override` permission.
 
 ## 4) QA smoke tests
 - Create a reseller and verify it appears in the list.
 - Set credit limit and confirm account balances update.
 - Record a repayment and verify it appears in the credit report.
 - Create a wholesale order and fulfill it.
+- Attempt to create an order above available credit; verify blocked without override and allowed with override.

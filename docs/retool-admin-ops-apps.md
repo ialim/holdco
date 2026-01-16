@@ -400,6 +400,7 @@ Field validation checklist:
   - [ ] `reseller_id`: required UUID.
   - [ ] `items`: required array (min 1).
   - [ ] Each item: `product_id` required UUID, `variant_id` optional UUID, `quantity` required >= 1.
+  - [ ] `notes`: optional string (use to flag credit overrides).
 
 Notes:
 - Treat this as a standalone app when roles and workflows stabilize; it can live in Admin/Ops while validating.

@@ -37,6 +37,8 @@ This layout describes page structure, components, and query wiring for the Resel
 | | Orders Table                  |  | Order Detail + Fulfill Action           |  |
 | | (order_no, status, total)     |  | - Items list                            |  |
 | +-------------------------------+  | - Create Order Drawer                   |  |
+|                                    |   • Available credit banner             |  |
+|                                    |   • Override toggle (if permitted)      |  |
 |                                    +-----------------------------------------+  |
 +----------------------------------------------------------------------------------+
 ```
@@ -57,6 +59,7 @@ This layout describes page structure, components, and query wiring for the Resel
   - `panelOrderDetail` -> `qGetOrder`
   - `drawerWholesaleOrder` -> `qCreateWholesaleOrder`
   - `btnFulfillOrder` -> `qFulfillWholesaleOrder`
+  - `toggleCreditOverride` -> visible when user has `credit.limit.override`
 
 ## Shared components
 - `dateRange`
@@ -64,6 +67,7 @@ This layout describes page structure, components, and query wiring for the Resel
 - Drawers: `drawerResellerCreate`, `drawerCreditLimit`, `drawerRepayment`, `drawerWholesaleOrder`
 - Panels: `panelResellerDetail`, `panelCreditReport`, `panelOrderDetail`
 - Toasts for success/error
+  - Banner: `creditAvailableBanner` inside order drawer
 
 ## Query wiring (naming convention)
 - Resellers: `qListResellers`, `qCreateReseller`, optional `qGetReseller`

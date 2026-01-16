@@ -184,8 +184,10 @@ Bindings
 - [ ] Reseller select updates credit accounts + credit report.
 - [ ] Drawer submit -> write query -> refresh list + close drawer.
 - [ ] Order create -> refresh orders list; fulfill -> refresh selected order.
+- [ ] Order create is disabled when available credit is insufficient and override is not enabled.
 
 QA
 - [ ] Create reseller and set credit limit.
 - [ ] Record repayment and confirm report updates.
 - [ ] Create and fulfill a wholesale order.
+- [ ] Verify override toggle appears only with `credit.limit.override` permission.

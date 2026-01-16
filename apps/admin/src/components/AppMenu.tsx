@@ -41,6 +41,8 @@ function CollapsibleSection({
   defaultOpen?: boolean;
 }) {
   const [open, setOpen] = useState(defaultOpen);
+  const canViewSecuritySection = canManageRbac || canViewAudit;
+
   return (
     <Box>
       <ListItemButton
@@ -93,11 +95,17 @@ export function AppMenu() {
         <MenuItemLink to="/orders" primaryText="Orders & Payments" leftIcon={<ReceiptLongOutlined />} />
       </CollapsibleSection>
 
-      {canManageRbac && (
+      {canViewSecuritySection && (
         <CollapsibleSection title="Security" defaultOpen={false}>
-          <MenuItemLink to="/users" primaryText="IdP Users" leftIcon={<SecurityOutlined />} />
-          <MenuItemLink to="/roles" primaryText="IdP Roles" leftIcon={<SecurityOutlined />} />
-          {canViewAudit && <MenuItemLink to="/audit-logs" primaryText="Audit Logs" leftIcon={<HistoryOutlined />} />}
+          {canManageRbac && (
+            <>
+              <MenuItemLink to="/users" primaryText="IdP Users" leftIcon={<SecurityOutlined />} />
+              <MenuItemLink to="/roles" primaryText="IdP Roles" leftIcon={<SecurityOutlined />} />
+            </>
+          )}
+          {canViewAudit && (
+            <MenuItemLink to="/audit-logs" primaryText="Audit Logs" leftIcon={<HistoryOutlined />} />
+          )}
         </CollapsibleSection>
       )}
 

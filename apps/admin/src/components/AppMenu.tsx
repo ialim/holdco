@@ -41,7 +41,6 @@ function CollapsibleSection({
   defaultOpen?: boolean;
 }) {
   const [open, setOpen] = useState(defaultOpen);
-  const canViewSecuritySection = canManageRbac || canViewAudit;
 
   return (
     <Box>
@@ -78,6 +77,7 @@ export function AppMenu() {
     permissionList.includes("*") ||
     permissionList.includes("audit.logs.read") ||
     normalized.includes("AUDITOR");
+  const canViewSecuritySection = canManageRbac || canViewAudit;
 
   return (
     <Box sx={{ paddingTop: 1 }}>

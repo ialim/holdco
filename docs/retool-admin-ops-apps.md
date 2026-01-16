@@ -390,6 +390,7 @@ Field validation checklist:
   - [ ] `reseller_id`: required UUID.
   - [ ] `limit_amount`: required number >= 0.
   - [ ] `currency`: optional 3-letter code.
+  - [ ] `reason`: required string (min length 3).
 - Repayment
   - [ ] `credit_account_id`: required UUID.
   - [ ] `amount`: required number >= 0.

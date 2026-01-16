@@ -43,14 +43,56 @@ export class AdaptersService {
     subsidiaryId: string;
     locationId?: string;
     body: CreateOrderDto;
+    allowCreditOverride?: boolean;
   }) {
-    return this.ordersService.createOrder(
-      params.groupId,
-      params.subsidiaryId,
-      params.locationId,
-      "wholesale",
-      params.body,
-    );
+    let creditAmount = 0;
+    if (params.body.reseller_id) {
+      const itemsTotal = params.body.items.reduce((sum, item) => {
+        const unitPrice = item.unit_price ?? 0;
+        return sum + unitPrice * item.quantity;
+      }, 0);
+      const discountAmount = params.body.discount_amount ?? 0;
+      const taxAmount = params.body.tax_amount ?? 0;
+      const shippingAmount = params.body.shipping_amount ?? 0;
+      const totalAmount = itemsTotal - discountAmount + taxAmount + shippingAmount;
+      creditAmount = totalAmount;
+
+      if (totalAmount < 0) {
+        throw new BadRequestException("Order total cannot be negative");
+      }
+
+      await this.creditService.reserveCreditUsage({
+        groupId: params.groupId,
+        subsidiaryId: params.subsidiaryId,
+        resellerId: params.body.reseller_id,
+        amount: totalAmount,
+        allowOverride: params.allowCreditOverride,
+      });
+    }
+
+    try {
+      return await this.ordersService.createOrder(
+        params.groupId,
+        params.subsidiaryId,
+        params.locationId,
+        "wholesale",
+        params.body,
+      );
+    } catch (error) {
+      if (params.body.reseller_id) {
+        try {
+          await this.creditService.releaseCreditUsage({
+            groupId: params.groupId,
+            subsidiaryId: params.subsidiaryId,
+            resellerId: params.body.reseller_id,
+            amount: creditAmount,
+          });
+        } catch {
+          // ignore credit rollback errors
+        }
+      }
+      throw error;
+    }
   }
 
   async fulfillWholesaleOrder(params: { groupId: string; subsidiaryId: string; orderId: string }) {

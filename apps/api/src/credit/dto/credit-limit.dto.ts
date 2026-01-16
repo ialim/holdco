@@ -1,4 +1,4 @@
-import { IsUUID, Min } from "class-validator";
+import { IsString, IsUUID, Min, MinLength } from "class-validator";
 import { Type } from "class-transformer";
 
 export class CreditLimitDto {
@@ -8,4 +8,8 @@ export class CreditLimitDto {
   @Type(() => Number)
   @Min(0)
   limit_amount!: number;
+
+  @IsString()
+  @MinLength(3)
+  reason!: string;
 }

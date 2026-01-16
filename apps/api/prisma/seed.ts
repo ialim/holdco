@@ -95,6 +95,7 @@ async function main() {
     "credit.limit.write",
     "credit.repayment.write",
   ];
+  const creditOverridePermission = "credit.limit.override";
   const loyaltyPermissions = [
     "loyalty.customer.read",
     "loyalty.customer.write",
@@ -167,6 +168,7 @@ async function main() {
     ...posPermissions,
     ...paymentsPermissions,
     ...creditPermissions,
+    creditOverridePermission,
     ...loyaltyPermissions,
     ...logisticsPermissions,
     ...reportsPermissions,

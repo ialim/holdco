@@ -65,6 +65,7 @@ Credit & collections
 - `credit.account.read`
 - `credit.account.write`
 - `credit.limit.write`
+- `credit.limit.override`
 - `credit.repayment.write`
 
 Loyalty

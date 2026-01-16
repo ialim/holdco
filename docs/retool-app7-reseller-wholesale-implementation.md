@@ -42,7 +42,8 @@ Optional `qGetReseller` (GET `/resellers/{{tableResellers.selectedRow.id}}`).
 {
   "reseller_id": "{{tableResellers.selectedRow.id}}",
   "limit_amount": {{inputCreditLimit.value}},
-  "currency": "{{selectCreditCurrency.value}}"
+  "currency": "{{selectCreditCurrency.value}}",
+  "reason": "{{inputCreditLimitReason.value}}"
 }
 ```
 

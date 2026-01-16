@@ -1,4 +1,4 @@
-import { IsDateString, IsOptional, IsUUID, Min } from "class-validator";
+import { IsDateString, IsOptional, IsString, IsUUID, Min } from "class-validator";
 import { Type } from "class-transformer";
 
 export class CreateRepaymentDto {
@@ -12,4 +12,8 @@ export class CreateRepaymentDto {
   @IsOptional()
   @IsDateString()
   paid_at?: string;
+
+  @IsOptional()
+  @IsString()
+  method?: string;
 }

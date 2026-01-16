@@ -84,6 +84,7 @@ export class CreditService {
         reseller_id: account.resellerId,
         limit_amount: Number(account.limitAmount),
         used_amount: Number(account.usedAmount),
+        available_amount: Math.max(0, Number(account.limitAmount) - Number(account.usedAmount)),
         status: account.status,
       })),
       meta: this.buildMeta(query, total),
@@ -108,6 +109,7 @@ export class CreditService {
       reseller_id: account.resellerId,
       limit_amount: Number(account.limitAmount),
       used_amount: Number(account.usedAmount),
+      available_amount: Math.max(0, Number(account.limitAmount) - Number(account.usedAmount)),
       status: account.status,
     };
   }
@@ -135,6 +137,7 @@ export class CreditService {
         reseller_id: created.resellerId,
         limit_amount: Number(created.limitAmount),
         used_amount: Number(created.usedAmount),
+        available_amount: Math.max(0, Number(created.limitAmount) - Number(created.usedAmount)),
         status: created.status,
       };
     }
@@ -149,36 +152,205 @@ export class CreditService {
       reseller_id: account.resellerId,
       limit_amount: Number(account.limitAmount),
       used_amount: Number(account.usedAmount),
+      available_amount: Math.max(0, Number(account.limitAmount) - Number(account.usedAmount)),
       status: account.status,
     };
+  }
+
+  async reserveCreditUsage(params: {
+    groupId: string;
+    subsidiaryId: string;
+    resellerId: string;
+    amount: number;
+    allowOverride?: boolean;
+  }) {
+    if (!params.groupId) throw new BadRequestException("X-Group-Id header is required");
+    if (!params.subsidiaryId) throw new BadRequestException("X-Subsidiary-Id header is required");
+
+    return this.prisma.$transaction(async (tx) => {
+      const account = await tx.creditAccount.findFirst({
+        where: {
+          groupId: params.groupId,
+          subsidiaryId: params.subsidiaryId,
+          resellerId: params.resellerId,
+          status: "active",
+        },
+      });
+
+      if (!account) throw new NotFoundException("Credit account not found");
+
+      const limitAmount = Number(account.limitAmount);
+      const usedAmount = Number(account.usedAmount);
+      const available = limitAmount - usedAmount;
+
+      if (!params.allowOverride && available < params.amount) {
+        throw new BadRequestException({
+          message: "Credit limit exceeded",
+          code: "credit.limit.exceeded",
+          available,
+          required: params.amount,
+        });
+      }
+
+      const updated = await tx.creditAccount.update({
+        where: { id: account.id },
+        data: { usedAmount: usedAmount + params.amount },
+      });
+
+      return {
+        id: updated.id,
+        reseller_id: updated.resellerId,
+        limit_amount: Number(updated.limitAmount),
+        used_amount: Number(updated.usedAmount),
+        available_amount: Math.max(0, Number(updated.limitAmount) - Number(updated.usedAmount)),
+        status: updated.status,
+      };
+    });
+  }
+
+  async releaseCreditUsage(params: {
+    groupId: string;
+    subsidiaryId: string;
+    resellerId: string;
+    amount: number;
+  }) {
+    if (!params.groupId) throw new BadRequestException("X-Group-Id header is required");
+    if (!params.subsidiaryId) throw new BadRequestException("X-Subsidiary-Id header is required");
+    if (params.amount <= 0) return;
+
+    return this.prisma.$transaction(async (tx) => {
+      const account = await tx.creditAccount.findFirst({
+        where: {
+          groupId: params.groupId,
+          subsidiaryId: params.subsidiaryId,
+          resellerId: params.resellerId,
+        },
+      });
+
+      if (!account) return;
+
+      const nextUsed = Math.max(0, Number(account.usedAmount) - params.amount);
+      const updated = await tx.creditAccount.update({
+        where: { id: account.id },
+        data: { usedAmount: nextUsed },
+      });
+
+      return {
+        id: updated.id,
+        reseller_id: updated.resellerId,
+        limit_amount: Number(updated.limitAmount),
+        used_amount: Number(updated.usedAmount),
+        available_amount: Math.max(0, Number(updated.limitAmount) - Number(updated.usedAmount)),
+        status: updated.status,
+      };
+    });
   }
 
   async createRepayment(groupId: string, subsidiaryId: string, body: CreateRepaymentDto) {
     if (!groupId) throw new BadRequestException("X-Group-Id header is required");
     if (!subsidiaryId) throw new BadRequestException("X-Subsidiary-Id header is required");
 
-    const account = await this.prisma.creditAccount.findFirst({
-      where: { id: body.credit_account_id, groupId, subsidiaryId },
+    return this.prisma.$transaction(async (tx) => {
+      const account = await tx.creditAccount.findFirst({
+        where: { id: body.credit_account_id, groupId, subsidiaryId },
+      });
+
+      if (!account) throw new NotFoundException("Credit account not found");
+
+      const repayment = await tx.repayment.create({
+        data: {
+          groupId,
+          subsidiaryId,
+          creditAccountId: body.credit_account_id,
+          amount: body.amount,
+          unappliedAmount: body.amount,
+          paidAt: body.paid_at ? new Date(body.paid_at) : new Date(),
+          method: body.method,
+        },
+      });
+
+      const orders = await tx.order.findMany({
+        where: {
+          groupId,
+          subsidiaryId,
+          resellerId: account.resellerId,
+          channel: "wholesale",
+          status: { not: "cancelled" },
+        },
+        orderBy: { createdAt: "asc" },
+      });
+
+      let remaining = body.amount;
+      const allocations: Array<{ order_id: string; amount: number }> = [];
+
+      for (const order of orders) {
+        if (remaining <= 0) break;
+        const totalAmount = Number(order.totalAmount);
+        const paidAmount = Number(order.paidAmount ?? 0);
+        const balance = totalAmount - paidAmount;
+        if (balance <= 0) continue;
+
+        const applied = Math.min(balance, remaining);
+        remaining -= applied;
+
+        await tx.orderPayment.create({
+          data: {
+            groupId,
+            subsidiaryId,
+            orderId: order.id,
+            method: "credit",
+            paymentType: "credit",
+            amount: applied,
+            currency: order.currency,
+            status: "captured",
+            provider: "credit",
+            reference: repayment.id,
+          },
+        });
+
+        const nextPaid = paidAmount + applied;
+        const paymentStatus =
+          nextPaid >= totalAmount ? "paid" : nextPaid > 0 ? "partial" : "unpaid";
+        await tx.order.update({
+          where: { id: order.id },
+          data: { paidAmount: nextPaid, paymentStatus },
+        });
+
+        await tx.repaymentAllocation.create({
+          data: {
+            groupId,
+            subsidiaryId,
+            repaymentId: repayment.id,
+            orderId: order.id,
+            amount: applied,
+          },
+        });
+
+        allocations.push({ order_id: order.id, amount: applied });
+      }
+
+      const appliedTotal = body.amount - remaining;
+      const newUsedAmount = Math.max(0, Number(account.usedAmount) - appliedTotal);
+      await tx.creditAccount.update({
+        where: { id: account.id },
+        data: { usedAmount: newUsedAmount },
+      });
+
+      const updatedRepayment = await tx.repayment.update({
+        where: { id: repayment.id },
+        data: { unappliedAmount: remaining },
+      });
+
+      return {
+        id: updatedRepayment.id,
+        credit_account_id: updatedRepayment.creditAccountId,
+        amount: Number(updatedRepayment.amount),
+        paid_at: updatedRepayment.paidAt.toISOString(),
+        method: updatedRepayment.method ?? undefined,
+        unapplied_amount: Number(updatedRepayment.unappliedAmount),
+        allocations,
+      };
     });
-
-    if (!account) throw new NotFoundException("Credit account not found");
-
-    const repayment = await this.prisma.repayment.create({
-      data: {
-        groupId,
-        subsidiaryId,
-        creditAccountId: body.credit_account_id,
-        amount: body.amount,
-        paidAt: body.paid_at ? new Date(body.paid_at) : new Date(),
-      },
-    });
-
-    return {
-      id: repayment.id,
-      credit_account_id: repayment.creditAccountId,
-      amount: Number(repayment.amount),
-      paid_at: repayment.paidAt.toISOString(),
-    };
   }
 
   private buildMeta(query: ListQueryDto, total: number) {

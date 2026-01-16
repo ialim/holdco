@@ -49,7 +49,15 @@ export class AdaptersController {
     @Body() body: CreateOrderDto,
     @Req() req: Request,
   ) {
-    const order = await this.adaptersService.createWholesaleOrder({ groupId, subsidiaryId, locationId, body });
+    const permissions = Array.isArray((req as any).user?.permissions) ? (req as any).user.permissions : [];
+    const allowCreditOverride = permissions.includes("*") || permissions.includes("credit.limit.override");
+    const order = await this.adaptersService.createWholesaleOrder({
+      groupId,
+      subsidiaryId,
+      locationId,
+      body,
+      allowCreditOverride,
+    });
     const actorId = resolveActorId(req);
     await this.auditService.record({
       groupId,

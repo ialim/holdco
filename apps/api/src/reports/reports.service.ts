@@ -76,14 +76,118 @@ export class ReportsService {
 
     const accounts = await this.prisma.creditAccount.findMany({
       where: { groupId, subsidiaryId },
-      select: { resellerId: true, usedAmount: true },
+      include: { reseller: true },
     });
 
+    const resellerIds = accounts.map((account) => account.resellerId);
+    const creditAccountIds = accounts.map((account) => account.id);
+    const orders = resellerIds.length
+      ? await this.prisma.order.findMany({
+          where: {
+            groupId,
+            subsidiaryId,
+            resellerId: { in: resellerIds },
+            channel: "wholesale",
+            status: { not: "cancelled" },
+          },
+          orderBy: { createdAt: "asc" },
+        })
+      : [];
+
+    const repayments = creditAccountIds.length
+      ? await this.prisma.repayment.findMany({
+          where: { groupId, subsidiaryId, creditAccountId: { in: creditAccountIds } },
+          orderBy: { paidAt: "desc" },
+          include: { allocations: true },
+        })
+      : [];
+
+    const ordersByReseller = new Map<string, typeof orders>();
+    for (const order of orders) {
+      const list = ordersByReseller.get(order.resellerId ?? "") ?? [];
+      list.push(order);
+      if (order.resellerId) ordersByReseller.set(order.resellerId, list);
+    }
+
+    const repaymentsByAccount = new Map<string, typeof repayments>();
+    for (const repayment of repayments) {
+      const list = repaymentsByAccount.get(repayment.creditAccountId) ?? [];
+      list.push(repayment);
+      repaymentsByAccount.set(repayment.creditAccountId, list);
+    }
+
+    const now = new Date();
+
     return {
-      data: accounts.map((account: any) => ({
-        reseller_id: account.resellerId,
-        balance: Number(account.usedAmount),
-      })),
+      data: accounts.map((account: any) => {
+        const limitAmount = Number(account.limitAmount);
+        const usedAmount = Number(account.usedAmount);
+        const availableAmount = Math.max(0, limitAmount - usedAmount);
+        const accountOrders = ordersByReseller.get(account.resellerId) ?? [];
+
+        const openOrders = accountOrders
+          .map((order: any) => {
+            const totalAmount = Number(order.totalAmount);
+            const paidAmount = Number(order.paidAmount ?? 0);
+            const balanceDue = Math.max(0, totalAmount - paidAmount);
+            const ageDays = Math.floor(
+              (now.getTime() - order.createdAt.getTime()) / (1000 * 60 * 60 * 24),
+            );
+            return {
+              order_id: order.id,
+              order_no: order.orderNo,
+              status: order.status,
+              total_amount: totalAmount,
+              paid_amount: paidAmount,
+              balance_due: balanceDue,
+              currency: order.currency,
+              created_at: order.createdAt.toISOString(),
+              age_days: ageDays,
+            };
+          })
+          .filter((order: any) => order.balance_due > 0);
+
+        const aging = openOrders.reduce(
+          (acc: any, order: any) => {
+            const bucket =
+              order.age_days <= 30
+                ? "0_30"
+                : order.age_days <= 60
+                  ? "31_60"
+                  : order.age_days <= 90
+                    ? "61_90"
+                    : "90_plus";
+            acc[bucket] = (acc[bucket] ?? 0) + order.balance_due;
+            return acc;
+          },
+          { "0_30": 0, "31_60": 0, "61_90": 0, "90_plus": 0 },
+        );
+
+        const accountRepayments = repaymentsByAccount.get(account.id) ?? [];
+        const repaymentHistory = accountRepayments.map((repayment: any) => ({
+          repayment_id: repayment.id,
+          amount: Number(repayment.amount),
+          unapplied_amount: Number(repayment.unappliedAmount ?? 0),
+          paid_at: repayment.paidAt.toISOString(),
+          method: repayment.method ?? undefined,
+          allocations: repayment.allocations.map((alloc: any) => ({
+            order_id: alloc.orderId,
+            amount: Number(alloc.amount),
+          })),
+        }));
+
+        return {
+          reseller_id: account.resellerId,
+          reseller_name: account.reseller?.name,
+          limit_amount: limitAmount,
+          used_amount: usedAmount,
+          available_amount: availableAmount,
+          status: account.status,
+          aging,
+          open_orders: openOrders,
+          repayments: repaymentHistory,
+        };
+      }),
     };
   }
 }

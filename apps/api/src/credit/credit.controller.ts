@@ -109,6 +109,7 @@ export class CreditController {
         limit_amount: account.limit_amount,
         used_amount: account.used_amount,
         status: account.status,
+        reason: body.reason,
       },
     });
     return account;
@@ -135,6 +136,7 @@ export class CreditController {
         credit_account_id: repayment.credit_account_id,
         amount: repayment.amount,
         paid_at: repayment.paid_at,
+        method: body.method,
       },
     });
     return repayment;

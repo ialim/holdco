@@ -6509,6 +6509,11 @@ components:
           format: float
           minimum: 0
           example: 250000
+        available_amount:
+          type: number
+          format: float
+          minimum: 0
+          example: 750000
         status:
           $ref: '#/components/schemas/CreditAccountStatus'
     CreateCreditAccountRequest:
@@ -6535,7 +6540,7 @@ components:
           $ref: '#/components/schemas/PageMeta'
     CreditLimitRequest:
       type: object
-      required: [reseller_id, limit_amount]
+      required: [reseller_id, limit_amount, reason]
       properties:
         reseller_id:
           type: string
@@ -6546,6 +6551,10 @@ components:
           format: float
           minimum: 0
           example: 1000000
+        reason:
+          type: string
+          minLength: 3
+          example: Increase limit for Q1 bulk order
     RepaymentRequest:
       type: object
       required: [credit_account_id, amount]
@@ -6563,6 +6572,21 @@ components:
           type: string
           format: date-time
           example: '2024-05-12T10:00:00Z'
+        method:
+          type: string
+          example: transfer
+    RepaymentAllocation:
+      type: object
+      properties:
+        order_id:
+          type: string
+          format: uuid
+          example: 7d2b0c62-6c07-4c3e-8f08-60a2b2b0b004
+        amount:
+          type: number
+          format: float
+          minimum: 0
+          example: 75000
     Repayment:
       type: object
       properties:
@@ -6579,10 +6603,22 @@ components:
           format: float
           minimum: 0
           example: 150000
+        unapplied_amount:
+          type: number
+          format: float
+          minimum: 0
+          example: 0
         paid_at:
           type: string
           format: date-time
           example: '2024-05-12T10:00:00Z'
+        method:
+          type: string
+          example: transfer
+        allocations:
+          type: array
+          items:
+            $ref: '#/components/schemas/RepaymentAllocation'
     Customer:
       type: object
       properties:
@@ -6765,11 +6801,78 @@ components:
           type: string
           format: uuid
           example: 5c1db0fe-3d0c-4c86-a5cc-6ad1fe39c1f4
-        balance:
+        reseller_name:
+          type: string
+          example: Alims Reseller Partner
+        limit_amount:
+          type: number
+          format: float
+          minimum: 0
+          example: 1000000
+        used_amount:
+          type: number
+          format: float
+          minimum: 0
+          example: 250000
+        available_amount:
           type: number
           format: float
           minimum: 0
           example: 750000
+        status:
+          type: string
+          example: active
+        aging:
+          type: object
+          properties:
+            0_30:
+              type: number
+              format: float
+              example: 100000
+            31_60:
+              type: number
+              format: float
+              example: 50000
+            61_90:
+              type: number
+              format: float
+              example: 0
+            90_plus:
+              type: number
+              format: float
+              example: 0
+        open_orders:
+          type: array
+          items:
+            type: object
+            properties:
+              order_id:
+                type: string
+                format: uuid
+              order_no:
+                type: string
+              status:
+                type: string
+              total_amount:
+                type: number
+                format: float
+              paid_amount:
+                type: number
+                format: float
+              balance_due:
+                type: number
+                format: float
+              currency:
+                type: string
+              created_at:
+                type: string
+                format: date-time
+              age_days:
+                type: integer
+        repayments:
+          type: array
+          items:
+            $ref: '#/components/schemas/Repayment'
     CreditReportResponse:
       type: object
       properties:

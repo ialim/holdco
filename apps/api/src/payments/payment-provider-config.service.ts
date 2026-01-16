@@ -118,6 +118,18 @@ export class PaymentProviderConfigService {
     return this.mapConfig(updated);
   }
 
+  async getConfig(groupId: string, configId: string) {
+    if (!groupId) throw new BadRequestException("X-Group-Id header is required");
+    if (!configId) throw new BadRequestException("Config id is required");
+
+    const config = await this.prisma.paymentProviderConfig.findFirst({
+      where: { id: configId, groupId },
+    });
+    if (!config) throw new NotFoundException("Payment provider config not found");
+
+    return this.mapConfig(config);
+  }
+
   private applyStatusDates(
     status: string | undefined,
     data: Prisma.PaymentProviderConfigUncheckedCreateInput | Prisma.PaymentProviderConfigUpdateInput,

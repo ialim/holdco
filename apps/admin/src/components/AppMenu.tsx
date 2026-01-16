@@ -80,7 +80,9 @@ export function AppMenu() {
     permissionList.includes("audit.logs.read") ||
     normalized.includes("AUDITOR");
   const canManagePaymentsConfig =
-    permissionList.includes("*") || permissionList.includes("payments.config.manage");
+    canManageRbac ||
+    permissionList.includes("*") ||
+    permissionList.includes("payments.config.manage");
   const canViewSecuritySection = canManageRbac || canViewAudit;
 
   return (

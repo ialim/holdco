@@ -31,6 +31,15 @@ export class PaymentsProviderConfigController {
   }
 
   @Permissions("payments.config.manage")
+  @Get(":config_id")
+  getConfig(
+    @Headers("x-group-id") groupId: string,
+    @Param("config_id", new ParseUUIDPipe()) configId: string,
+  ) {
+    return this.configService.getConfig(groupId, configId);
+  }
+
+  @Permissions("payments.config.manage")
   @Patch(":config_id")
   updateConfig(
     @Headers("x-group-id") groupId: string,

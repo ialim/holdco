@@ -164,3 +164,28 @@ Bindings
 QA
 - [ ] Update settlement details and KYC contact info.
 - [ ] Move status through draft -> submitted without validation errors.
+
+## App 7: Reseller/Wholesale Portal (MVP)
+Layout guide: `docs/retool-app7-reseller-wholesale-layout.md`.
+
+Queries
+- [ ] Resellers: `qListResellers`, `qCreateReseller` (Idempotency-Key).
+- [ ] Credit: `qListCreditAccounts`, `qSetCreditLimit`, `qCreateRepayment` (Idempotency-Key).
+- [ ] Reports: `qCreditReport`.
+- [ ] Orders: `qListWholesaleOrders`, `qCreateWholesaleOrder`, `qFulfillWholesaleOrder` (Idempotency-Key).
+
+Components
+- [ ] Tabs: Resellers, Credit, Wholesale Orders.
+- [ ] Tables: `tableResellers`, `tableCreditAccounts`, `tableWholesaleOrders`.
+- [ ] Drawers: `drawerResellerCreate`, `drawerCreditLimit`, `drawerRepayment`, `drawerWholesaleOrder`.
+- [ ] Panels: `panelResellerDetail`, `panelCreditReport`, `panelOrderDetail`.
+
+Bindings
+- [ ] Reseller select updates credit accounts + credit report.
+- [ ] Drawer submit -> write query -> refresh list + close drawer.
+- [ ] Order create -> refresh orders list; fulfill -> refresh selected order.
+
+QA
+- [ ] Create reseller and set credit limit.
+- [ ] Record repayment and confirm report updates.
+- [ ] Create and fulfill a wholesale order.

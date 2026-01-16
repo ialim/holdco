@@ -62,5 +62,5 @@ Phase 3
 
 ## Recommended Next Steps
 1) Keep POS separate, continue Admin/Ops as the primary console.
-2) Define Reseller/Wholesale portal MVP (credit + ordering + statements).
+2) Define Reseller/Wholesale portal MVP (credit + ordering + statements). See `docs/reseller-wholesale-mvp.md`.
 3) Split only when workflows are validated and a dedicated team exists.

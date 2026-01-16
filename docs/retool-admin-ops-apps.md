@@ -359,3 +359,46 @@ Field validation checklist:
 
 Notes:
 - Use one record per subsidiary + provider + environment.
+
+## App 7: Reseller/Wholesale Portal (MVP)
+Purpose: Onboard resellers, manage credit, and create wholesale orders.
+Layout guide: `docs/retool-app7-reseller-wholesale-layout.md`.
+Implementation steps: `docs/retool-app7-reseller-wholesale-implementation.md`.
+
+Queries checklist:
+- [ ] List resellers: `GET /resellers?limit=50&offset={{tableResellers.offset}}&status={{selectResellerStatus.value}}&q={{searchResellers.value}}`
+- [ ] Create reseller: `POST /resellers` (Idempotency-Key)
+- [ ] List credit accounts: `GET /credit-accounts?limit=50&offset={{tableCreditAccounts.offset}}&reseller_id={{tableResellers.selectedRow.id}}`
+- [ ] Set credit limit: `POST /credit-limits` (Idempotency-Key)
+- [ ] Record repayment: `POST /adapters/credit/repayments` (Idempotency-Key)
+- [ ] Credit report: `GET /reports/credit?reseller_id={{tableResellers.selectedRow.id}}&start_date={{dateRange.value.start}}&end_date={{dateRange.value.end}}`
+- [ ] List wholesale orders: `GET /orders?limit=50&offset={{tableWholesaleOrders.offset}}&channel=wholesale&status={{orderStatus.value}}&reseller_id={{tableResellers.selectedRow.id}}`
+- [ ] Create wholesale order: `POST /adapters/wholesale/orders` (Idempotency-Key)
+- [ ] Fulfill wholesale order: `POST /adapters/wholesale/orders/{{tableWholesaleOrders.selectedRow.id}}/fulfill` (Idempotency-Key)
+
+Component checklist:
+- [ ] Tables: `tableResellers`, `tableCreditAccounts`, `tableWholesaleOrders`.
+- [ ] Search + filters: reseller search, reseller status, order status, date range.
+- [ ] Drawers: `drawerResellerCreate`, `drawerCreditLimit`, `drawerRepayment`, `drawerWholesaleOrder`.
+- [ ] Panels: reseller detail + credit summary, credit report, order detail.
+
+Field validation checklist:
+- Reseller
+  - [ ] `name`: required, min length 2.
+  - [ ] `status`: optional enum `active`, `inactive`.
+- Credit limit
+  - [ ] `reseller_id`: required UUID.
+  - [ ] `limit_amount`: required number >= 0.
+  - [ ] `currency`: optional 3-letter code.
+- Repayment
+  - [ ] `credit_account_id`: required UUID.
+  - [ ] `amount`: required number >= 0.
+  - [ ] `method`: optional string.
+  - [ ] `paid_at`: optional ISO date.
+- Wholesale order
+  - [ ] `reseller_id`: required UUID.
+  - [ ] `items`: required array (min 1).
+  - [ ] Each item: `product_id` required UUID, `variant_id` optional UUID, `quantity` required >= 1.
+
+Notes:
+- Treat this as a standalone app when roles and workflows stabilize; it can live in Admin/Ops while validating.

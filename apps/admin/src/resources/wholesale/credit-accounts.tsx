@@ -53,6 +53,15 @@ function CreditLimitButton() {
       notify("Limit amount is required", { type: "warning" });
       return;
     }
+    const currentLimit = Number(record?.limit_amount ?? 0);
+    if (parsedLimit > currentLimit) {
+      const confirmed = window.confirm(
+        `Increase credit limit from ${currentLimit.toLocaleString()} to ${parsedLimit.toLocaleString()}?`
+      );
+      if (!confirmed) {
+        return;
+      }
+    }
     if (!reason.trim()) {
       notify("Reason is required", { type: "warning" });
       return;

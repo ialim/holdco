@@ -186,7 +186,16 @@ export function CreditReportPage() {
                       <TableCell>{formatAmount(repayment.amount)}</TableCell>
                       <TableCell>{formatAmount(repayment.unapplied_amount)}</TableCell>
                       <TableCell>{repayment.method || "-"}</TableCell>
-                      <TableCell>{repayment.allocations?.length ?? 0}</TableCell>
+                      <TableCell>
+                        <Stack spacing={0.5}>
+                          {(repayment.allocations || []).map((alloc, index) => (
+                            <Typography variant="caption" key={`${repayment.repayment_id}-${alloc.order_id}-${index}`}>
+                              {alloc.order_id.slice(0, 8)}... {formatAmount(alloc.amount)}
+                            </Typography>
+                          ))}
+                          {!repayment.allocations?.length && <Typography variant="caption">-</Typography>}
+                        </Stack>
+                      </TableCell>
                     </TableRow>
                   ))}
                   {!item.repayments?.length && (

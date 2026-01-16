@@ -2047,6 +2047,58 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/CreditReportResponse'
+  /v1/audit-logs:
+    parameters:
+      - $ref: '#/components/parameters/GroupId'
+    get:
+      tags: [Audit]
+      operationId: listAuditLogs
+      summary: List audit logs
+      x-rbac:
+        permissions: [audit.logs.read]
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Offset'
+        - name: subsidiary_id
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: actor_id
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: entity_id
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: entity_type
+          in: query
+          schema:
+            type: string
+        - name: action
+          in: query
+          schema:
+            type: string
+        - name: start_date
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: end_date
+          in: query
+          schema:
+            type: string
+            format: date-time
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuditLogListResponse'
         '401':
           $ref: '#/components/responses/Unauthorized'
   /v1/third-parties:
@@ -6880,6 +6932,52 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/CreditReportRow'
+    AuditActor:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+        name:
+          type: string
+    AuditLog:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        subsidiary_id:
+          type: string
+          format: uuid
+        actor_id:
+          type: string
+          format: uuid
+        actor:
+          $ref: '#/components/schemas/AuditActor'
+        action:
+          type: string
+        entity_type:
+          type: string
+        entity_id:
+          type: string
+          format: uuid
+        payload:
+          type: object
+        created_at:
+          type: string
+          format: date-time
+    AuditLogListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/AuditLog'
+        meta:
+          $ref: '#/components/schemas/PageMeta'
     ThirdParty:
       type: object
       properties:

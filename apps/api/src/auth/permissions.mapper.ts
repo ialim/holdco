@@ -28,6 +28,8 @@ const COMPLIANCE_ALL = [
   "compliance.risk.manage",
 ];
 
+const AUDIT_LOGS_READ = "audit.logs.read";
+
 const PROCUREMENT_ALL = [
   "procurement.request.manage",
   "procurement.order.manage",
@@ -159,8 +161,14 @@ const ROLE_PERMISSION_MAP: Record<string, string[]> = {
     "shared_services.request.reject",
   ],
   ADVISORY_LEAD: [...ADVISORY_ALL, "shared_services.request.read"],
-  AUDITOR: ["finance.tax_impact.read", "finance.consolidated_pl.read"],
-  RBAC_ADMIN: ["rbac.roles.manage", "rbac.permissions.read", "tenancy.subsidiaries.manage", TENANCY_LOCATIONS_MANAGE],
+  RBAC_ADMIN: [
+    "rbac.roles.manage",
+    "rbac.permissions.read",
+    "tenancy.subsidiaries.manage",
+    TENANCY_LOCATIONS_MANAGE,
+    AUDIT_LOGS_READ,
+  ],
+  AUDITOR: ["finance.tax_impact.read", "finance.consolidated_pl.read", AUDIT_LOGS_READ],
 };
 
 function normalizeRole(role: string): string {

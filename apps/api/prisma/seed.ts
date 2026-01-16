@@ -105,6 +105,7 @@ async function main() {
   ];
   const logisticsPermissions = ["logistics.shipment.read", "logistics.shipment.write"];
   const reportsPermissions = ["reports.sales", "reports.inventory", "reports.credit"];
+  const auditPermissions = ["audit.logs.read"];
   const sharedServicesPermissions = [
     "shared_services.third_party.read",
     "shared_services.third_party.write",
@@ -172,6 +173,7 @@ async function main() {
     ...loyaltyPermissions,
     ...logisticsPermissions,
     ...reportsPermissions,
+    ...auditPermissions,
     ...sharedServicesPermissions,
     ...hrPermissions,
     ...financePermissions,
@@ -238,8 +240,16 @@ async function main() {
     { name: "Compliance Officer", scope: "group", permissions: [...compliancePermissions, "shared_services.request.read", "shared_services.request.approve", "shared_services.request.reject"] },
     { name: "Procurement Manager", scope: "group", permissions: [...procurementPermissions, "shared_services.request.read", "shared_services.request.approve", "shared_services.request.reject"] },
     { name: "Advisory Lead", scope: "group", permissions: [...advisoryPermissions, "shared_services.request.read"] },
-    { name: "Auditor", scope: "group", permissions: ["finance.tax_impact.read", "finance.consolidated_pl.read"] },
-    { name: "RBAC Admin", scope: "group", permissions: [...rbacPermissions, "tenancy.subsidiaries.manage", "tenancy.locations.manage"] },
+    {
+      name: "Auditor",
+      scope: "group",
+      permissions: ["finance.tax_impact.read", "finance.consolidated_pl.read", "audit.logs.read"],
+    },
+    {
+      name: "RBAC Admin",
+      scope: "group",
+      permissions: [...rbacPermissions, "tenancy.subsidiaries.manage", "tenancy.locations.manage", "audit.logs.read"],
+    },
   ];
 
   for (const preset of rolePresets) {

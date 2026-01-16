@@ -130,6 +130,9 @@ Compliance & risk
 - `compliance.audit.manage`
 - `compliance.risk.manage`
 
+Audit
+- `audit.logs.read`
+
 Procurement
 - `procurement.request.manage`
 - `procurement.order.manage`

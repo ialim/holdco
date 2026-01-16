@@ -191,3 +191,21 @@ QA
 - [ ] Record repayment and confirm report updates.
 - [ ] Create and fulfill a wholesale order.
 - [ ] Verify override toggle appears only with `credit.limit.override` permission.
+
+## App 8: Audit Logs
+Layout guide: `docs/retool-app8-audit-logs-layout.md`.
+
+Queries
+- [ ] Create list query: `qListAuditLogs`.
+
+Components
+- [ ] Filters: `dateRange`, `selectSubsidiary`, `selectAction`, `selectEntityType`, `selectActor`, `searchEntityId`.
+- [ ] Table: `tableAuditLogs`.
+- [ ] Detail panel: `panelAuditDetail`.
+
+Bindings
+- [ ] Filter changes re-run `qListAuditLogs`.
+- [ ] Row select populates payload view.
+
+QA
+- [ ] Filter by `credit.limit.update` and confirm reason in payload.

@@ -404,3 +404,19 @@ Field validation checklist:
 
 Notes:
 - Treat this as a standalone app when roles and workflows stabilize; it can live in Admin/Ops while validating.
+
+## App 8: Audit Logs
+Purpose: Review audit actions with filters and payload detail.
+Layout guide: `docs/retool-app8-audit-logs-layout.md`.
+Implementation steps: `docs/retool-app8-audit-logs-implementation.md`.
+
+Queries checklist:
+- [ ] List audit logs: `GET /audit-logs?limit=50&offset={{tableAuditLogs.offset}}&subsidiary_id={{selectSubsidiary.value}}&actor_id={{selectActor.value}}&entity_id={{searchEntityId.value}}&entity_type={{selectEntityType.value}}&action={{selectAction.value}}&start_date={{dateRange.value.start}}&end_date={{dateRange.value.end}}`
+
+Component checklist:
+- [ ] Filters: date range, subsidiary, action, entity type, actor, entity id search.
+- [ ] Table: `tableAuditLogs` with columns for created_at, action, entity_type, entity_id, actor.email.
+- [ ] Detail panel: shows payload JSON and actor metadata.
+
+Notes:
+- Filter by `action=credit.limit.update` to confirm reason is recorded.

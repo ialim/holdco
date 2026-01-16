@@ -74,6 +74,7 @@ export function AppMenu() {
     normalized.includes("GROUP_ADMIN") ||
     normalized.includes("RBAC_ADMIN");
   const canViewAudit =
+    canManageRbac ||
     permissionList.includes("*") ||
     permissionList.includes("audit.logs.read") ||
     normalized.includes("AUDITOR");

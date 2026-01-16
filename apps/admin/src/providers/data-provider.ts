@@ -69,6 +69,17 @@ export const dataProvider: DataProvider = {
       const paged = filtered.slice(offset, offset + perPage);
       return { data: paged, total: filtered.length };
     }
+    if (resource === "tenant-groups") {
+      const response = await apiFetch(`/tenant-groups`);
+      const { items } = normalizeList(response.data);
+      const query = (filter.q ?? "").toString().toLowerCase();
+      const filtered = query
+        ? items.filter((item: any) => String(item?.name ?? "").toLowerCase().includes(query))
+        : items;
+      const offset = (page - 1) * perPage;
+      const paged = filtered.slice(offset, offset + perPage);
+      return { data: paged, total: filtered.length };
+    }
     if (resource === "app-roles") {
       const response = await apiFetch(`/roles`);
       const { items } = normalizeList(response.data);

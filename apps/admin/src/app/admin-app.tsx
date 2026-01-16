@@ -36,7 +36,7 @@ import {
   PurchaseRequestCreate,
   PurchaseRequestList
 } from "../resources/procurement";
-import { SubsidiaryCreate, SubsidiaryList } from "../resources/tenancy";
+import { SubsidiaryCreate, SubsidiaryList, TenantGroupList } from "../resources/tenancy";
 import { RolesList, UsersList } from "../resources/rbac";
 import { AppRoleCreate, AppRolesList, AppUserCreate, AppUsersList } from "../resources/app-roles";
 import {
@@ -51,6 +51,7 @@ import {
   JournalEntriesCreate,
   JournalEntriesList
 } from "../resources/finance";
+import { AuditLogList } from "../resources/audit";
 
 export default function AdminApp() {
   return (
@@ -70,10 +71,12 @@ export default function AdminApp() {
         <Resource name="facets" list={FacetList} create={FacetCreate} />
         <Resource name="facet-values" list={FacetValueList} create={FacetValueCreate} />
         <Resource name="orders" list={OrdersList} show={OrderShow} options={{ label: "Orders & Payments" }} />
+        <Resource name="audit-logs" list={AuditLogList} options={{ label: "Audit Logs" }} />
         <Resource name="users" list={UsersList} options={{ label: "Users" }} />
         <Resource name="roles" list={RolesList} options={{ label: "Roles" }} />
         <Resource name="app-users" list={AppUsersList} create={AppUserCreate} options={{ label: "App Users" }} />
         <Resource name="app-roles" list={AppRolesList} create={AppRoleCreate} options={{ label: "App Roles" }} />
+        <Resource name="tenant-groups" list={TenantGroupList} options={{ label: "Tenant Groups" }} />
         <Resource name="subsidiaries" list={SubsidiaryList} create={SubsidiaryCreate} options={{ label: "Subsidiaries" }} />
         <Resource name="locations" list={LocationList} create={LocationCreate} options={{ label: "Locations" }} />
         <Resource name="pos/devices" list={DeviceList} create={DeviceCreate} edit={DeviceEdit} options={{ label: "POS Devices" }} />

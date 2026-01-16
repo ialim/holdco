@@ -38,6 +38,14 @@ This layout describes the Audit Logs viewer for Admin/Ops. It relies on `docs/re
 - Table: `tableAuditLogs`
 - Detail panel: `panelAuditDetail`
 
+## Table columns (recommended)
+- `created_at`
+- `action`
+- `entity_type`
+- `entity_id`
+- `actor.email`
+- `subsidiary_id`
+
 ## Query wiring (naming convention)
 - List audit logs: `qListAuditLogs` (GET `/audit-logs`)
 

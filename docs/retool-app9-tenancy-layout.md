@@ -42,6 +42,14 @@ This layout describes the Tenancy & IAM Admin app for managing groups, subsidiar
 - Tables: `tableGroups`, `tableSubsidiaries`, `tableLocations`, `tableUsers`, `tableRoles`, `tableIamUsers`.
 - Drawers: `drawerSubsidiary`, `drawerLocation`, `drawerAppUser`, `drawerRole`, `drawerRolePermissions`, `drawerAssignRoles`.
 
+## Table columns (recommended)
+- Groups: `name`, `created_at`
+- Subsidiaries: `name`, `role`, `status`
+- Locations: `name`, `type`, `city`, `state`
+- App Users: `email`, `name`, `status`, `roles`
+- App Roles: `name`, `scope`
+- IAM Users: `username`, `email`, `enabled`, `group_id`, `subsidiary_id`
+
 ## Query wiring (naming convention)
 - Tenant groups: `qListTenantGroups` (GET `/tenant-groups`)
 - Subsidiaries: `qListSubsidiaries` (GET `/tenants`)

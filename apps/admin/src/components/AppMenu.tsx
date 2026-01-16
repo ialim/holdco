@@ -14,6 +14,7 @@ import {
   FileDownloadOutlined,
   FilterListOutlined,
   HandshakeOutlined,
+  HistoryOutlined,
   Inventory2Outlined,
   LayersOutlined,
   LibraryBooksOutlined,
@@ -71,6 +72,10 @@ export function AppMenu() {
     normalized.includes("HOLDCO_ADMIN") ||
     normalized.includes("GROUP_ADMIN") ||
     normalized.includes("RBAC_ADMIN");
+  const canViewAudit =
+    permissionList.includes("*") ||
+    permissionList.includes("audit.logs.read") ||
+    normalized.includes("AUDITOR");
 
   return (
     <Box sx={{ paddingTop: 1 }}>
@@ -92,6 +97,7 @@ export function AppMenu() {
         <CollapsibleSection title="Security" defaultOpen={false}>
           <MenuItemLink to="/users" primaryText="IdP Users" leftIcon={<SecurityOutlined />} />
           <MenuItemLink to="/roles" primaryText="IdP Roles" leftIcon={<SecurityOutlined />} />
+          {canViewAudit && <MenuItemLink to="/audit-logs" primaryText="Audit Logs" leftIcon={<HistoryOutlined />} />}
         </CollapsibleSection>
       )}
 
@@ -103,6 +109,7 @@ export function AppMenu() {
       )}
 
       <CollapsibleSection title="Tenancy" defaultOpen={false}>
+        <MenuItemLink to="/tenant-groups" primaryText="Groups" leftIcon={<CorporateFareOutlined />} />
         <MenuItemLink to="/subsidiaries" primaryText="Subsidiaries" leftIcon={<CorporateFareOutlined />} />
         <MenuItemLink to="/locations" primaryText="Locations" leftIcon={<LocationOnOutlined />} />
       </CollapsibleSection>

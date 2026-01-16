@@ -20,6 +20,7 @@ Tenancy
 - `qListTenantGroups` (GET `/tenant-groups`)
   - Tip: For SUPER_ADMIN/HOLDCO_ADMIN, allow an override to call without `X-Group-Id` to list all groups.
 - `qListSubsidiaries` (GET `/tenants`)
+  - Note: this endpoint returns a plain array, not `{ data: [] }`. Bind tables to `{{qListSubsidiaries.data}}`.
 - `qCreateSubsidiary` (POST `/subsidiaries`)
 - `qListLocations` (GET `/locations`)
 - `qCreateLocation` (POST `/locations`)
@@ -49,7 +50,92 @@ All write queries should include `Idempotency-Key: {{newIdempotencyKey.value}}`.
 - Table row select -> populate drawers/forms for edits and assignments.
 - Drawer submit -> write query -> refresh list + close drawer.
 
-## 4) QA smoke tests
+## 4) Suggested query bodies
+`qCreateSubsidiary` body:
+```json
+{
+  "name": "{{inputSubsidiaryName.value}}",
+  "role": "{{selectSubsidiaryRole.value}}",
+  "status": "{{selectSubsidiaryStatus.value}}",
+  "create_default_location": {{toggleDefaultLocation.value}},
+  "location": {
+    "name": "{{inputDefaultLocationName.value}}",
+    "type": "{{inputDefaultLocationType.value}}",
+    "address_line1": "{{inputLocationAddress1.value}}",
+    "city": "{{inputLocationCity.value}}",
+    "state": "{{inputLocationState.value}}",
+    "country": "{{inputLocationCountry.value}}"
+  }
+}
+```
+
+`qCreateLocation` body:
+```json
+{
+  "subsidiary_id": "{{selectSubsidiary.value}}",
+  "type": "{{inputLocationType.value}}",
+  "name": "{{inputLocationName.value}}",
+  "address_line1": "{{inputLocationAddress1.value}}",
+  "city": "{{inputLocationCity.value}}",
+  "state": "{{inputLocationState.value}}",
+  "country": "{{inputLocationCountry.value}}"
+}
+```
+
+`qCreateAppUser` body:
+```json
+{
+  "email": "{{inputUserEmail.value}}",
+  "name": "{{inputUserName.value}}",
+  "status": "{{selectUserStatus.value}}",
+  "role_id": "{{selectRole.value}}",
+  "subsidiary_id": "{{selectSubsidiary.value}}",
+  "location_id": "{{selectLocation.value}}"
+}
+```
+
+`qAssignAppRole` body:
+```json
+{
+  "role_id": "{{selectAssignRole.value}}",
+  "subsidiary_id": "{{selectSubsidiary.value}}",
+  "location_id": "{{selectLocation.value}}"
+}
+```
+
+`qCreateRole` body:
+```json
+{
+  "name": "{{inputRoleName.value}}",
+  "scope": "{{selectRoleScope.value}}",
+  "permissions": {{multiselectPermissions.value || []}}
+}
+```
+
+`qUpdateRolePermissions` body:
+```json
+{
+  "permissions": {{multiselectPermissions.value || []}}
+}
+```
+
+`qAssignIamRoles` body:
+```json
+{
+  "roles": {{multiselectIamRoles.value || []}}
+}
+```
+
+`qUpdateIamAttributes` body:
+```json
+{
+  "group_id": "{{selectGroup.value}}",
+  "subsidiary_id": "{{selectSubsidiary.value}}",
+  "location_id": "{{selectLocation.value}}"
+}
+```
+
+## 5) QA smoke tests
 - Create a subsidiary and confirm a default location is created when enabled.
 - Create a new location for the subsidiary.
 - Create an app user and assign an app role.

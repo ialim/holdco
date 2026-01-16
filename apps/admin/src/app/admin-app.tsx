@@ -52,6 +52,7 @@ import {
   JournalEntriesList
 } from "../resources/finance";
 import { AuditLogList } from "../resources/audit";
+import { PaymentProviderConfigCreate, PaymentProviderConfigEdit, PaymentProviderConfigList } from "../resources/payments";
 
 export default function AdminApp() {
   return (
@@ -81,6 +82,13 @@ export default function AdminApp() {
         <Resource name="locations" list={LocationList} create={LocationCreate} options={{ label: "Locations" }} />
         <Resource name="pos/devices" list={DeviceList} create={DeviceCreate} edit={DeviceEdit} options={{ label: "POS Devices" }} />
         <Resource name="pos/shifts" list={ShiftList} show={ShiftShow} create={ShiftCreate} options={{ label: "POS Shifts" }} />
+        <Resource
+          name="payments/providers"
+          list={PaymentProviderConfigList}
+          create={PaymentProviderConfigCreate}
+          edit={PaymentProviderConfigEdit}
+          options={{ label: "Payments Config" }}
+        />
         <Resource name="procurement/purchase-requests" list={PurchaseRequestList} create={PurchaseRequestCreate} options={{ label: "Purchase Requests" }} />
         <Resource name="procurement/purchase-orders" list={PurchaseOrderList} create={PurchaseOrderCreate} options={{ label: "Purchase Orders" }} />
         <Resource

@@ -22,6 +22,7 @@ import {
   LocalShippingOutlined,
   LocalMallOutlined,
   LocationOnOutlined,
+  PaymentsOutlined,
   PointOfSaleOutlined,
   ReceiptOutlined,
   ReceiptLongOutlined,
@@ -78,6 +79,8 @@ export function AppMenu() {
     permissionList.includes("*") ||
     permissionList.includes("audit.logs.read") ||
     normalized.includes("AUDITOR");
+  const canManagePaymentsConfig =
+    permissionList.includes("*") || permissionList.includes("payments.config.manage");
   const canViewSecuritySection = canManageRbac || canViewAudit;
 
   return (
@@ -95,6 +98,12 @@ export function AppMenu() {
       <CollapsibleSection title="Orders" defaultOpen>
         <MenuItemLink to="/orders" primaryText="Orders & Payments" leftIcon={<ReceiptLongOutlined />} />
       </CollapsibleSection>
+
+      {canManagePaymentsConfig && (
+        <CollapsibleSection title="Payments" defaultOpen={false}>
+          <MenuItemLink to="/payments/providers" primaryText="Provider Configs" leftIcon={<PaymentsOutlined />} />
+        </CollapsibleSection>
+      )}
 
       {canViewSecuritySection && (
         <CollapsibleSection title="Security" defaultOpen={false}>

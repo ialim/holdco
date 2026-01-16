@@ -57,6 +57,10 @@ export class ListQueryDto {
 
   @IsOptional()
   @IsUUID()
+  reseller_id?: string;
+
+  @IsOptional()
+  @IsUUID()
   price_list_id?: string;
 
   @IsOptional()

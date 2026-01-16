@@ -70,6 +70,7 @@ export class CreditService {
     const where = {
       groupId,
       subsidiaryId,
+      ...(query.reseller_id ? { resellerId: query.reseller_id } : {}),
       ...(query.status ? { status: query.status } : {}),
     };
 

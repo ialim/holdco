@@ -84,6 +84,36 @@ export function AppMenu() {
     permissionList.includes("*") ||
     permissionList.includes("payments.config.manage");
   const canViewSecuritySection = canManageRbac || canViewAudit;
+  const canViewResellers =
+    canManageRbac ||
+    permissionList.includes("*") ||
+    permissionList.includes("credit.reseller.read") ||
+    permissionList.includes("credit.reseller.write");
+  const canViewCreditAccounts =
+    canManageRbac ||
+    permissionList.includes("*") ||
+    permissionList.includes("credit.account.read") ||
+    permissionList.includes("credit.account.write");
+  const canManageRepayments =
+    canManageRbac ||
+    permissionList.includes("*") ||
+    permissionList.includes("credit.repayment.write");
+  const canViewCreditReport =
+    canManageRbac ||
+    permissionList.includes("*") ||
+    permissionList.includes("reports.credit");
+  const canViewWholesaleOrders =
+    canManageRbac ||
+    permissionList.includes("*") ||
+    permissionList.includes("orders.read") ||
+    permissionList.includes("orders.write") ||
+    permissionList.includes("orders.fulfill");
+  const canViewWholesaleSection =
+    canViewResellers ||
+    canViewCreditAccounts ||
+    canManageRepayments ||
+    canViewCreditReport ||
+    canViewWholesaleOrders;
 
   return (
     <Box sx={{ paddingTop: 1 }}>
@@ -100,6 +130,26 @@ export function AppMenu() {
       <CollapsibleSection title="Orders" defaultOpen>
         <MenuItemLink to="/orders" primaryText="Orders & Payments" leftIcon={<ReceiptLongOutlined />} />
       </CollapsibleSection>
+
+      {canViewWholesaleSection && (
+        <CollapsibleSection title="Reseller & Wholesale" defaultOpen={false}>
+          {canViewResellers && (
+            <MenuItemLink to="/resellers" primaryText="Resellers" leftIcon={<HandshakeOutlined />} />
+          )}
+          {canViewCreditAccounts && (
+            <MenuItemLink to="/credit-accounts" primaryText="Credit Accounts" leftIcon={<AccountBalanceOutlined />} />
+          )}
+          {canViewCreditReport && (
+            <MenuItemLink to="/credit-report" primaryText="Credit Report" leftIcon={<ReceiptOutlined />} />
+          )}
+          {canManageRepayments && (
+            <MenuItemLink to="/repayments/create" primaryText="Record Repayment" leftIcon={<ReceiptOutlined />} />
+          )}
+          {canViewWholesaleOrders && (
+            <MenuItemLink to="/wholesale-orders" primaryText="Wholesale Orders" leftIcon={<LocalMallOutlined />} />
+          )}
+        </CollapsibleSection>
+      )}
 
       {canManagePaymentsConfig && (
         <CollapsibleSection title="Payments" defaultOpen={false}>

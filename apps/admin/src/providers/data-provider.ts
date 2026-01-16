@@ -125,6 +125,19 @@ export const dataProvider: DataProvider = {
       const { items, total } = normalizeList(response.data);
       return { data: items, total };
     }
+    if (resource === "wholesale-orders") {
+      const query = buildQuery({
+        limit: perPage,
+        offset: (page - 1) * perPage,
+        sort: field,
+        order: order,
+        ...filter,
+        channel: "wholesale"
+      });
+      const response = await apiFetch(`/orders${query}`);
+      const { items, total } = normalizeList(response.data);
+      return { data: items, total };
+    }
     const query = buildQuery({
       limit: perPage,
       offset: (page - 1) * perPage,
@@ -155,6 +168,11 @@ export const dataProvider: DataProvider = {
       const response = await apiFetch(`/pos/devices?device_id=${params.id}`);
       const { items } = normalizeList(response.data);
       return { data: mapPosDeviceRecord(items[0]) };
+    }
+    if (resource === "wholesale-orders") {
+      const response = await apiFetch(`/orders/${params.id}`);
+      const record = (response.data as any)?.data ?? response.data;
+      return { data: record };
     }
     const response = await apiFetch(`/${resource}/${params.id}`);
     const record = (response.data as any)?.data ?? response.data;
@@ -217,6 +235,15 @@ export const dataProvider: DataProvider = {
         method: "POST",
         body: payload,
         headers: { ...idempotencyHeaders(), ...(locationId ? { "X-Location-Id": locationId } : {}) }
+      });
+      const record = (response.data as any)?.data ?? response.data;
+      return { data: record };
+    }
+    if (resource === "wholesale-orders") {
+      const response = await apiFetch(`/adapters/wholesale/orders`, {
+        method: "POST",
+        body: params.data,
+        headers: idempotencyHeaders()
       });
       const record = (response.data as any)?.data ?? response.data;
       return { data: record };

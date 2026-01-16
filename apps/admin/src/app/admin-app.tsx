@@ -53,6 +53,16 @@ import {
 } from "../resources/finance";
 import { AuditLogList } from "../resources/audit";
 import { PaymentProviderConfigCreate, PaymentProviderConfigEdit, PaymentProviderConfigList } from "../resources/payments";
+import {
+  CreditAccountCreate,
+  CreditAccountList,
+  CreditReportPage,
+  RepaymentCreate,
+  ResellerCreate,
+  ResellerList,
+  WholesaleOrderCreate,
+  WholesaleOrderList
+} from "../resources/wholesale";
 
 export default function AdminApp() {
   return (
@@ -72,6 +82,11 @@ export default function AdminApp() {
         <Resource name="facets" list={FacetList} create={FacetCreate} />
         <Resource name="facet-values" list={FacetValueList} create={FacetValueCreate} />
         <Resource name="orders" list={OrdersList} show={OrderShow} options={{ label: "Orders & Payments" }} />
+        <Resource name="wholesale-orders" list={WholesaleOrderList} show={OrderShow} create={WholesaleOrderCreate} options={{ label: "Wholesale Orders" }} />
+        <Resource name="resellers" list={ResellerList} create={ResellerCreate} options={{ label: "Resellers" }} />
+        <Resource name="credit-accounts" list={CreditAccountList} create={CreditAccountCreate} options={{ label: "Credit Accounts" }} />
+        <Resource name="repayments" create={RepaymentCreate} options={{ label: "Repayments" }} />
+        <Resource name="credit-report" list={CreditReportPage} options={{ label: "Credit Report" }} />
         <Resource name="audit-logs" list={AuditLogList} options={{ label: "Audit Logs" }} />
         <Resource name="users" list={UsersList} options={{ label: "Users" }} />
         <Resource name="roles" list={RolesList} options={{ label: "Roles" }} />

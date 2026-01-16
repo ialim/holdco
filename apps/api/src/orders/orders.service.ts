@@ -25,6 +25,7 @@ export class OrdersService {
       ...(query.status ? { status: query.status } : {}),
       ...(query.channel ? { channel: query.channel } : {}),
       ...(query.location_id ? { locationId: query.location_id } : {}),
+      ...(query.reseller_id ? { resellerId: query.reseller_id } : {}),
       ...(createdAt.gte || createdAt.lte ? { createdAt } : {}),
     };
 

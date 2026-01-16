@@ -93,7 +93,9 @@ Phase 0: Use Admin/Ops with role-gated menu entries for wholesale.
 Phase 1: Split to standalone app once workflows are stable and roles are validated.
 Phase 2: Add reporting and advanced credit operations (aging buckets, dunning).
 
-## Open Questions
-- Do we need approval workflow for credit limit changes?
-- Should order creation enforce available credit at time of checkout?
-- Do repayments reconcile against specific invoices or general balance?
+## Decision Record (MVP)
+- Credit limit changes require `credit.limit.write` and are audited with reason + actor.
+- Wholesale order creation enforces available credit; override requires a separate admin permission.
+- Repayments auto-apply FIFO to oldest open invoices; store allocation links.
+
+Implementation tasks and follow-ups: `docs/reseller-wholesale-mvp-tasks.md`.

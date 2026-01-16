@@ -77,6 +77,16 @@ const POS_OPERATOR = [
   "loyalty.points.redeem",
 ];
 
+const CREDIT_MANAGER = [
+  "credit.reseller.read",
+  "credit.reseller.write",
+  "credit.account.read",
+  "credit.account.write",
+  "credit.limit.write",
+  "credit.limit.override",
+  "credit.repayment.write",
+];
+
 const ADVISORY_ALL = ["advisory.engagement.manage", "advisory.deliverable.manage"];
 
 const FINANCE_ALL = [
@@ -133,6 +143,7 @@ const ROLE_PERMISSION_MAP: Record<string, string[]> = {
   ],
   POS_MANAGER: POS_ALL,
   RETAIL_POS_OPERATOR: POS_OPERATOR,
+  RESELLER_CREDIT_MANAGER: CREDIT_MANAGER,
   SUBSIDIARY_REQUESTER: ["shared_services.request.read", "shared_services.request.create"],
   HR_MANAGER: [...HR_ALL, "shared_services.request.read"],
   COMPLIANCE_OFFICER: [

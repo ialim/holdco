@@ -123,12 +123,11 @@ export class AuditService {
       ...(query.q ? { action: { contains: query.q, mode: "insensitive" as const } } : {}),
     };
 
-    const [total, actions] = await this.prisma.$transaction([
-      this.prisma.auditLog.count({ where, distinct: ["action"] }),
-      this.prisma.auditLog.findMany({
+    const [allActions, actions] = await this.prisma.$transaction([
+      this.prisma.auditLog.groupBy({ by: ["action"], where, orderBy: { action: "asc" } }),
+      this.prisma.auditLog.groupBy({
+        by: ["action"],
         where,
-        distinct: ["action"],
-        select: { action: true },
         orderBy: { action: "asc" },
         skip: offset,
         take: limit,
@@ -140,7 +139,7 @@ export class AuditService {
       meta: {
         limit,
         offset,
-        total,
+        total: allActions.length,
       },
     };
   }
@@ -157,12 +156,11 @@ export class AuditService {
       ...(query.q ? { entityType: { contains: query.q, mode: "insensitive" as const } } : {}),
     };
 
-    const [total, types] = await this.prisma.$transaction([
-      this.prisma.auditLog.count({ where, distinct: ["entityType"] }),
-      this.prisma.auditLog.findMany({
+    const [allTypes, types] = await this.prisma.$transaction([
+      this.prisma.auditLog.groupBy({ by: ["entityType"], where, orderBy: { entityType: "asc" } }),
+      this.prisma.auditLog.groupBy({
+        by: ["entityType"],
         where,
-        distinct: ["entityType"],
-        select: { entityType: true },
         orderBy: { entityType: "asc" },
         skip: offset,
         take: limit,
@@ -174,7 +172,7 @@ export class AuditService {
       meta: {
         limit,
         offset,
-        total,
+        total: allTypes.length,
       },
     };
   }
@@ -201,23 +199,25 @@ export class AuditService {
         : {}),
     };
 
-    const [total, rows] = await this.prisma.$transaction([
-      this.prisma.auditLog.count({ where, distinct: ["actorId"] }),
-      this.prisma.auditLog.findMany({
+    const [allActors, rows] = await this.prisma.$transaction([
+      this.prisma.auditLog.groupBy({ by: ["actorId"], where, orderBy: { actorId: "asc" } }),
+      this.prisma.auditLog.groupBy({
+        by: ["actorId"],
         where,
-        distinct: ["actorId"],
-        select: {
-          actorId: true,
-          actor: { select: { id: true, email: true, name: true } },
-        },
         orderBy: { actorId: "asc" },
         skip: offset,
         take: limit,
       }),
     ]);
 
-    const data = rows
-      .map((row) => row.actor)
+    const actorIds = rows.map((row) => row.actorId).filter((id): id is string => Boolean(id));
+    const actors = await this.prisma.user.findMany({
+      where: { id: { in: actorIds } },
+      select: { id: true, email: true, name: true },
+    });
+    const actorMap = new Map(actors.map((actor) => [actor.id, actor]));
+    const data = actorIds
+      .map((id) => actorMap.get(id))
       .filter((actor): actor is { id: string; email: string; name: string | null } => Boolean(actor))
       .map((actor) => ({
         id: actor.id,
@@ -230,7 +230,7 @@ export class AuditService {
       meta: {
         limit,
         offset,
-        total,
+        total: allActors.length,
       },
     };
   }

@@ -29,6 +29,7 @@ tags:
   - name: Compliance
   - name: Procurement
   - name: Advisory
+  - name: IAM
   - name: Adapters
 paths:
   /v1/auth/login:
@@ -74,6 +75,24 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/Subsidiary'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /v1/tenant-groups:
+    parameters:
+      - $ref: '#/components/parameters/GroupId'
+    get:
+      tags: [Tenancy]
+      operationId: listTenantGroups
+      summary: List tenant groups
+      x-rbac:
+        permissions: [tenancy.read]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TenantGroupListResponse'
         '401':
           $ref: '#/components/responses/Unauthorized'
   /v1/subsidiaries:
@@ -122,6 +141,31 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/UserListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    post:
+      tags: [Tenancy]
+      operationId: createAppUser
+      summary: Create app user
+      x-rbac:
+        permissions: [rbac.roles.manage]
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateAppUserRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '400':
+          $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
   /v1/locations:
@@ -3531,6 +3575,107 @@ paths:
                 $ref: '#/components/schemas/PermissionListResponse'
         '401':
           $ref: '#/components/responses/Unauthorized'
+  /v1/iam/users:
+    parameters:
+      - $ref: '#/components/parameters/GroupId'
+    get:
+      tags: [IAM]
+      operationId: listIamUsers
+      summary: List IAM users
+      x-rbac:
+        permissions: [rbac.roles.manage]
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Offset'
+        - name: q
+          in: query
+          schema:
+            type: string
+        - name: include_unscoped
+          in: query
+          schema:
+            type: boolean
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IamUserListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /v1/iam/roles:
+    get:
+      tags: [IAM]
+      operationId: listIamRoles
+      summary: List IAM roles
+      x-rbac:
+        permissions: [rbac.roles.manage]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IamRoleListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /v1/iam/users/{user_id}/roles:
+    parameters:
+      - $ref: '#/components/parameters/UserId'
+    post:
+      tags: [IAM]
+      operationId: assignIamUserRoles
+      summary: Assign IAM roles
+      x-rbac:
+        permissions: [rbac.roles.manage]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AssignIamRolesRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AssignIamRolesResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /v1/iam/users/{user_id}/attributes:
+    parameters:
+      - $ref: '#/components/parameters/UserId'
+    post:
+      tags: [IAM]
+      operationId: updateIamUserAttributes
+      summary: Update IAM user attributes
+      x-rbac:
+        permissions: [rbac.roles.manage]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateIamUserAttributesRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UpdateIamUserAttributesResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
   /v1/compliance/policies:
     parameters:
       - $ref: '#/components/parameters/GroupId'
@@ -4887,6 +5032,9 @@ components:
         name:
           type: string
           example: Operations Manager
+        status:
+          type: string
+          example: active
         roles:
           type: array
           items:
@@ -4906,6 +5054,44 @@ components:
             $ref: '#/components/schemas/User'
         meta:
           $ref: '#/components/schemas/PageMeta'
+    CreateAppUserRequest:
+      type: object
+      required: [email, role_id]
+      properties:
+        email:
+          type: string
+          format: email
+        name:
+          type: string
+        status:
+          type: string
+        role_id:
+          type: string
+          format: uuid
+        subsidiary_id:
+          type: string
+          format: uuid
+        location_id:
+          type: string
+          format: uuid
+    TenantGroup:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+    TenantGroupListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/TenantGroup'
     Subsidiary:
       type: object
       properties:
@@ -7346,6 +7532,111 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Role'
+    IamRole:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        composite:
+          type: boolean
+        permissions:
+          type: array
+          items:
+            type: string
+    IamRoleListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/IamRole'
+    IamUser:
+      type: object
+      properties:
+        id:
+          type: string
+        username:
+          type: string
+        email:
+          type: string
+          format: email
+        name:
+          type: string
+        enabled:
+          type: boolean
+        group_id:
+          type: string
+          format: uuid
+        subsidiary_id:
+          type: string
+          format: uuid
+        location_id:
+          type: string
+          format: uuid
+        roles:
+          type: array
+          items:
+            type: string
+        permissions:
+          type: array
+          items:
+            type: string
+    IamUserListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/IamUser'
+        meta:
+          $ref: '#/components/schemas/PageMeta'
+    AssignIamRolesRequest:
+      type: object
+      required: [roles]
+      properties:
+        roles:
+          type: array
+          items:
+            type: string
+    AssignIamRolesResponse:
+      type: object
+      properties:
+        user_id:
+          type: string
+        roles:
+          type: array
+          items:
+            type: string
+    UpdateIamUserAttributesRequest:
+      type: object
+      properties:
+        group_id:
+          type: string
+          format: uuid
+        subsidiary_id:
+          type: string
+          format: uuid
+        location_id:
+          type: string
+          format: uuid
+    UpdateIamUserAttributesResponse:
+      type: object
+      properties:
+        user_id:
+          type: string
+        group_id:
+          type: string
+          format: uuid
+        subsidiary_id:
+          type: string
+          format: uuid
+        location_id:
+          type: string
+          format: uuid
     Permission:
       type: object
       properties:

@@ -107,6 +107,24 @@ export const dataProvider: DataProvider = {
       const paged = filtered.slice(offset, offset + perPage);
       return { data: paged, total: filtered.length };
     }
+    if (resource === "audit-logs") {
+      const toIso = (value: any) => (value instanceof Date ? value.toISOString() : value);
+      const query = buildQuery({
+        limit: perPage,
+        offset: (page - 1) * perPage,
+        subsidiary_id: filter.subsidiary_id,
+        actor_id: filter.actor_id,
+        actor_email: filter.actor_email,
+        entity_id: filter.entity_id,
+        entity_type: filter.entity_type,
+        action: filter.action,
+        start_date: toIso(filter.start_date),
+        end_date: toIso(filter.end_date)
+      });
+      const response = await apiFetch(`/audit-logs${query}`);
+      const { items, total } = normalizeList(response.data);
+      return { data: items, total };
+    }
     const query = buildQuery({
       limit: perPage,
       offset: (page - 1) * perPage,

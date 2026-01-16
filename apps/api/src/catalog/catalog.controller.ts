@@ -215,6 +215,16 @@ export class CatalogController {
   }
 
   @Permissions("catalog.variant.read")
+  @Get("variants/:variant_id")
+  getVariant(
+    @Headers("x-group-id") groupId: string,
+    @Headers("x-subsidiary-id") subsidiaryId: string,
+    @Param("variant_id", new ParseUUIDPipe()) variantId: string,
+  ) {
+    return this.catalogService.getVariant(groupId, subsidiaryId, variantId);
+  }
+
+  @Permissions("catalog.variant.read")
   @Get("categories/variants")
   listCategoryVariants(
     @Headers("x-group-id") groupId: string,

@@ -73,6 +73,8 @@ export class PricingService {
       groupId,
       OR: [{ subsidiaryId }, { subsidiaryId: null }],
       ...(query.price_list_id ? { priceListId: query.price_list_id } : {}),
+      ...(query.product_id ? { productId: query.product_id } : {}),
+      ...(query.variant_id ? { variantId: query.variant_id } : {}),
     };
 
     const [total, priceRules] = await this.prisma.$transaction([

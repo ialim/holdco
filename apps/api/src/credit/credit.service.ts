@@ -63,6 +63,23 @@ export class CreditService {
     };
   }
 
+  async getReseller(groupId: string, subsidiaryId: string, resellerId: string) {
+    if (!groupId) throw new BadRequestException("X-Group-Id header is required");
+    if (!subsidiaryId) throw new BadRequestException("X-Subsidiary-Id header is required");
+
+    const reseller = await this.prisma.reseller.findFirst({
+      where: { id: resellerId, groupId, subsidiaryId },
+    });
+
+    if (!reseller) throw new NotFoundException("Reseller not found");
+
+    return {
+      id: reseller.id,
+      name: reseller.name,
+      status: reseller.status,
+    };
+  }
+
   async listCreditAccounts(groupId: string, subsidiaryId: string, query: ListQueryDto) {
     if (!groupId) throw new BadRequestException("X-Group-Id header is required");
     if (!subsidiaryId) throw new BadRequestException("X-Subsidiary-Id header is required");

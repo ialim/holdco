@@ -12,12 +12,18 @@
 }
 
 html,
-body {
+body,
+#__next {
   padding: 0;
   margin: 0;
   font-family: var(--font-body);
   background: radial-gradient(circle at top left, #ffffff, var(--bg));
   color: var(--ink);
+  height: 100%;
+}
+
+body {
+  overflow: hidden;
 }
 
 body::before {
@@ -70,6 +76,25 @@ body::before {
   padding: 16px;
   box-shadow: 0 18px 35px rgba(30, 26, 18, 0.1);
   border: 1px solid var(--stroke);
+}
+
+.RaLayout-appFrame {
+  margin-top: 0 !important;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.RaLayout-contentWithSidebar {
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.RaLayout-content {
+  height: 100%;
+  min-height: 0;
+  overflow: auto;
+  padding-top: var(--appbar-height, 72px);
 }
 
 .RaList-main {

@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useLocation } from "react-router-dom";
 import {
   Create,
   Datagrid,
@@ -117,8 +118,12 @@ function CreditLimitButton() {
 }
 
 export function CreditAccountList() {
+  const location = useLocation();
+  const resellerId = useMemo(() => new URLSearchParams(location.search).get("reseller_id") || "", [location.search]);
+  const defaultFilters = resellerId ? { reseller_id: resellerId } : undefined;
+
   return (
-    <List filters={accountFilters} perPage={50}>
+    <List filters={accountFilters} perPage={50} filterDefaultValues={defaultFilters}>
       <Datagrid rowClick={false}>
         <TextField source="reseller_id" label="Reseller ID" />
         <NumberField source="limit_amount" />

@@ -70,12 +70,18 @@ export class ReportsService {
     };
   }
 
-  async creditReport(groupId: string, subsidiaryId: string) {
+  async creditReport(groupId: string, subsidiaryId: string, query?: ReportRangeDto) {
     if (!groupId) throw new BadRequestException("X-Group-Id header is required");
     if (!subsidiaryId) throw new BadRequestException("X-Subsidiary-Id header is required");
 
+    const accountWhere = {
+      groupId,
+      subsidiaryId,
+      ...(query?.reseller_id ? { resellerId: query.reseller_id } : {}),
+    };
+
     const accounts = await this.prisma.creditAccount.findMany({
-      where: { groupId, subsidiaryId },
+      where: accountWhere,
       include: { reseller: true },
     });
 

@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Headers, Post, Query, Req, UseGuards, UsePipes, ValidationPipe } from "@nestjs/common";
+import { Body, Controller, Get, Headers, Param, ParseUUIDPipe, Post, Query, Req, UseGuards, UsePipes, ValidationPipe } from "@nestjs/common";
 import { Request } from "express";
 import { Permissions } from "../auth/permissions.decorator";
 import { PermissionsGuard } from "../auth/permissions.guard";
@@ -27,6 +27,16 @@ export class CreditController {
     @Query() query: ListQueryDto,
   ) {
     return this.creditService.listResellers(groupId, subsidiaryId, query);
+  }
+
+  @Permissions("credit.reseller.read")
+  @Get("resellers/:reseller_id")
+  getReseller(
+    @Headers("x-group-id") groupId: string,
+    @Headers("x-subsidiary-id") subsidiaryId: string,
+    @Param("reseller_id", new ParseUUIDPipe()) resellerId: string,
+  ) {
+    return this.creditService.getReseller(groupId, subsidiaryId, resellerId);
   }
 
   @Permissions("credit.reseller.write")

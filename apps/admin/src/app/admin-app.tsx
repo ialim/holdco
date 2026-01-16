@@ -60,6 +60,7 @@ import {
   RepaymentCreate,
   ResellerCreate,
   ResellerList,
+  ResellerShow,
   WholesaleOrderCreate,
   WholesaleOrderList
 } from "../resources/wholesale";
@@ -83,7 +84,7 @@ export default function AdminApp() {
         <Resource name="facet-values" list={FacetValueList} create={FacetValueCreate} />
         <Resource name="orders" list={OrdersList} show={OrderShow} options={{ label: "Orders & Payments" }} />
         <Resource name="wholesale-orders" list={WholesaleOrderList} show={OrderShow} create={WholesaleOrderCreate} options={{ label: "Wholesale Orders" }} />
-        <Resource name="resellers" list={ResellerList} create={ResellerCreate} options={{ label: "Resellers" }} />
+        <Resource name="resellers" list={ResellerList} show={ResellerShow} create={ResellerCreate} options={{ label: "Resellers" }} />
         <Resource name="credit-accounts" list={CreditAccountList} create={CreditAccountCreate} options={{ label: "Credit Accounts" }} />
         <Resource name="repayments" create={RepaymentCreate} options={{ label: "Repayments" }} />
         <Resource name="credit-report" list={CreditReportPage} options={{ label: "Credit Report" }} />

@@ -179,6 +179,15 @@ export const dataProvider: DataProvider = {
     return { data: record };
   },
   getMany: async (resource, params) => {
+    if (resource === "products" || resource === "variants" || resource === "price-lists") {
+      const responses = await Promise.all(
+        params.ids.map((id) => apiFetch(`/${resource}/${id}`))
+      );
+      const items = responses
+        .map((response) => (response.data as any)?.data ?? response.data)
+        .filter(Boolean);
+      return { data: items };
+    }
     const query = buildQuery({ ids: params.ids.join(",") });
     const response = await apiFetch(`/${resource}${query}`);
     const { items } = normalizeList(response.data);

@@ -50,7 +50,8 @@ export class AdaptersController {
     @Req() req: Request,
   ) {
     const permissions = Array.isArray((req as any).user?.permissions) ? (req as any).user.permissions : [];
-    const allowCreditOverride = permissions.includes("*") || permissions.includes("credit.limit.override");
+    const canOverride = permissions.includes("*") || permissions.includes("credit.limit.override");
+    const allowCreditOverride = canOverride && body.allow_credit_override === true;
     const order = await this.adaptersService.createWholesaleOrder({
       groupId,
       subsidiaryId,

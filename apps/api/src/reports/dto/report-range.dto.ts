@@ -1,4 +1,4 @@
-import { IsDateString, IsOptional } from "class-validator";
+import { IsDateString, IsOptional, IsUUID } from "class-validator";
 
 export class ReportRangeDto {
   @IsOptional()
@@ -8,4 +8,8 @@ export class ReportRangeDto {
   @IsOptional()
   @IsDateString()
   end_date?: string;
+
+  @IsOptional()
+  @IsUUID()
+  reseller_id?: string;
 }

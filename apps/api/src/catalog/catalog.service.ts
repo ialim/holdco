@@ -716,6 +716,32 @@ export class CatalogService {
     };
   }
 
+  async getVariant(groupId: string, subsidiaryId: string, variantId: string) {
+    if (!groupId) throw new BadRequestException("X-Group-Id header is required");
+    if (!subsidiaryId) throw new BadRequestException("X-Subsidiary-Id header is required");
+
+    const subsidiary = await this.getSubsidiary(groupId, subsidiaryId);
+    const where: Prisma.VariantWhereInput = { id: variantId, groupId };
+    if (this.isTradingSubsidiary(subsidiary)) {
+      where.AND = [{ OR: [{ subsidiaryId }, { subsidiaryId: null }] }];
+    } else {
+      where.AND = [
+        {
+          assortments: { some: { subsidiaryId, status: "active" } },
+        },
+      ];
+    }
+
+    const variant = await this.prisma.variant.findFirst({
+      where,
+      include: { facets: { include: { facetValue: { include: { facet: true } } } } },
+    });
+
+    if (!variant) throw new NotFoundException("Variant not found");
+
+    return this.mapVariant(variant);
+  }
+
   async listCategoryVariantsById(
     groupId: string,
     subsidiaryId: string,

@@ -1,4 +1,4 @@
-import { IsArray, IsOptional, IsString, IsUUID, Matches, Min, ValidateNested } from "class-validator";
+import { IsArray, IsBoolean, IsOptional, IsString, IsUUID, Matches, Min, ValidateNested } from "class-validator";
 import { Type } from "class-transformer";
 import { CreateOrderItemDto } from "./create-order-item.dto";
 
@@ -39,4 +39,9 @@ export class CreateOrderDto {
   @IsOptional()
   @IsString()
   notes?: string;
+
+  @IsOptional()
+  @Type(() => Boolean)
+  @IsBoolean()
+  allow_credit_override?: boolean;
 }

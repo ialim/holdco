@@ -28,7 +28,11 @@ export class ReportsController {
 
   @Permissions("reports.credit")
   @Get("reports/credit")
-  creditReport(@Headers("x-group-id") groupId: string, @Headers("x-subsidiary-id") subsidiaryId: string) {
-    return this.reportsService.creditReport(groupId, subsidiaryId);
+  creditReport(
+    @Headers("x-group-id") groupId: string,
+    @Headers("x-subsidiary-id") subsidiaryId: string,
+    @Query() query: ReportRangeDto,
+  ) {
+    return this.reportsService.creditReport(groupId, subsidiaryId, query);
   }
 }

@@ -55,7 +55,7 @@ import {
 import { AuditLogList } from "../resources/audit";
 import { PaymentProviderConfigCreate, PaymentProviderConfigEdit, PaymentProviderConfigList } from "../resources/payments";
 import { PriceListCreate, PriceListList, PriceRuleCreate, PriceRuleList, PromotionCreate, PromotionList } from "../resources/pricing";
-import { StockAdjustmentCreate, StockLevelList, StockTransferCreate } from "../resources/inventory";
+import { StockAdjustmentCreate, StockLevelList, StockTransferCreate, StockTransferList } from "../resources/inventory";
 import {
   CreditAccountCreate,
   CreditAccountList,
@@ -123,7 +123,7 @@ export default function AdminApp() {
         />
         <Resource name="stock-levels" list={StockLevelList} options={{ label: "Stock Levels" }} />
         <Resource name="stock-adjustments" create={StockAdjustmentCreate} options={{ label: "Stock Adjustments" }} />
-        <Resource name="stock-transfers" create={StockTransferCreate} options={{ label: "Stock Transfers" }} />
+        <Resource name="stock-transfers" list={StockTransferList} create={StockTransferCreate} options={{ label: "Stock Transfers" }} />
         <Resource
           name="finance/accounts"
           list={ChartOfAccountsList}

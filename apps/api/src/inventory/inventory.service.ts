@@ -1,8 +1,9 @@
-import { BadRequestException, Injectable } from "@nestjs/common";
+import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
 import { Prisma } from "@prisma/client";
 import { ListQueryDto } from "../common/dto/list-query.dto";
 import { PrismaService } from "../prisma/prisma.service";
 import { StockAdjustmentDto } from "./dto/stock-adjustment.dto";
+import { ListStockTransfersDto } from "./dto/list-stock-transfers.dto";
 import { StockReservationDto } from "./dto/stock-reservation.dto";
 import { StockTransferDto } from "./dto/stock-transfer.dto";
 
@@ -139,6 +140,157 @@ export class InventoryService {
       quantity: transfer.quantity,
       status: transfer.status,
       created_at: transfer.createdAt.toISOString(),
+    };
+  }
+
+  async listStockTransfers(groupId: string, subsidiaryId: string, query: ListStockTransfersDto) {
+    if (!groupId) throw new BadRequestException("X-Group-Id header is required");
+    if (!subsidiaryId) throw new BadRequestException("X-Subsidiary-Id header is required");
+
+    const where: Prisma.StockTransferWhereInput = {
+      groupId,
+      subsidiaryId,
+      ...(query.status ? { status: query.status } : {}),
+      ...(query.product_id ? { productId: query.product_id } : {}),
+      ...(query.variant_id ? { variantId: query.variant_id } : {}),
+      ...(query.from_location_id ? { fromLocationId: query.from_location_id } : {}),
+      ...(query.to_location_id ? { toLocationId: query.to_location_id } : {}),
+    };
+
+    const [total, transfers] = await this.prisma.$transaction([
+      this.prisma.stockTransfer.count({ where }),
+      this.prisma.stockTransfer.findMany({
+        where,
+        orderBy: { createdAt: "desc" },
+        skip: query.offset ?? 0,
+        take: query.limit ?? 50,
+        include: {
+          product: true,
+          variant: true,
+          fromLocation: true,
+          toLocation: true,
+        },
+      }),
+    ]);
+
+    return {
+      data: transfers.map((transfer: any) => ({
+        id: transfer.id,
+        product_id: transfer.productId,
+        product_name: transfer.product?.name,
+        product_sku: transfer.product?.sku,
+        variant_id: transfer.variantId ?? undefined,
+        variant_label: transfer.variant
+          ? `${transfer.variant.size ?? ""}${transfer.variant.unit ? ` ${transfer.variant.unit}` : ""}${
+              transfer.variant.barcode ? ` - ${transfer.variant.barcode}` : ""
+            }`.trim()
+          : undefined,
+        from_location_id: transfer.fromLocationId,
+        from_location_name: transfer.fromLocation?.name,
+        to_location_id: transfer.toLocationId,
+        to_location_name: transfer.toLocation?.name,
+        quantity: transfer.quantity,
+        status: transfer.status,
+        created_at: transfer.createdAt.toISOString(),
+        updated_at: transfer.updatedAt.toISOString(),
+      })),
+      meta: this.buildMeta(query, total),
+    };
+  }
+
+  async completeStockTransfer(groupId: string, subsidiaryId: string, transferId: string) {
+    if (!groupId) throw new BadRequestException("X-Group-Id header is required");
+    if (!subsidiaryId) throw new BadRequestException("X-Subsidiary-Id header is required");
+
+    const transfer = await this.prisma.stockTransfer.findFirst({
+      where: { id: transferId, groupId, subsidiaryId },
+      include: { fromLocation: true, toLocation: true, product: true, variant: true },
+    });
+    if (!transfer) {
+      throw new NotFoundException("Transfer not found");
+    }
+    if (transfer.status === "completed") {
+      return {
+        id: transfer.id,
+        product_id: transfer.productId,
+        variant_id: transfer.variantId ?? undefined,
+        from_location_id: transfer.fromLocationId,
+        to_location_id: transfer.toLocationId,
+        quantity: transfer.quantity,
+        status: transfer.status,
+        created_at: transfer.createdAt.toISOString(),
+        updated_at: transfer.updatedAt.toISOString(),
+      };
+    }
+
+    const result = await this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+      const fromLevel = await tx.stockLevel.findFirst({
+        where: {
+          groupId,
+          subsidiaryId,
+          locationId: transfer.fromLocationId,
+          productId: transfer.productId,
+          variantId: transfer.variantId ?? null,
+        },
+      });
+      if (!fromLevel) {
+        throw new BadRequestException("Source stock level not found");
+      }
+      const available = fromLevel.onHand - fromLevel.reserved;
+      if (available < transfer.quantity) {
+        throw new BadRequestException("Insufficient available stock to complete transfer");
+      }
+
+      await tx.stockLevel.update({
+        where: { id: fromLevel.id },
+        data: { onHand: { decrement: transfer.quantity } },
+      });
+
+      const toLevel = await tx.stockLevel.findFirst({
+        where: {
+          groupId,
+          subsidiaryId,
+          locationId: transfer.toLocationId,
+          productId: transfer.productId,
+          variantId: transfer.variantId ?? null,
+        },
+      });
+
+      if (toLevel) {
+        await tx.stockLevel.update({
+          where: { id: toLevel.id },
+          data: { onHand: { increment: transfer.quantity } },
+        });
+      } else {
+        await tx.stockLevel.create({
+          data: {
+            groupId,
+            subsidiaryId,
+            locationId: transfer.toLocationId,
+            productId: transfer.productId,
+            variantId: transfer.variantId,
+            onHand: transfer.quantity,
+            reserved: 0,
+          },
+        });
+      }
+
+      return tx.stockTransfer.update({
+        where: { id: transfer.id },
+        data: { status: "completed" },
+      });
+    });
+
+    return {
+      id: result.id,
+      product_id: result.productId,
+      variant_id: result.variantId ?? undefined,
+      from_location_id: result.fromLocationId,
+      to_location_id: result.toLocationId,
+      quantity: result.quantity,
+      status: result.status,
+      created_at: result.createdAt.toISOString(),
+      updated_at: result.updatedAt.toISOString(),
     };
   }
 

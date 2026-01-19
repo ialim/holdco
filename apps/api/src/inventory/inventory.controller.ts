@@ -3,6 +3,8 @@ import {
   Controller,
   Get,
   Headers,
+  Param,
+  ParseUUIDPipe,
   Post,
   Query,
   Req,
@@ -17,6 +19,7 @@ import { ListQueryDto } from "../common/dto/list-query.dto";
 import { AuditService } from "../audit/audit.service";
 import { InventoryService } from "./inventory.service";
 import { StockAdjustmentDto } from "./dto/stock-adjustment.dto";
+import { ListStockTransfersDto } from "./dto/list-stock-transfers.dto";
 import { StockReservationDto } from "./dto/stock-reservation.dto";
 import { StockTransferDto } from "./dto/stock-transfer.dto";
 
@@ -84,6 +87,45 @@ export class InventoryController {
       subsidiaryId,
       actorId,
       action: "inventory.transfer.create",
+      entityType: "stock_transfer",
+      entityId: transfer.id,
+      payload: {
+        product_id: transfer.product_id,
+        variant_id: transfer.variant_id,
+        from_location_id: transfer.from_location_id,
+        to_location_id: transfer.to_location_id,
+        quantity: transfer.quantity,
+        status: transfer.status,
+      },
+    });
+    return transfer;
+  }
+
+  @Permissions("inventory.stock.read")
+  @Get("transfers")
+  listStockTransfers(
+    @Headers("x-group-id") groupId: string,
+    @Headers("x-subsidiary-id") subsidiaryId: string,
+    @Query() query: ListStockTransfersDto,
+  ) {
+    return this.inventoryService.listStockTransfers(groupId, subsidiaryId, query);
+  }
+
+  @Permissions("inventory.stock.transfer")
+  @Post("transfers/:transfer_id/complete")
+  async completeStockTransfer(
+    @Headers("x-group-id") groupId: string,
+    @Headers("x-subsidiary-id") subsidiaryId: string,
+    @Param("transfer_id", new ParseUUIDPipe()) transferId: string,
+    @Req() req: Request,
+  ) {
+    const transfer = await this.inventoryService.completeStockTransfer(groupId, subsidiaryId, transferId);
+    const actorId = ((req as any).user?.sub ?? (req as any).user?.id ?? (req as any).user?.userId) as string | undefined;
+    await this.auditService.record({
+      groupId,
+      subsidiaryId,
+      actorId,
+      action: "inventory.transfer.complete",
       entityType: "stock_transfer",
       entityId: transfer.id,
       payload: {

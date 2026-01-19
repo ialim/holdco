@@ -12,7 +12,8 @@ function AdminAppBar(props: AppBarProps) {
   useEffect(() => {
     if (!appBarRef.current) return;
     const setHeightVar = () => {
-      const height = appBarRef.current?.getBoundingClientRect().height ?? 0;
+      const measured = appBarRef.current?.getBoundingClientRect().height ?? 0;
+      const height = Math.max(measured, 96);
       document.documentElement.style.setProperty("--appbar-height", `${height}px`);
     };
     setHeightVar();

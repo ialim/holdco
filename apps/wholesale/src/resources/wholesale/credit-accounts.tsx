@@ -5,6 +5,7 @@ import { useLocation } from "react-router-dom";
 import {
   Create,
   Datagrid,
+  DateField,
   List,
   NumberField,
   NumberInput,
@@ -139,6 +140,7 @@ export function CreditAccountList() {
         <NumberField source="used_amount" />
         <NumberField source="available_amount" />
         <TextField source="status" />
+        <DateField source="updated_at" label="Last limit change" showTime />
         <CreditLimitButton />
       </Datagrid>
     </List>

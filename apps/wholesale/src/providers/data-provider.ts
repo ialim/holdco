@@ -257,6 +257,15 @@ export const dataProvider: DataProvider = {
       const record = (response.data as any)?.data ?? response.data;
       return { data: record };
     }
+    if (resource === "repayments") {
+      const response = await apiFetch(`/adapters/credit/repayments`, {
+        method: "POST",
+        body: params.data,
+        headers: idempotencyHeaders()
+      });
+      const record = (response.data as any)?.data ?? response.data;
+      return { data: record };
+    }
     const response = await apiFetch(`/${resource}`, { method: "POST", body: params.data, headers: idempotencyHeaders() });
     const record = (response.data as any)?.data ?? response.data;
     if (resource === "pos/devices") {

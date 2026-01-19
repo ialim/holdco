@@ -181,7 +181,8 @@
       { "name": "HOLDCO_ADMIN" },
       { "name": "GROUP_ADMIN" },
       { "name": "SUPER_ADMIN" },
-      { "name": "RBAC_ADMIN" }
+      { "name": "RBAC_ADMIN" },
+      { "name": "WHOLESALE_REP" }
     ]
   },
   "users": [
@@ -216,6 +217,22 @@
         }
       ],
       "realmRoles": ["SUPER_ADMIN"]
+    },
+    {
+      "username": "wholesale.rep",
+      "enabled": true,
+      "emailVerified": true,
+      "email": "wholesale@holdco.local",
+      "firstName": "Wholesale",
+      "lastName": "Rep",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "admin123",
+          "temporary": false
+        }
+      ],
+      "realmRoles": ["WHOLESALE_REP"]
     }
   ]
 }

@@ -21,6 +21,7 @@ import {
   ProductList,
   SupplierCreate,
   SupplierList,
+  VariantAssortmentsPage,
   VariantCreate,
   VariantEdit,
   VariantList
@@ -80,6 +81,7 @@ export default function AdminApp() {
         <Resource name="categories" list={CategoryList} create={CategoryCreate} edit={CategoryEdit} />
         <Resource name="products" list={ProductList} create={ProductCreate} edit={ProductEdit} />
         <Resource name="variants" list={VariantList} create={VariantCreate} edit={VariantEdit} />
+        <Resource name="assortments" list={VariantAssortmentsPage} options={{ label: "Assortments" }} />
         <Resource name="facets" list={FacetList} create={FacetCreate} />
         <Resource name="facet-values" list={FacetValueList} create={FacetValueCreate} />
         <Resource name="orders" list={OrdersList} show={OrderShow} options={{ label: "Orders & Payments" }} />

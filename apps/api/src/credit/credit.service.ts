@@ -104,6 +104,7 @@ export class CreditService {
         used_amount: Number(account.usedAmount),
         available_amount: Math.max(0, Number(account.limitAmount) - Number(account.usedAmount)),
         status: account.status,
+        updated_at: account.updatedAt.toISOString(),
       })),
       meta: this.buildMeta(query, total),
     };
@@ -129,6 +130,7 @@ export class CreditService {
       used_amount: Number(account.usedAmount),
       available_amount: Math.max(0, Number(account.limitAmount) - Number(account.usedAmount)),
       status: account.status,
+      updated_at: account.updatedAt.toISOString(),
     };
   }
 
@@ -157,6 +159,7 @@ export class CreditService {
         used_amount: Number(created.usedAmount),
         available_amount: Math.max(0, Number(created.limitAmount) - Number(created.usedAmount)),
         status: created.status,
+        updated_at: created.updatedAt.toISOString(),
       };
     }
 
@@ -172,6 +175,7 @@ export class CreditService {
       used_amount: Number(account.usedAmount),
       available_amount: Math.max(0, Number(account.limitAmount) - Number(account.usedAmount)),
       status: account.status,
+      updated_at: account.updatedAt.toISOString(),
     };
   }
 

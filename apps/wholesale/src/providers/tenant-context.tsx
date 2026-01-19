@@ -19,7 +19,7 @@ const DEFAULT_TENANT: TenantContextState = {
   groupId: "",
   subsidiaryId: "",
   locationId: "",
-  channel: "wholesale_ops"
+  channel: "wholesale"
 };
 
 const TenantContext = createContext<TenantContextValue | undefined>(undefined);

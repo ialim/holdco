@@ -53,7 +53,18 @@ export const authProvider: AuthProvider = {
     const tokens = getAuthTokens();
     const payload = tokens?.accessToken ? decodeJwt(tokens.accessToken) : null;
     if (!payload) return [];
-    return payload.permissions || payload.roles || [];
+    const clientId = process.env.NEXT_PUBLIC_AUTH_CLIENT_ID;
+    const clientRoles =
+      clientId && payload.resource_access && payload.resource_access[clientId]
+        ? payload.resource_access[clientId].roles
+        : undefined;
+    const permissions =
+      payload.permissions ||
+      payload.roles ||
+      payload.realm_access?.roles ||
+      clientRoles ||
+      [];
+    return Array.isArray(permissions) ? permissions : [];
   },
   getIdentity: async () => {
     const tokens = getAuthTokens();

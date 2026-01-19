@@ -89,6 +89,23 @@ const CREDIT_MANAGER = [
   "credit.repayment.write",
 ];
 
+const WHOLESALE_REP = [
+  "catalog.product.read",
+  "catalog.variant.read",
+  "pricing.price_list.read",
+  "pricing.price_rule.read",
+  "orders.read",
+  "orders.write",
+  "orders.fulfill",
+  "credit.reseller.read",
+  "credit.reseller.write",
+  "credit.account.read",
+  "credit.account.write",
+  "credit.limit.write",
+  "credit.repayment.write",
+  "reports.credit",
+];
+
 const ADVISORY_ALL = ["advisory.engagement.manage", "advisory.deliverable.manage"];
 
 const FINANCE_ALL = [
@@ -146,6 +163,7 @@ const ROLE_PERMISSION_MAP: Record<string, string[]> = {
   POS_MANAGER: POS_ALL,
   RETAIL_POS_OPERATOR: POS_OPERATOR,
   RESELLER_CREDIT_MANAGER: CREDIT_MANAGER,
+  WHOLESALE_REP,
   SUBSIDIARY_REQUESTER: ["shared_services.request.read", "shared_services.request.create"],
   HR_MANAGER: [...HR_ALL, "shared_services.request.read"],
   COMPLIANCE_OFFICER: [

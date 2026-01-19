@@ -48,26 +48,34 @@ function CollapsibleSection({
 export function AppMenu() {
   const { permissions } = usePermissions();
   const permissionList = Array.isArray(permissions) ? permissions.map(String) : [];
-  const canViewCatalog =
+  const normalized = permissionList.map((value) => value.toUpperCase());
+  const isAdmin =
     permissionList.includes("*") ||
+    normalized.includes("SUPER_ADMIN") ||
+    normalized.includes("HOLDCO_ADMIN") ||
+    normalized.includes("GROUP_ADMIN");
+  const isWholesaleRep = normalized.includes("WHOLESALE_REP");
+  const hasWholesaleAccess = isAdmin || isWholesaleRep;
+  const canViewCatalog =
+    hasWholesaleAccess ||
     permissionList.includes("catalog.product.read") ||
     permissionList.includes("catalog.variant.read");
   const canViewResellers =
-    permissionList.includes("*") ||
+    hasWholesaleAccess ||
     permissionList.includes("credit.reseller.read") ||
     permissionList.includes("credit.reseller.write");
   const canViewCreditAccounts =
-    permissionList.includes("*") ||
+    hasWholesaleAccess ||
     permissionList.includes("credit.account.read") ||
     permissionList.includes("credit.account.write");
   const canManageRepayments =
-    permissionList.includes("*") ||
+    hasWholesaleAccess ||
     permissionList.includes("credit.repayment.write");
   const canViewCreditReport =
-    permissionList.includes("*") ||
+    hasWholesaleAccess ||
     permissionList.includes("reports.credit");
   const canViewWholesaleOrders =
-    permissionList.includes("*") ||
+    hasWholesaleAccess ||
     permissionList.includes("orders.read") ||
     permissionList.includes("orders.write") ||
     permissionList.includes("orders.fulfill");

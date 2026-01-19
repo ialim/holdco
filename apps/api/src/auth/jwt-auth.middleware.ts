@@ -130,7 +130,11 @@ async function verifyWithOidc(token: string) {
   if (issuer) options.issuer = issuer;
   if (audience) {
     const audiences = audience.split(",").map((value) => value.trim()).filter(Boolean);
-    options.audience = audiences.length > 1 ? audiences : audiences[0];
+    if (audiences.length === 1) {
+      options.audience = audiences[0];
+    } else if (audiences.length > 1) {
+      options.audience = [audiences[0], ...audiences.slice(1)];
+    }
   }
 
   return verify(token, publicKey, options);

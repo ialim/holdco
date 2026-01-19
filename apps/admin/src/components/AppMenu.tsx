@@ -27,6 +27,7 @@ import {
   ReceiptOutlined,
   ReceiptLongOutlined,
   ScheduleOutlined,
+  SyncAltOutlined,
   TuneOutlined
 } from "@mui/icons-material";
 import { MenuItemLink, usePermissions } from "react-admin";
@@ -123,6 +124,7 @@ export function AppMenu() {
         <MenuItemLink to="/categories" primaryText="Categories" leftIcon={<CategoryOutlined />} />
         <MenuItemLink to="/products" primaryText="Products" leftIcon={<Inventory2Outlined />} />
         <MenuItemLink to="/variants" primaryText="Variants" leftIcon={<LayersOutlined />} />
+        <MenuItemLink to="/assortments" primaryText="Assortments" leftIcon={<SyncAltOutlined />} />
         <MenuItemLink to="/facets" primaryText="Facets" leftIcon={<FilterListOutlined />} />
         <MenuItemLink to="/facet-values" primaryText="Facet Values" leftIcon={<TuneOutlined />} />
       </CollapsibleSection>

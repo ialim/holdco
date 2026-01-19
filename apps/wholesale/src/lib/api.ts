@@ -19,7 +19,7 @@ export function buildHeaders(extra?: Record<string, string>) {
     ...(tenant.groupId ? { "X-Group-Id": tenant.groupId } : {}),
     ...(tenant.subsidiaryId ? { "X-Subsidiary-Id": tenant.subsidiaryId } : {}),
     ...(tenant.locationId ? { "X-Location-Id": tenant.locationId } : {}),
-    "X-Channel": tenant.channel || "admin_ops",
+    "X-Channel": tenant.channel || "wholesale",
     ...(tokens?.accessToken ? { Authorization: `Bearer ${tokens.accessToken}` } : {}),
     ...(extra || {})
   };

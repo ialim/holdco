@@ -1,11 +1,12 @@
 "use client";
 
-import { Box, Button, MenuItem, Paper, Stack, TextField } from "@mui/material";
+import { Box, Button, MenuItem, Paper, Stack, TextField, Typography } from "@mui/material";
 import { useEffect, useState } from "react";
 import { useTenant } from "../providers/tenant-context";
 import { apiFetch } from "../lib/api";
 
-const CHANNELS = ["admin_ops", "retail", "wholesale", "credit", "digital"];
+const PREFERRED_SUBSIDIARY_ROLES = ["RESELLER"];
+const LOCKED_CHANNEL = "wholesale";
 
 export function TenantSelector() {
   const { tenant, setTenant } = useTenant();
@@ -62,7 +63,9 @@ export function TenantSelector() {
         if (!active) return;
         if (response.ok) {
           const data = (response.data as any)?.data ?? response.data;
-          setSubsidiaries(Array.isArray(data) ? data : []);
+          const list = Array.isArray(data) ? data : [];
+          const filtered = list.filter((subsidiary) => String(subsidiary.role).toUpperCase() === "RESELLER");
+          setSubsidiaries(filtered);
         } else {
           setSubsidiaries([]);
         }
@@ -78,6 +81,19 @@ export function TenantSelector() {
       active = false;
     };
   }, [draft.groupId]);
+
+  useEffect(() => {
+    if (!draft.groupId || draft.subsidiaryId || !subsidiariesLoaded || subsidiaries.length === 0) {
+      return;
+    }
+    const preferred = subsidiaries.find(
+      (subsidiary) => subsidiary.role && PREFERRED_SUBSIDIARY_ROLES.includes(subsidiary.role)
+    );
+    const fallback = subsidiaries.find((subsidiary) => subsidiary.status === "active") ?? subsidiaries[0];
+    const selected = preferred ?? fallback;
+    if (!selected?.id) return;
+    setDraft((current) => ({ ...current, subsidiaryId: selected.id, locationId: "" }));
+  }, [draft.groupId, draft.subsidiaryId, subsidiariesLoaded, subsidiaries]);
 
   useEffect(() => {
     let active = true;
@@ -186,6 +202,15 @@ export function TenantSelector() {
               </MenuItem>
             ))}
           </TextField>
+        ) : subsidiariesLoaded ? (
+          <TextField
+            label="Subsidiary"
+            size="small"
+            value=""
+            helperText="No reseller subsidiaries found for this group."
+            disabled
+            sx={{ minWidth: 220 }}
+          />
         ) : (
           <TextField
             label="Subsidiary"
@@ -222,25 +247,20 @@ export function TenantSelector() {
             sx={{ minWidth: 150 }}
           />
         )}
-        <TextField
-          select
-          label="Channel"
-          size="small"
-          value={draft.channel}
-          onChange={(event) => setDraft({ ...draft, channel: event.target.value })}
-          sx={{ minWidth: 140 }}
-        >
-          {CHANNELS.map((channel) => (
-            <MenuItem key={channel} value={channel}>
-              {channel}
-            </MenuItem>
-          ))}
-        </TextField>
+        <TextField label="Channel" size="small" value={LOCKED_CHANNEL} disabled sx={{ minWidth: 140 }} />
         <Box sx={{ flexGrow: 1 }} />
-        <Button variant="contained" size="small" onClick={() => setTenant(draft)}>
+        <Button
+          variant="contained"
+          size="small"
+          onClick={() => setTenant({ ...draft, channel: LOCKED_CHANNEL })}
+          disabled={!draft.groupId || !draft.subsidiaryId}
+        >
           Apply
         </Button>
       </Stack>
+      <Typography variant="caption" sx={{ display: "block", marginTop: 1, color: "text.secondary" }}>
+        Context locked to reseller subsidiaries for wholesale operations.
+      </Typography>
     </Paper>
   );
 }

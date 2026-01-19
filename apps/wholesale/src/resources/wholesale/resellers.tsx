@@ -87,6 +87,7 @@ type CreditAccountSummary = {
   used_amount?: number;
   available_amount?: number;
   status?: string;
+  updated_at?: string;
 };
 
 type CreditReportEntry = {
@@ -134,7 +135,8 @@ function ResellerCreditSummary() {
         limit_amount: Number(account.limit_amount),
         used_amount: Number(account.used_amount),
         available_amount: Number(account.available_amount),
-        status: account.status
+        status: account.status,
+        updated_at: account.updated_at
       });
     };
     loadCredit();
@@ -169,7 +171,7 @@ function ResellerCreditSummary() {
     }
 
     setSubmitting(true);
-    const response = await apiFetch("/repayments", {
+    const response = await apiFetch("/adapters/credit/repayments", {
       method: "POST",
       headers: { "Idempotency-Key": newIdempotencyKey() },
       body: {
@@ -206,6 +208,9 @@ function ResellerCreditSummary() {
           <Typography variant="body2">Used: {formatMoney(credit.used_amount)}</Typography>
           <Typography variant="body2">Available: {formatMoney(credit.available_amount)}</Typography>
           <Typography variant="body2">Status: {credit.status}</Typography>
+          <Typography variant="body2">
+            Last limit change: {credit.updated_at ? credit.updated_at.slice(0, 10) : "-"}
+          </Typography>
         </Stack>
       ) : (
         <Typography variant="body2" color="text.secondary">

@@ -24,10 +24,14 @@ import {
   LocationOnOutlined,
   PaymentsOutlined,
   PointOfSaleOutlined,
+  PlaylistAddOutlined,
   ReceiptOutlined,
   ReceiptLongOutlined,
   ScheduleOutlined,
+  SellOutlined,
   SyncAltOutlined,
+  SwapHorizOutlined,
+  WarehouseOutlined,
   TuneOutlined
 } from "@mui/icons-material";
 import { MenuItemLink, usePermissions } from "react-admin";
@@ -129,6 +133,11 @@ export function AppMenu() {
         <MenuItemLink to="/facet-values" primaryText="Facet Values" leftIcon={<TuneOutlined />} />
       </CollapsibleSection>
 
+      <CollapsibleSection title="Pricing" defaultOpen={false}>
+        <MenuItemLink to="/price-lists" primaryText="Price Lists" leftIcon={<SellOutlined />} />
+        <MenuItemLink to="/price-rules" primaryText="Price Rules" leftIcon={<ReceiptOutlined />} />
+      </CollapsibleSection>
+
       <CollapsibleSection title="Orders" defaultOpen>
         <MenuItemLink to="/orders" primaryText="Orders & Payments" leftIcon={<ReceiptLongOutlined />} />
       </CollapsibleSection>
@@ -195,6 +204,12 @@ export function AppMenu() {
         <MenuItemLink to="/procurement/purchase-requests" primaryText="Purchase Requests" leftIcon={<ReceiptOutlined />} />
         <MenuItemLink to="/procurement/purchase-orders" primaryText="Purchase Orders" leftIcon={<LocalMallOutlined />} />
         <MenuItemLink to="/procurement/import-shipments" primaryText="Import Shipments" leftIcon={<LocalShippingOutlined />} />
+      </CollapsibleSection>
+
+      <CollapsibleSection title="Warehouse" defaultOpen={false}>
+        <MenuItemLink to="/stock-levels" primaryText="Stock Levels" leftIcon={<WarehouseOutlined />} />
+        <MenuItemLink to="/stock-adjustments/create" primaryText="Stock Adjustments" leftIcon={<PlaylistAddOutlined />} />
+        <MenuItemLink to="/stock-transfers/create" primaryText="Stock Transfers" leftIcon={<SwapHorizOutlined />} />
       </CollapsibleSection>
 
       <CollapsibleSection title="Finance" defaultOpen={false}>

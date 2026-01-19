@@ -248,6 +248,15 @@ export const dataProvider: DataProvider = {
       const record = (response.data as any)?.data ?? response.data;
       return { data: record };
     }
+    if (resource === "stock-transfers") {
+      const response = await apiFetch(`/transfers`, {
+        method: "POST",
+        body: params.data,
+        headers: idempotencyHeaders()
+      });
+      const record = (response.data as any)?.data ?? response.data;
+      return { data: record };
+    }
     if (resource === "wholesale-orders") {
       const response = await apiFetch(`/adapters/wholesale/orders`, {
         method: "POST",

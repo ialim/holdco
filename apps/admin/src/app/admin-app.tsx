@@ -54,6 +54,8 @@ import {
 } from "../resources/finance";
 import { AuditLogList } from "../resources/audit";
 import { PaymentProviderConfigCreate, PaymentProviderConfigEdit, PaymentProviderConfigList } from "../resources/payments";
+import { PriceListCreate, PriceListList, PriceRuleCreate, PriceRuleList } from "../resources/pricing";
+import { StockAdjustmentCreate, StockLevelList, StockTransferCreate } from "../resources/inventory";
 import {
   CreditAccountCreate,
   CreditAccountList,
@@ -84,6 +86,8 @@ export default function AdminApp() {
         <Resource name="assortments" list={VariantAssortmentsPage} options={{ label: "Assortments" }} />
         <Resource name="facets" list={FacetList} create={FacetCreate} />
         <Resource name="facet-values" list={FacetValueList} create={FacetValueCreate} />
+        <Resource name="price-lists" list={PriceListList} create={PriceListCreate} options={{ label: "Price Lists" }} />
+        <Resource name="price-rules" list={PriceRuleList} create={PriceRuleCreate} options={{ label: "Price Rules" }} />
         <Resource name="orders" list={OrdersList} show={OrderShow} options={{ label: "Orders & Payments" }} />
         <Resource name="wholesale-orders" list={WholesaleOrderList} show={OrderShow} create={WholesaleOrderCreate} options={{ label: "Wholesale Orders" }} />
         <Resource name="resellers" list={ResellerList} show={ResellerShow} create={ResellerCreate} options={{ label: "Resellers" }} />
@@ -116,6 +120,9 @@ export default function AdminApp() {
           create={ImportShipmentCreate}
           options={{ label: "Import Shipments" }}
         />
+        <Resource name="stock-levels" list={StockLevelList} options={{ label: "Stock Levels" }} />
+        <Resource name="stock-adjustments" create={StockAdjustmentCreate} options={{ label: "Stock Adjustments" }} />
+        <Resource name="stock-transfers" create={StockTransferCreate} options={{ label: "Stock Transfers" }} />
         <Resource
           name="finance/accounts"
           list={ChartOfAccountsList}

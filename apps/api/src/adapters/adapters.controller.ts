@@ -72,6 +72,7 @@ export class AdaptersController {
         total_amount: order.total_amount,
         currency: order.currency,
         location_id: locationId,
+        allow_credit_override: allowCreditOverride,
       },
     });
     return order;

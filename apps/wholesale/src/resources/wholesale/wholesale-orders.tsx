@@ -25,11 +25,12 @@ import {
   useRecordContext,
   useRefresh
 } from "react-admin";
-import { Alert, Box, Button, Stack, Typography } from "@mui/material";
+import { Alert, Box, Button, Stack, TextField as MuiTextField, Typography } from "@mui/material";
 import { useLocation } from "react-router-dom";
 import { useFormContext, useWatch } from "react-hook-form";
 import { apiFetch } from "../../lib/api";
 import { newIdempotencyKey } from "../../lib/idempotency";
+import { useTenant } from "../../providers/tenant-context";
 
 const orderFilters = [
   <TextInput key="reseller_id" source="reseller_id" label="Reseller ID" />,
@@ -52,6 +53,16 @@ type CreditSnapshot = {
 
 const formatMoney = (value?: number) =>
   Number.isFinite(value) ? Number(value).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "-";
+
+const parseIds = (input: string) =>
+  Array.from(
+    new Set(
+      input
+        .split(/[\s,;]+/)
+        .map((value) => value.trim())
+        .filter(Boolean)
+    )
+  );
 
 function FulfillWholesaleButton() {
   const record = useRecordContext();
@@ -326,6 +337,187 @@ function PriceLookupButton({
   );
 }
 
+function StockAvailability({ productId, variantId }: { productId?: string; variantId?: string }) {
+  const { tenant } = useTenant();
+  const [available, setAvailable] = useState<number | null>(null);
+  const [statusLabel, setStatusLabel] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!productId && !variantId) {
+      setAvailable(null);
+      setStatusLabel(null);
+      return;
+    }
+
+    const load = async () => {
+      const params = new URLSearchParams({ limit: "200" });
+      if (variantId) {
+        params.set("variant_id", variantId);
+      } else if (productId) {
+        params.set("product_id", productId);
+      }
+
+      const response = await apiFetch(`/stock-levels?${params.toString()}`);
+      if (!response.ok) {
+        setStatusLabel(response.status === 403 ? "No access" : "Unavailable");
+        setAvailable(null);
+        return;
+      }
+
+      const data = (response.data as any)?.data ?? [];
+      const rows = Array.isArray(data) ? data : [];
+      const totalAvailable = rows.reduce((sum: number, row: any) => sum + Number(row.available ?? 0), 0);
+      setAvailable(totalAvailable);
+      setStatusLabel(null);
+    };
+
+    load();
+  }, [productId, variantId, tenant.groupId, tenant.subsidiaryId, tenant.locationId]);
+
+  if (statusLabel) {
+    return <Typography variant="caption">Stock: {statusLabel}</Typography>;
+  }
+
+  return (
+    <Typography variant="caption">
+      Stock: {available == null ? "-" : available.toLocaleString()}
+    </Typography>
+  );
+}
+
+function OrderTotalsPanel() {
+  const { control } = useFormContext();
+  const items = (useWatch({ control, name: "items" }) as Array<any>) ?? [];
+  const discountAmount = Number(useWatch({ control, name: "discount_amount" }) ?? 0);
+  const taxAmount = Number(useWatch({ control, name: "tax_amount" }) ?? 0);
+  const shippingAmount = Number(useWatch({ control, name: "shipping_amount" }) ?? 0);
+
+  const subtotal = items.reduce((sum, item) => {
+    const quantity = Number(item?.quantity ?? 0);
+    const unitPrice = Number(item?.unit_price ?? 0);
+    return sum + quantity * unitPrice;
+  }, 0);
+
+  const total = subtotal - discountAmount + taxAmount + shippingAmount;
+
+  return (
+    <Box sx={{ border: "1px solid #E3DED3", borderRadius: 2, padding: 2, backgroundColor: "rgba(255,255,255,0.7)" }}>
+      <Stack spacing={1}>
+        <Typography variant="subtitle2">Order totals</Typography>
+        <Stack direction={{ xs: "column", md: "row" }} spacing={2}>
+          <Typography variant="body2">Subtotal: {formatMoney(subtotal)}</Typography>
+          <Typography variant="body2">Discount: {formatMoney(discountAmount)}</Typography>
+          <Typography variant="body2">Tax: {formatMoney(taxAmount)}</Typography>
+          <Typography variant="body2">Shipping: {formatMoney(shippingAmount)}</Typography>
+          <Typography variant="body2">Total: {formatMoney(total)}</Typography>
+        </Stack>
+      </Stack>
+    </Box>
+  );
+}
+
+function BulkVariantAdder() {
+  const notify = useNotify();
+  const { control, getValues, setValue } = useFormContext();
+  const [input, setInput] = useState("");
+  const [quantity, setQuantity] = useState("1");
+  const [loading, setLoading] = useState(false);
+  const priceListId = useWatch({ control, name: "price_list_id" }) as string | undefined;
+
+  const addVariants = async () => {
+    const ids = parseIds(input);
+    if (!ids.length) {
+      notify("Enter variant IDs to add", { type: "warning" });
+      return;
+    }
+
+    const parsedQty = Number(quantity);
+    if (!Number.isFinite(parsedQty) || parsedQty <= 0) {
+      notify("Quantity must be a positive number", { type: "warning" });
+      return;
+    }
+
+    setLoading(true);
+    const existing = (getValues("items") as Array<any>) ?? [];
+    const existingVariantIds = new Set(
+      existing.map((item) => item?.variant_id).filter(Boolean)
+    );
+    const nextItems = [...existing];
+    let added = 0;
+
+    for (const id of ids) {
+      if (existingVariantIds.has(id)) continue;
+      const variantResponse = await apiFetch(`/variants/${id}`);
+      if (!variantResponse.ok) {
+        continue;
+      }
+      const variant = variantResponse.data as any;
+      if (!variant?.product_id) {
+        continue;
+      }
+
+      let unitPrice = 0;
+      if (priceListId) {
+        const params = new URLSearchParams({
+          price_list_id: priceListId,
+          variant_id: variant.id,
+          limit: "1"
+        });
+        const priceResponse = await apiFetch(`/price-rules?${params.toString()}`);
+        if (priceResponse.ok) {
+          const items = (priceResponse.data as any)?.data ?? [];
+          const rule = Array.isArray(items) ? items[0] : undefined;
+          if (rule?.price != null) {
+            unitPrice = Number(rule.price);
+          }
+        }
+      }
+
+      nextItems.push({
+        product_id: variant.product_id,
+        variant_id: variant.id,
+        quantity: parsedQty,
+        unit_price: unitPrice
+      });
+      existingVariantIds.add(id);
+      added += 1;
+    }
+
+    setValue("items", nextItems, { shouldDirty: true, shouldValidate: true });
+    setInput("");
+    setLoading(false);
+    notify(`Added ${added} variants`, { type: "success" });
+  };
+
+  return (
+    <Box sx={{ border: "1px dashed #D5CDBE", borderRadius: 2, padding: 2 }}>
+      <Stack spacing={2} direction={{ xs: "column", md: "row" }} alignItems="flex-start">
+        <MuiTextField
+          label="Bulk add variants (IDs)"
+          value={input}
+          onChange={(event) => setInput(event.target.value)}
+          fullWidth
+          multiline
+          minRows={3}
+          placeholder="Paste variant UUIDs separated by comma or newline"
+        />
+        <Stack spacing={1} sx={{ minWidth: 180 }}>
+          <MuiTextField
+            label="Default quantity"
+            type="number"
+            value={quantity}
+            onChange={(event) => setQuantity(event.target.value)}
+            fullWidth
+          />
+          <Button variant="outlined" onClick={addVariants} disabled={loading}>
+            {loading ? "Adding..." : "Add variants"}
+          </Button>
+        </Stack>
+      </Stack>
+    </Box>
+  );
+}
+
 export function WholesaleOrderCreate() {
   const { permissions } = usePermissions();
   const permissionList = Array.isArray(permissions) ? permissions.map(String) : [];
@@ -377,6 +569,7 @@ export function WholesaleOrderCreate() {
             filterToQuery={(search) => ({ q: search })}
           />
         </ReferenceInput>
+        <BulkVariantAdder />
         <TextInput source="currency" defaultValue="NGN" fullWidth />
         <NumberInput source="discount_amount" fullWidth />
         <NumberInput source="tax_amount" fullWidth />
@@ -402,7 +595,7 @@ export function WholesaleOrderCreate() {
                     <AutocompleteInput
                       optionText={(record) =>
                         record?.size || record?.unit || record?.barcode
-                          ? `${record?.size ?? ""}${record?.unit ? ` ${record.unit}` : ""}${record?.barcode ? ` • ${record.barcode}` : ""}`.trim()
+                          ? `${record?.size ?? ""}${record?.unit ? ` ${record.unit}` : ""}${record?.barcode ? ` - ${record.barcode}` : ""}`.trim()
                           : record?.id
                       }
                     />
@@ -415,11 +608,19 @@ export function WholesaleOrderCreate() {
                     variantId={scopedFormData?.variant_id}
                     target={getSource("unit_price")}
                   />
+                  <StockAvailability
+                    productId={scopedFormData?.product_id}
+                    variantId={scopedFormData?.variant_id}
+                  />
+                  <Typography variant="caption">
+                    Line total: {formatMoney((Number(scopedFormData?.quantity ?? 0) || 0) * (Number(scopedFormData?.unit_price ?? 0) || 0))}
+                  </Typography>
                 </>
               )}
             </FormDataConsumer>
           </SimpleFormIterator>
         </ArrayInput>
+        <OrderTotalsPanel />
         <TextInput source="notes" multiline minRows={3} fullWidth />
       </SimpleForm>
     </Create>

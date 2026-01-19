@@ -94,6 +94,7 @@ const WHOLESALE_REP = [
   "catalog.variant.read",
   "pricing.price_list.read",
   "pricing.price_rule.read",
+  "inventory.stock.read",
   "orders.read",
   "orders.write",
   "orders.fulfill",

@@ -412,6 +412,100 @@ async function main() {
     }
   }
 
+  const tradingSubsidiary = recipientSubsidiaries.find(
+    (subsidiary) => subsidiary.role === SubsidiaryRole.PROCUREMENT_TRADING,
+  );
+  if (tradingSubsidiary) {
+    const existingLocation = await prisma.location.findFirst({
+      where: {
+        groupId: group.id,
+        subsidiaryId: tradingSubsidiary.id,
+        type: "warehouse",
+      },
+      orderBy: { createdAt: "asc" },
+    });
+    const tradingLocation =
+      existingLocation ??
+      (await prisma.location.create({
+        data: {
+          groupId: group.id,
+          subsidiaryId: tradingSubsidiary.id,
+          type: "warehouse",
+          name: "Central Warehouse",
+        },
+      }));
+
+    const variants = await prisma.variant.findMany({
+      where: { groupId: group.id },
+      orderBy: { createdAt: "desc" },
+      take: 25,
+      select: { id: true, productId: true },
+    });
+
+    if (variants.length) {
+      for (const [index, variant] of variants.entries()) {
+        const existingLevel = await prisma.stockLevel.findUnique({
+          where: {
+            groupId_subsidiaryId_locationId_productId_variantId: {
+              groupId: group.id,
+              subsidiaryId: tradingSubsidiary.id,
+              locationId: tradingLocation.id,
+              productId: variant.productId,
+              variantId: variant.id,
+            },
+          },
+        });
+        if (existingLevel) continue;
+
+        const onHand = 20 + index * 2;
+        await prisma.stockLevel.create({
+          data: {
+            groupId: group.id,
+            subsidiaryId: tradingSubsidiary.id,
+            locationId: tradingLocation.id,
+            productId: variant.productId,
+            variantId: variant.id,
+            onHand,
+            reserved: 0,
+          },
+        });
+      }
+    } else {
+      const products = await prisma.product.findMany({
+        where: { groupId: group.id },
+        orderBy: { createdAt: "desc" },
+        take: 25,
+        select: { id: true },
+      });
+
+      for (const [index, product] of products.entries()) {
+        const existingLevel = await prisma.stockLevel.findFirst({
+          where: {
+            groupId: group.id,
+            subsidiaryId: tradingSubsidiary.id,
+            locationId: tradingLocation.id,
+            productId: product.id,
+            variantId: null,
+          },
+        });
+        if (existingLevel) continue;
+
+        const onHand = 20 + index * 2;
+        await prisma.stockLevel.create({
+          data: {
+            groupId: group.id,
+            subsidiaryId: tradingSubsidiary.id,
+            locationId: tradingLocation.id,
+            productId: product.id,
+            variantId: null,
+            onHand,
+            reserved: 0,
+          },
+        });
+      }
+    }
+  }
+
   const chartAccounts = [
     { code: "1000", name: "Cash", type: "asset" },
     { code: "1100", name: "Accounts Receivable", type: "asset" },

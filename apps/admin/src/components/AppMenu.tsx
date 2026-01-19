@@ -136,6 +136,7 @@ export function AppMenu() {
       <CollapsibleSection title="Pricing" defaultOpen={false}>
         <MenuItemLink to="/price-lists" primaryText="Price Lists" leftIcon={<SellOutlined />} />
         <MenuItemLink to="/price-rules" primaryText="Price Rules" leftIcon={<ReceiptOutlined />} />
+        <MenuItemLink to="/promotions" primaryText="Promotions" leftIcon={<LocalOfferOutlined />} />
       </CollapsibleSection>
 
       <CollapsibleSection title="Orders" defaultOpen>

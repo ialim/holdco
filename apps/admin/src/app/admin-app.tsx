@@ -54,7 +54,7 @@ import {
 } from "../resources/finance";
 import { AuditLogList } from "../resources/audit";
 import { PaymentProviderConfigCreate, PaymentProviderConfigEdit, PaymentProviderConfigList } from "../resources/payments";
-import { PriceListCreate, PriceListList, PriceRuleCreate, PriceRuleList } from "../resources/pricing";
+import { PriceListCreate, PriceListList, PriceRuleCreate, PriceRuleList, PromotionCreate, PromotionList } from "../resources/pricing";
 import { StockAdjustmentCreate, StockLevelList, StockTransferCreate } from "../resources/inventory";
 import {
   CreditAccountCreate,
@@ -88,6 +88,7 @@ export default function AdminApp() {
         <Resource name="facet-values" list={FacetValueList} create={FacetValueCreate} />
         <Resource name="price-lists" list={PriceListList} create={PriceListCreate} options={{ label: "Price Lists" }} />
         <Resource name="price-rules" list={PriceRuleList} create={PriceRuleCreate} options={{ label: "Price Rules" }} />
+        <Resource name="promotions" list={PromotionList} create={PromotionCreate} options={{ label: "Promotions" }} />
         <Resource name="orders" list={OrdersList} show={OrderShow} options={{ label: "Orders & Payments" }} />
         <Resource name="wholesale-orders" list={WholesaleOrderList} show={OrderShow} create={WholesaleOrderCreate} options={{ label: "Wholesale Orders" }} />
         <Resource name="resellers" list={ResellerList} show={ResellerShow} create={ResellerCreate} options={{ label: "Resellers" }} />

@@ -16,9 +16,26 @@ import {
   useNotify,
   useRecordContext
 } from "react-admin";
-import { Box, Button, Stack, Typography } from "@mui/material";
+import {
+  Box,
+  Button,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  MenuItem,
+  Stack,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableRow,
+  TextField as MuiTextField,
+  Typography
+} from "@mui/material";
 import { Link as RouterLink } from "react-router-dom";
 import { apiFetch } from "../../lib/api";
+import { newIdempotencyKey } from "../../lib/idempotency";
 
 const statusChoices = [
   { id: "active", name: "active" },
@@ -65,6 +82,7 @@ export function ResellerList() {
 }
 
 type CreditAccountSummary = {
+  id?: string;
   limit_amount?: number;
   used_amount?: number;
   available_amount?: number;
@@ -89,6 +107,12 @@ function ResellerCreditSummary() {
   const notify = useNotify();
   const [credit, setCredit] = useState<CreditAccountSummary | null>(null);
   const [report, setReport] = useState<CreditReportEntry | null>(null);
+  const [reloadKey, setReloadKey] = useState(0);
+  const [repaymentOpen, setRepaymentOpen] = useState(false);
+  const [repaymentAmount, setRepaymentAmount] = useState("");
+  const [repaymentMethod, setRepaymentMethod] = useState("");
+  const [repaymentDate, setRepaymentDate] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     if (!record?.id) return;
@@ -106,6 +130,7 @@ function ResellerCreditSummary() {
         return;
       }
       setCredit({
+        id: account.id,
         limit_amount: Number(account.limit_amount),
         used_amount: Number(account.used_amount),
         available_amount: Number(account.available_amount),
@@ -113,7 +138,7 @@ function ResellerCreditSummary() {
       });
     };
     loadCredit();
-  }, [record?.id, notify]);
+  }, [record?.id, notify, reloadKey]);
 
   useEffect(() => {
     if (!record?.id) return;
@@ -129,11 +154,46 @@ function ResellerCreditSummary() {
       setReport(entries[0] ?? null);
     };
     loadReport();
-  }, [record?.id, notify]);
+  }, [record?.id, notify, reloadKey]);
 
   const lastRepayment = report?.repayments?.[0];
   const openOrders = report?.open_orders ?? [];
   const openBalance = openOrders.reduce((sum, order) => sum + Number(order.balance_due ?? 0), 0);
+
+  const submitRepayment = async () => {
+    if (!credit?.id) return;
+    const amount = Number(repaymentAmount);
+    if (!Number.isFinite(amount) || amount <= 0) {
+      notify("Repayment amount is required", { type: "warning" });
+      return;
+    }
+
+    setSubmitting(true);
+    const response = await apiFetch("/repayments", {
+      method: "POST",
+      headers: { "Idempotency-Key": newIdempotencyKey() },
+      body: {
+        credit_account_id: credit.id,
+        amount,
+        method: repaymentMethod || undefined,
+        paid_at: repaymentDate || undefined
+      }
+    });
+    setSubmitting(false);
+
+    if (!response.ok) {
+      const message = (response.data as any)?.message || `Repayment failed (${response.status})`;
+      notify(message, { type: "error" });
+      return;
+    }
+
+    notify("Repayment recorded", { type: "success" });
+    setRepaymentOpen(false);
+    setRepaymentAmount("");
+    setRepaymentMethod("");
+    setRepaymentDate("");
+    setReloadKey((prev) => prev + 1);
+  };
 
   return (
     <Box sx={{ border: "1px solid #E3DED3", borderRadius: 2, padding: 2 }}>
@@ -159,7 +219,97 @@ function ResellerCreditSummary() {
         <Typography variant="body2">
           Last repayment: {lastRepayment ? `${formatMoney(lastRepayment.amount)} on ${lastRepayment.paid_at.slice(0, 10)}` : "None"}
         </Typography>
+        <Button
+          variant="outlined"
+          size="small"
+          onClick={() => setRepaymentOpen(true)}
+          disabled={!credit?.id}
+        >
+          Record repayment
+        </Button>
       </Stack>
+
+      <Typography variant="subtitle2" sx={{ marginTop: 3, marginBottom: 1 }}>
+        Repayment allocations
+      </Typography>
+      <Table size="small">
+        <TableHead>
+          <TableRow>
+            <TableCell>Paid at</TableCell>
+            <TableCell>Amount</TableCell>
+            <TableCell>Unapplied</TableCell>
+            <TableCell>Method</TableCell>
+            <TableCell>Allocations</TableCell>
+          </TableRow>
+        </TableHead>
+        <TableBody>
+          {(report?.repayments || []).map((repayment) => (
+            <TableRow key={repayment.repayment_id}>
+              <TableCell>{repayment.paid_at.slice(0, 10)}</TableCell>
+              <TableCell>{formatMoney(repayment.amount)}</TableCell>
+              <TableCell>{formatMoney(repayment.unapplied_amount)}</TableCell>
+              <TableCell>{repayment.method || "-"}</TableCell>
+              <TableCell>
+                <Stack spacing={0.5}>
+                  {(repayment.allocations || []).map((alloc, index) => (
+                    <Typography variant="caption" key={`${repayment.repayment_id}-${alloc.order_id}-${index}`}>
+                      {alloc.order_id.slice(0, 8)}... {formatMoney(alloc.amount)}
+                    </Typography>
+                  ))}
+                  {!repayment.allocations?.length && <Typography variant="caption">-</Typography>}
+                </Stack>
+              </TableCell>
+            </TableRow>
+          ))}
+          {!report?.repayments?.length && (
+            <TableRow>
+              <TableCell colSpan={5}>No repayments recorded</TableCell>
+            </TableRow>
+          )}
+        </TableBody>
+      </Table>
+
+      <Dialog open={repaymentOpen} onClose={() => setRepaymentOpen(false)} fullWidth maxWidth="sm">
+        <DialogTitle>Record repayment</DialogTitle>
+        <DialogContent>
+          <Stack spacing={2} sx={{ marginTop: 1 }}>
+            <MuiTextField label="Credit account ID" value={credit?.id ?? ""} disabled fullWidth />
+            <MuiTextField
+              label="Amount"
+              type="number"
+              value={repaymentAmount}
+              onChange={(event) => setRepaymentAmount(event.target.value)}
+              fullWidth
+            />
+            <MuiTextField
+              label="Method"
+              select
+              value={repaymentMethod}
+              onChange={(event) => setRepaymentMethod(event.target.value)}
+              fullWidth
+            >
+              <MenuItem value="">Unspecified</MenuItem>
+              <MenuItem value="cash">Cash</MenuItem>
+              <MenuItem value="transfer">Transfer</MenuItem>
+              <MenuItem value="card">Card</MenuItem>
+            </MuiTextField>
+            <MuiTextField
+              label="Paid at"
+              type="date"
+              value={repaymentDate}
+              onChange={(event) => setRepaymentDate(event.target.value)}
+              fullWidth
+              InputLabelProps={{ shrink: true }}
+            />
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setRepaymentOpen(false)}>Cancel</Button>
+          <Button variant="contained" onClick={submitRepayment} disabled={submitting}>
+            Save
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }

@@ -74,6 +74,26 @@ export class ReportsService {
     if (!groupId) throw new BadRequestException("X-Group-Id header is required");
     if (!subsidiaryId) throw new BadRequestException("X-Subsidiary-Id header is required");
 
+    const createdAt: { gte?: Date; lte?: Date } = {};
+    if (query?.start_date) {
+      createdAt.gte = new Date(query.start_date);
+    }
+    if (query?.end_date) {
+      const end = new Date(query.end_date);
+      end.setHours(23, 59, 59, 999);
+      createdAt.lte = end;
+    }
+
+    const paidAt: { gte?: Date; lte?: Date } = {};
+    if (query?.start_date) {
+      paidAt.gte = new Date(query.start_date);
+    }
+    if (query?.end_date) {
+      const end = new Date(query.end_date);
+      end.setHours(23, 59, 59, 999);
+      paidAt.lte = end;
+    }
+
     const accountWhere = {
       groupId,
       subsidiaryId,
@@ -95,6 +115,7 @@ export class ReportsService {
             resellerId: { in: resellerIds },
             channel: "wholesale",
             status: { not: "cancelled" },
+            ...(createdAt.gte || createdAt.lte ? { createdAt } : {}),
           },
           orderBy: { createdAt: "asc" },
         })
@@ -102,7 +123,12 @@ export class ReportsService {
 
     const repayments = creditAccountIds.length
       ? await this.prisma.repayment.findMany({
-          where: { groupId, subsidiaryId, creditAccountId: { in: creditAccountIds } },
+          where: {
+            groupId,
+            subsidiaryId,
+            creditAccountId: { in: creditAccountIds },
+            ...(paidAt.gte || paidAt.lte ? { paidAt } : {}),
+          },
           orderBy: { paidAt: "desc" },
           include: { allocations: true },
         })

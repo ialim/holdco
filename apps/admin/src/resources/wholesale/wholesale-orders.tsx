@@ -47,6 +47,7 @@ type CreditSnapshot = {
   orderTotal?: number;
   allowOverride?: boolean;
   hasAccount?: boolean;
+  overage?: number;
 };
 
 const formatMoney = (value?: number) =>
@@ -133,6 +134,8 @@ function CreditSummaryPanel({
   const total =
     orderTotal - Number(discountAmount ?? 0) + Number(taxAmount ?? 0) + Number(shippingAmount ?? 0);
 
+  const overage =
+    credit?.available != null && total > credit.available ? total - credit.available : 0;
   const exceedsCredit = credit?.available != null && total > credit.available && !allowOverride;
 
   useEffect(() => {
@@ -144,7 +147,8 @@ function CreditSummaryPanel({
       status: credit?.status,
       hasAccount: credit?.hasAccount,
       orderTotal: total,
-      allowOverride
+      allowOverride,
+      overage
     });
   }, [
     resellerId,
@@ -154,8 +158,9 @@ function CreditSummaryPanel({
     credit?.status,
     credit?.hasAccount,
     total,
-    allowOverride,
-    onSnapshot
+      allowOverride,
+      overage,
+      onSnapshot
   ]);
 
   useEffect(() => {
@@ -228,9 +233,15 @@ function CreditSummaryPanel({
         </Stack>
         {exceedsCredit && (
           <Alert severity="error">
-            Credit limit exceeded. Available credit is {formatMoney(credit?.available)}.
+            Order total {formatMoney(total)} exceeds available credit {formatMoney(credit?.available)}
+            {overage ? ` by ${formatMoney(overage)}.` : "."}
             {canOverride ? " Enable override to proceed." : " You do not have override permission."}
           </Alert>
+        )}
+        {canOverride && !exceedsCredit && credit?.available != null && (
+          <Typography variant="caption" color="text.secondary">
+            Credit override is available if you need to exceed the limit.
+          </Typography>
         )}
       </Stack>
     </Box>
@@ -345,6 +356,11 @@ export function WholesaleOrderCreate() {
             filterToQuery={(search) => ({ q: search })}
             validate={[required()]}
             fullWidth
+            helperText={
+              snapshot?.available != null
+                ? `Available credit: ${formatMoney(snapshot.available)}`
+                : undefined
+            }
           />
         </ReferenceInput>
         <CreditSummaryPanel canOverride={canOverride} onSnapshot={setSnapshot} />

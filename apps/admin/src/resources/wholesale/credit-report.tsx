@@ -7,6 +7,7 @@ import {
   AccordionSummary,
   Box,
   Button,
+  MenuItem,
   Stack,
   Table,
   TableBody,
@@ -19,6 +20,7 @@ import {
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import { useNotify } from "react-admin";
 import { apiFetch } from "../../lib/api";
+import { useTenant } from "../../providers/tenant-context";
 
 type CreditReportItem = {
   reseller_id: string;
@@ -57,13 +59,22 @@ const formatAmount = (value: number) =>
 
 export function CreditReportPage() {
   const notify = useNotify();
+  const { tenant } = useTenant();
   const [items, setItems] = useState<CreditReportItem[]>([]);
+  const [resellers, setResellers] = useState<Array<{ id: string; name: string }>>([]);
+  const [resellerId, setResellerId] = useState("");
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState("");
 
   const loadReport = async () => {
     setLoading(true);
-    const response = await apiFetch("/reports/credit");
+    const params = new URLSearchParams();
+    if (resellerId) params.set("reseller_id", resellerId);
+    if (startDate) params.set("start_date", startDate);
+    if (endDate) params.set("end_date", endDate);
+    const response = await apiFetch(`/reports/credit${params.toString() ? `?${params.toString()}` : ""}`);
     setLoading(false);
 
     if (!response.ok) {
@@ -78,7 +89,21 @@ export function CreditReportPage() {
 
   useEffect(() => {
     loadReport();
-  }, []);
+  }, [tenant.groupId, tenant.subsidiaryId]);
+
+  useEffect(() => {
+    const loadResellers = async () => {
+      const response = await apiFetch("/resellers?limit=200&offset=0");
+      if (!response.ok) {
+        const message = (response.data as any)?.message || `Reseller lookup failed (${response.status})`;
+        notify(message, { type: "error" });
+        return;
+      }
+      const data = (response.data as any)?.data ?? [];
+      setResellers(Array.isArray(data) ? data : []);
+    };
+    loadResellers();
+  }, [tenant.groupId, tenant.subsidiaryId, notify]);
 
   const filtered = useMemo(() => {
     const term = search.trim().toLowerCase();
@@ -96,13 +121,43 @@ export function CreditReportPage() {
       </Typography>
       <Stack spacing={2} direction={{ xs: "column", md: "row" }}>
         <MuiTextField
+          label="Reseller"
+          select
+          value={resellerId}
+          onChange={(event) => setResellerId(event.target.value)}
+          fullWidth
+        >
+          <MenuItem value="">All resellers</MenuItem>
+          {resellers.map((reseller) => (
+            <MenuItem key={reseller.id} value={reseller.id}>
+              {reseller.name}
+            </MenuItem>
+          ))}
+        </MuiTextField>
+        <MuiTextField
+          label="Start date"
+          type="date"
+          value={startDate}
+          onChange={(event) => setStartDate(event.target.value)}
+          InputLabelProps={{ shrink: true }}
+          fullWidth
+        />
+        <MuiTextField
+          label="End date"
+          type="date"
+          value={endDate}
+          onChange={(event) => setEndDate(event.target.value)}
+          InputLabelProps={{ shrink: true }}
+          fullWidth
+        />
+        <MuiTextField
           label="Search reseller"
           value={search}
           onChange={(event) => setSearch(event.target.value)}
           fullWidth
         />
         <Button variant="contained" onClick={loadReport} disabled={loading}>
-          Refresh
+          Apply
         </Button>
       </Stack>
 

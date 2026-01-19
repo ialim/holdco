@@ -90,7 +90,7 @@ Define the minimum viable scope for the Reseller/Wholesale channel app so we can
 
 ## Rollout Plan
 Phase 0: Use Admin/Ops with role-gated menu entries for wholesale.
-Phase 1: Split to standalone app once workflows are stable and roles are validated.
+Phase 1: Split to standalone app in `apps/wholesale` (Keycloak client `holdco-wholesale`).
 Phase 2: Add reporting and advanced credit operations (aging buckets, dunning).
 
 ## Decision Record (MVP)

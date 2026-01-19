@@ -6,6 +6,7 @@ Define which channels deserve separate apps, which stay in Admin/Ops, and when t
 ## Current App Inventory
 - Retail POS (Electron): cashier workflow, offline queue, device peripherals.
 - Admin/Ops (Web): catalog, pricing, inventory, procurement, finance, tenancy, IAM.
+- Wholesale/Reseller (Web): reseller credit + wholesale orders (`apps/wholesale`).
 
 ## Recommended Channel Apps
 ### 1) Retail POS (Electron)
@@ -44,8 +45,8 @@ Define which channels deserve separate apps, which stay in Admin/Ops, and when t
 Phase 0 (now)
 - POS (Electron) + Admin/Ops (Web).
 
-Phase 1 (next)
-- Add Reseller/Wholesale portal if credit + payment flows stabilize.
+Phase 1 (in progress)
+- Reseller/Wholesale portal split started in `apps/wholesale`.
 - Keep Digital Commerce inside Admin/Ops unless team size grows.
 
 Phase 2

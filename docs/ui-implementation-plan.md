@@ -23,6 +23,11 @@ POS docs:
 - Idempotency: all write requests send `Idempotency-Key`.
 - Audit: admin actions surfaced via existing audit logs.
 
+## Channel apps
+- Wholesale/Reseller portal: `apps/wholesale` (Next.js + React-Admin).
+  - OIDC client: `holdco-wholesale` (port 3002).
+  - Scope: reseller onboarding, credit limits/repayments, wholesale orders.
+
 ## Admin/Ops scope (MVP to full)
 Core:
 - Tenancy context selector, user/role viewer, audit log viewer.

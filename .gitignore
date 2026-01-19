@@ -4,8 +4,10 @@ shared_services_module_pack/
 .env
 apps/api/.env
 apps/admin/.env.local
+apps/wholesale/.env.local
 apps/api/dist/
 apps/admin/.next/
+apps/wholesale/.next/
 apps/api/scripts/erp/config.json
 apps/api/scripts/erp/output/
 apps/api/scripts/warehouse/output/

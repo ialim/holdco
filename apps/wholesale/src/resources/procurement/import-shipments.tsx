@@ -1,0 +1,338 @@
+"use client";
+
+import { useState } from "react";
+import {
+  ArrayInput,
+  Create,
+  Datagrid,
+  DateField,
+  DateInput,
+  List,
+  NumberField,
+  NumberInput,
+  Show,
+  SimpleForm,
+  SimpleFormIterator,
+  TextField,
+  TextInput,
+  useNotify,
+  useRecordContext,
+  useRefresh,
+  required
+} from "react-admin";
+import { Box, Button, Stack, TextField as MuiTextField, Typography } from "@mui/material";
+import { apiFetch } from "../../lib/api";
+import { newIdempotencyKey } from "../../lib/idempotency";
+
+const shipmentFilters = [
+  <TextInput key="status" source="status" label="Status" />,
+  <DateInput key="start_date" source="start_date" label="Start date" />,
+  <DateInput key="end_date" source="end_date" label="End date" />
+];
+
+function ActionSection({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <Box sx={{ border: "1px solid #E3DED3", borderRadius: 2, padding: 2, marginTop: 2 }}>
+      <Typography variant="subtitle1" sx={{ marginBottom: 1 }}>
+        {title}
+      </Typography>
+      {children}
+    </Box>
+  );
+}
+
+function AddCostsPanel() {
+  const record = useRecordContext();
+  const notify = useNotify();
+  const refresh = useRefresh();
+  const [costs, setCosts] = useState([{ category: "", amount: "", notes: "" }]);
+
+  const updateCost = (index: number, key: string, value: string) => {
+    setCosts((prev) => prev.map((item, idx) => (idx === index ? { ...item, [key]: value } : item)));
+  };
+
+  const addLine = () => setCosts((prev) => [...prev, { category: "", amount: "", notes: "" }]);
+  const removeLine = (index: number) => setCosts((prev) => prev.filter((_, idx) => idx !== index));
+
+  const submitCosts = async () => {
+    if (!record?.id) return;
+    const payload = {
+      costs: costs
+        .filter((line) => line.category && line.amount !== "")
+        .map((line) => ({
+          category: line.category,
+          amount: Number(line.amount),
+          notes: line.notes || undefined
+        }))
+    };
+    if (!payload.costs.length) {
+      notify("At least one cost line is required", { type: "warning" });
+      return;
+    }
+
+    const response = await apiFetch(`/procurement/import-shipments/${record.id}/costs`, {
+      method: "POST",
+      headers: { "Idempotency-Key": newIdempotencyKey() },
+      body: payload
+    });
+
+    if (!response.ok) {
+      const message = (response.data as any)?.message || `Add costs failed (${response.status})`;
+      notify(message, { type: "error" });
+      return;
+    }
+
+    notify("Costs added", { type: "success" });
+    refresh();
+  };
+
+  return (
+    <ActionSection title="Add import costs">
+      <Stack spacing={2}>
+        {costs.map((line, index) => (
+          <Stack key={`${line.category}-${index}`} spacing={1} direction={{ xs: "column", md: "row" }}>
+            <MuiTextField
+              label="Category"
+              value={line.category}
+              onChange={(event) => updateCost(index, "category", event.target.value)}
+              fullWidth
+            />
+            <MuiTextField
+              label="Amount"
+              type="number"
+              value={line.amount}
+              onChange={(event) => updateCost(index, "amount", event.target.value)}
+              fullWidth
+            />
+            <MuiTextField
+              label="Notes"
+              value={line.notes}
+              onChange={(event) => updateCost(index, "notes", event.target.value)}
+              fullWidth
+            />
+            <Button variant="outlined" onClick={() => removeLine(index)}>
+              Remove
+            </Button>
+          </Stack>
+        ))}
+        <Stack direction="row" spacing={2}>
+          <Button variant="outlined" onClick={addLine}>
+            Add line
+          </Button>
+          <Button variant="contained" onClick={submitCosts}>
+            Save costs
+          </Button>
+        </Stack>
+      </Stack>
+    </ActionSection>
+  );
+}
+
+function ReceiveShipmentPanel() {
+  const record = useRecordContext();
+  const notify = useNotify();
+  const refresh = useRefresh();
+  const [locationId, setLocationId] = useState("");
+  const [receivedAt, setReceivedAt] = useState("");
+  const [notes, setNotes] = useState("");
+  const [lines, setLines] = useState([
+    { product_id: "", variant_id: "", quantity_received: "", quantity_rejected: "" }
+  ]);
+
+  const updateLine = (index: number, key: string, value: string) => {
+    setLines((prev) => prev.map((line, idx) => (idx === index ? { ...line, [key]: value } : line)));
+  };
+
+  const addLine = () =>
+    setLines((prev) => [...prev, { product_id: "", variant_id: "", quantity_received: "", quantity_rejected: "" }]);
+  const removeLine = (index: number) => setLines((prev) => prev.filter((_, idx) => idx !== index));
+
+  const submitReceive = async () => {
+    if (!record?.id) return;
+    if (!locationId) {
+      notify("Location ID is required", { type: "warning" });
+      return;
+    }
+    const payload = {
+      location_id: locationId,
+      received_at: receivedAt || undefined,
+      notes: notes || undefined,
+      lines: lines
+        .filter((line) => line.product_id && line.quantity_received !== "")
+        .map((line) => ({
+          product_id: line.product_id,
+          variant_id: line.variant_id || undefined,
+          quantity_received: Number(line.quantity_received),
+          quantity_rejected: line.quantity_rejected ? Number(line.quantity_rejected) : undefined
+        }))
+    };
+
+    if (!payload.lines.length) {
+      notify("At least one receive line is required", { type: "warning" });
+      return;
+    }
+
+    const response = await apiFetch(`/procurement/import-shipments/${record.id}/receive`, {
+      method: "POST",
+      headers: { "Idempotency-Key": newIdempotencyKey() },
+      body: payload
+    });
+
+    if (!response.ok) {
+      const message = (response.data as any)?.message || `Receive failed (${response.status})`;
+      notify(message, { type: "error" });
+      return;
+    }
+
+    notify("Shipment received", { type: "success" });
+    refresh();
+  };
+
+  return (
+    <ActionSection title="Receive shipment">
+      <Stack spacing={2}>
+        <Stack spacing={2} direction={{ xs: "column", md: "row" }}>
+          <MuiTextField
+            label="Location ID"
+            value={locationId}
+            onChange={(event) => setLocationId(event.target.value)}
+            fullWidth
+          />
+          <MuiTextField
+            label="Received at (YYYY-MM-DD)"
+            value={receivedAt}
+            onChange={(event) => setReceivedAt(event.target.value)}
+            fullWidth
+          />
+          <MuiTextField
+            label="Notes"
+            value={notes}
+            onChange={(event) => setNotes(event.target.value)}
+            fullWidth
+          />
+        </Stack>
+        {lines.map((line, index) => (
+          <Stack key={`${line.product_id}-${index}`} spacing={1} direction={{ xs: "column", md: "row" }}>
+            <MuiTextField
+              label="Product ID"
+              value={line.product_id}
+              onChange={(event) => updateLine(index, "product_id", event.target.value)}
+              fullWidth
+            />
+            <MuiTextField
+              label="Variant ID"
+              value={line.variant_id}
+              onChange={(event) => updateLine(index, "variant_id", event.target.value)}
+              fullWidth
+            />
+            <MuiTextField
+              label="Qty received"
+              type="number"
+              value={line.quantity_received}
+              onChange={(event) => updateLine(index, "quantity_received", event.target.value)}
+              fullWidth
+            />
+            <MuiTextField
+              label="Qty rejected"
+              type="number"
+              value={line.quantity_rejected}
+              onChange={(event) => updateLine(index, "quantity_rejected", event.target.value)}
+              fullWidth
+            />
+            <Button variant="outlined" onClick={() => removeLine(index)}>
+              Remove
+            </Button>
+          </Stack>
+        ))}
+        <Stack direction="row" spacing={2}>
+          <Button variant="outlined" onClick={addLine}>
+            Add line
+          </Button>
+          <Button variant="contained" onClick={submitReceive}>
+            Receive shipment
+          </Button>
+        </Stack>
+      </Stack>
+    </ActionSection>
+  );
+}
+
+function FinalizeShipmentPanel() {
+  const record = useRecordContext();
+  const notify = useNotify();
+  const refresh = useRefresh();
+
+  const finalize = async () => {
+    if (!record?.id) return;
+    const response = await apiFetch(`/procurement/import-shipments/${record.id}/finalize`, {
+      method: "POST",
+      headers: { "Idempotency-Key": newIdempotencyKey() }
+    });
+    if (!response.ok) {
+      const message = (response.data as any)?.message || `Finalize failed (${response.status})`;
+      notify(message, { type: "error" });
+      return;
+    }
+    notify("Shipment finalized", { type: "success" });
+    refresh();
+  };
+
+  return (
+    <ActionSection title="Finalize shipment">
+      <Button variant="contained" onClick={finalize}>
+        Finalize shipment
+      </Button>
+    </ActionSection>
+  );
+}
+
+export function ImportShipmentList() {
+  return (
+    <List filters={shipmentFilters} perPage={50}>
+      <Datagrid rowClick={false}>
+        <TextField source="reference" />
+        <TextField source="status" />
+        <TextField source="supplier_id" />
+        <TextField source="currency" />
+        <NumberField source="fx_rate" />
+        <DateField source="arrival_date" />
+        <NumberField source="lines_count" />
+        <DateField source="created_at" showTime />
+      </Datagrid>
+    </List>
+  );
+}
+
+export function ImportShipmentCreate() {
+  return (
+    <Create>
+      <SimpleForm>
+        <TextInput source="reference" validate={[required()]} fullWidth />
+        <TextInput source="supplier_id" label="Supplier ID" fullWidth />
+        <TextInput source="currency" validate={[required()]} />
+        <NumberInput source="fx_rate" validate={[required()]} />
+        <DateInput source="arrival_date" />
+        <ArrayInput source="lines">
+          <SimpleFormIterator inline>
+            <TextInput source="product_id" validate={[required()]} />
+            <TextInput source="variant_id" />
+            <NumberInput source="quantity" validate={[required()]} />
+            <NumberInput source="unit_cost" validate={[required()]} />
+          </SimpleFormIterator>
+        </ArrayInput>
+      </SimpleForm>
+    </Create>
+  );
+}
+
+export function ImportShipmentShow() {
+  return (
+    <Show>
+      <SimpleForm>
+        <AddCostsPanel />
+        <ReceiveShipmentPanel />
+        <FinalizeShipmentPanel />
+      </SimpleForm>
+    </Show>
+  );
+}

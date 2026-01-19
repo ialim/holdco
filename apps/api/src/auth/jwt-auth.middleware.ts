@@ -128,7 +128,10 @@ async function verifyWithOidc(token: string) {
   const publicKey = createPublicKey({ key: jwk, format: "jwk" });
   const options: VerifyOptions = { algorithms: OIDC_ALGORITHMS };
   if (issuer) options.issuer = issuer;
-  if (audience) options.audience = audience;
+  if (audience) {
+    const audiences = audience.split(",").map((value) => value.trim()).filter(Boolean);
+    options.audience = audiences.length > 1 ? audiences : audiences[0];
+  }
 
   return verify(token, publicKey, options);
 }

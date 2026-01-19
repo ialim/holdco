@@ -22,37 +22,46 @@ function AdminAppBar(props: AppBarProps) {
   }, []);
 
   return (
-    <AppBar
-      {...props}
-      color="transparent"
-      elevation={2}
-      position="fixed"
+    <Box
       ref={appBarRef}
       sx={{
-        color: "#1C1B18",
-        backgroundColor: "rgba(255, 253, 250, 0.98)",
-        borderBottom: "1px solid #E3DED3",
-        backdropFilter: "blur(10px)",
-        transition: "background-color 180ms ease, border-color 180ms ease, box-shadow 180ms ease",
+        position: "fixed",
+        top: 0,
+        left: 0,
+        right: 0,
         zIndex: (theme) => theme.zIndex.drawer + 2
       }}
     >
-      <Box sx={{ display: "flex", alignItems: "center", width: "100%", gap: 2, paddingY: 0.5 }}>
-        <Box sx={{ display: "flex", alignItems: "baseline", gap: 1 }}>
-          <Typography variant="h6" sx={{ fontFamily: "var(--font-display)", fontWeight: 700 }}>
-            HoldCo
-          </Typography>
-          <Typography variant="caption" sx={{ letterSpacing: "0.2em", textTransform: "uppercase" }}>
-            Admin Ops
-          </Typography>
+      <AppBar
+        {...props}
+        color="transparent"
+        elevation={2}
+        position="static"
+        sx={{
+          color: "#1C1B18",
+          backgroundColor: "rgba(255, 253, 250, 0.98)",
+          borderBottom: "1px solid #E3DED3",
+          backdropFilter: "blur(10px)",
+          transition: "background-color 180ms ease, border-color 180ms ease, box-shadow 180ms ease"
+        }}
+      >
+        <Box sx={{ display: "flex", alignItems: "center", width: "100%", gap: 2, paddingY: 0.5 }}>
+          <Box sx={{ display: "flex", alignItems: "baseline", gap: 1 }}>
+            <Typography variant="h6" sx={{ fontFamily: "var(--font-display)", fontWeight: 700 }}>
+              HoldCo
+            </Typography>
+            <Typography variant="caption" sx={{ letterSpacing: "0.2em", textTransform: "uppercase" }}>
+              Admin Ops
+            </Typography>
+          </Box>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+            <TitlePortal />
+          </Box>
+          <Box sx={{ flex: 1 }} />
+          <TenantSelector />
         </Box>
-        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-          <TitlePortal />
-        </Box>
-        <Box sx={{ flex: 1 }} />
-        <TenantSelector />
-      </Box>
-    </AppBar>
+      </AppBar>
+    </Box>
   );
 }
 

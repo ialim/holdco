@@ -150,6 +150,18 @@ export const dataProvider: DataProvider = {
       const { items, total } = normalizeList(response.data);
       return { data: items, total };
     }
+    if (resource === "stock-reservations") {
+      const query = buildQuery({
+        limit: perPage,
+        offset: (page - 1) * perPage,
+        sort: field,
+        order: order,
+        ...filter
+      });
+      const response = await apiFetch(`/reservations${query}`);
+      const { items, total } = normalizeList(response.data);
+      return { data: items, total };
+    }
     const query = buildQuery({
       limit: perPage,
       offset: (page - 1) * perPage,

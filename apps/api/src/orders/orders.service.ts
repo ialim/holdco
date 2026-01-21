@@ -1,11 +1,15 @@
 import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
+import { InventoryService } from "../inventory/inventory.service";
 import { ListQueryDto } from "../common/dto/list-query.dto";
 import { CreateOrderDto } from "./dto/create-order.dto";
 
 @Injectable()
 export class OrdersService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly inventoryService: InventoryService,
+  ) {}
 
   async listOrders(groupId: string, subsidiaryId: string, query: ListQueryDto) {
     if (!groupId) throw new BadRequestException("X-Group-Id header is required");
@@ -129,6 +133,8 @@ export class OrdersService {
       where: { id: orderId, groupId, subsidiaryId },
     });
     if (!existing) throw new NotFoundException("Order not found");
+
+    await this.inventoryService.releaseStockReservationsForOrder(groupId, subsidiaryId, orderId);
 
     const order = await this.prisma.order.update({
       where: { id: existing.id },

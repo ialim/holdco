@@ -209,7 +209,8 @@ export function AppMenu() {
 
       <CollapsibleSection title="Warehouse" defaultOpen={false}>
         <MenuItemLink to="/stock-levels" primaryText="Stock Levels" leftIcon={<WarehouseOutlined />} />
-        <MenuItemLink to="/stock-adjustments/create" primaryText="Stock Adjustments" leftIcon={<PlaylistAddOutlined />} />
+        <MenuItemLink to="/stock-adjustments" primaryText="Stock Adjustments" leftIcon={<PlaylistAddOutlined />} />
+        <MenuItemLink to="/stock-reservations" primaryText="Stock Reservations" leftIcon={<PlaylistAddOutlined />} />
         <MenuItemLink to="/stock-transfers" primaryText="Stock Transfers" leftIcon={<SwapHorizOutlined />} />
       </CollapsibleSection>
 

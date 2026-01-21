@@ -1,6 +1,42 @@
 "use client";
 
-import { AutocompleteInput, Create, NumberInput, ReferenceInput, SimpleForm, TextInput, required } from "react-admin";
+import {
+  AutocompleteInput,
+  Create,
+  Datagrid,
+  DateField,
+  List,
+  NumberField,
+  NumberInput,
+  ReferenceInput,
+  SimpleForm,
+  TextField,
+  TextInput,
+  required
+} from "react-admin";
+
+const adjustmentFilters = [
+  <TextInput key="product_id" source="product_id" label="Product ID" />,
+  <TextInput key="variant_id" source="variant_id" label="Variant ID" />,
+  <TextInput key="location_id" source="location_id" label="Location ID" />
+];
+
+export function StockAdjustmentList() {
+  return (
+    <List perPage={50} filters={adjustmentFilters}>
+      <Datagrid rowClick={false}>
+        <TextField source="product_name" />
+        <TextField source="product_sku" />
+        <TextField source="variant_label" />
+        <TextField source="location_name" />
+        <NumberField source="quantity" />
+        <TextField source="reason" />
+        <TextField source="created_by_email" />
+        <DateField source="created_at" showTime />
+      </Datagrid>
+    </List>
+  );
+}
 
 export function StockAdjustmentCreate() {
   return (

@@ -34,10 +34,10 @@ function CompleteTransferButton() {
   const refresh = useRefresh();
   const [loading, setLoading] = useState(false);
 
-  const completeTransfer = async () => {
+  const receiveTransfer = async () => {
     if (!record?.id) return;
     setLoading(true);
-    const response = await apiFetch(`/transfers/${record.id}/complete`, {
+    const response = await apiFetch(`/transfers/${record.id}/receive`, {
       method: "POST",
       headers: { "Idempotency-Key": newIdempotencyKey() }
     });
@@ -49,7 +49,7 @@ function CompleteTransferButton() {
       return;
     }
 
-    notify("Transfer completed", { type: "success" });
+    notify("Transfer received", { type: "success" });
     refresh();
   };
 
@@ -57,10 +57,47 @@ function CompleteTransferButton() {
     <Button
       size="small"
       variant="outlined"
-      onClick={completeTransfer}
-      disabled={loading || record?.status === "completed"}
+      onClick={receiveTransfer}
+      disabled={loading || record?.status !== "approved"}
     >
-      Complete
+      Receive
+    </Button>
+  );
+}
+
+function ApproveTransferButton() {
+  const record = useRecordContext();
+  const notify = useNotify();
+  const refresh = useRefresh();
+  const [loading, setLoading] = useState(false);
+
+  const approveTransfer = async () => {
+    if (!record?.id) return;
+    setLoading(true);
+    const response = await apiFetch(`/transfers/${record.id}/approve`, {
+      method: "POST",
+      headers: { "Idempotency-Key": newIdempotencyKey() }
+    });
+    setLoading(false);
+
+    if (!response.ok) {
+      const message = (response.data as any)?.message || `Request failed (${response.status})`;
+      notify(message, { type: "error" });
+      return;
+    }
+
+    notify("Transfer approved", { type: "success" });
+    refresh();
+  };
+
+  return (
+    <Button
+      size="small"
+      variant="outlined"
+      onClick={approveTransfer}
+      disabled={loading || record?.status !== "pending"}
+    >
+      Approve
     </Button>
   );
 }
@@ -77,6 +114,7 @@ export function StockTransferList() {
         <TextField source="to_location_name" />
         <NumberField source="quantity" />
         <DateField source="created_at" />
+        <ApproveTransferButton />
         <CompleteTransferButton />
       </Datagrid>
     </List>

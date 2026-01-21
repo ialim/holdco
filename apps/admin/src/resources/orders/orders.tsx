@@ -13,10 +13,22 @@ import {
   TextField,
   TextInput,
   useNotify,
+  usePermissions,
   useRecordContext,
   useRefresh
 } from "react-admin";
-import { Box, Button, MenuItem, Stack, TextField as MuiTextField, Typography } from "@mui/material";
+import {
+  Box,
+  Button,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  MenuItem,
+  Stack,
+  TextField as MuiTextField,
+  Typography
+} from "@mui/material";
 import { apiFetch } from "../../lib/api";
 import { newIdempotencyKey } from "../../lib/idempotency";
 
@@ -320,6 +332,70 @@ function ReconcilePanel() {
   );
 }
 
+function OrderReservationsPanel() {
+  const record = useRecordContext();
+  const notify = useNotify();
+  const { permissions } = usePermissions();
+  const refresh = useRefresh();
+  const [open, setOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const permissionList = Array.isArray(permissions) ? permissions.map(String) : [];
+  const canRelease = permissionList.includes("*") || permissionList.includes("inventory.stock.reserve");
+
+  const releaseReservations = async () => {
+    if (!record?.id) return;
+    setLoading(true);
+    const response = await apiFetch("/reservations/release", {
+      method: "POST",
+      headers: { "Idempotency-Key": newIdempotencyKey() },
+      body: { order_id: record.id }
+    });
+    setLoading(false);
+
+    if (!response.ok) {
+      notify(formatError(response.data, response.status), { type: "error" });
+      return;
+    }
+
+    const released = (response.data as any)?.released ?? 0;
+    notify(`Released ${released} reservation(s)`, { type: "success" });
+    setOpen(false);
+    refresh();
+  };
+
+  return (
+    <Section title="Stock reservations">
+      <Stack direction={{ xs: "column", md: "row" }} spacing={2} alignItems="center">
+        <Typography variant="body2">
+          Release all active stock holds for this order.
+        </Typography>
+        <Button variant="outlined" onClick={() => setOpen(true)} disabled={!record?.id || !canRelease}>
+          Release holds
+        </Button>
+        {!canRelease && (
+          <Typography variant="caption" color="text.secondary">
+            Insufficient permission.
+          </Typography>
+        )}
+      </Stack>
+      <Dialog open={open} onClose={() => setOpen(false)} fullWidth maxWidth="sm">
+        <DialogTitle>Release stock reservations</DialogTitle>
+        <DialogContent>
+          <Typography variant="body2">
+            This will release all active stock reservations tied to order {record?.order_no ?? record?.id}. Continue?
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpen(false)}>Cancel</Button>
+          <Button variant="contained" onClick={releaseReservations} disabled={loading}>
+            {loading ? "Releasing..." : "Release"}
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </Section>
+  );
+}
+
 export function OrdersList() {
   return (
     <List filters={orderFilters} perPage={50}>
@@ -362,6 +438,7 @@ export function OrderShow() {
             <NumberField source="total_price" />
           </Datagrid>
         </ArrayField>
+        <OrderReservationsPanel />
         <PaymentIntentPanel />
         <RefundPanel />
         <ReconcilePanel />

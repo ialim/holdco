@@ -3,6 +3,7 @@ import { Prisma } from "@prisma/client";
 import { ListQueryDto } from "../common/dto/list-query.dto";
 import { PrismaService } from "../prisma/prisma.service";
 import { StockAdjustmentDto } from "./dto/stock-adjustment.dto";
+import { ListStockReservationsDto } from "./dto/list-stock-reservations.dto";
 import { ListStockTransfersDto } from "./dto/list-stock-transfers.dto";
 import { StockReservationDto } from "./dto/stock-reservation.dto";
 import { StockTransferDto } from "./dto/stock-transfer.dto";
@@ -42,6 +43,59 @@ export class InventoryService {
         on_hand: level.onHand,
         reserved: level.reserved,
         available: level.onHand - level.reserved,
+      })),
+      meta: this.buildMeta(query, total),
+    };
+  }
+
+  async listStockAdjustments(groupId: string, subsidiaryId: string, query: ListQueryDto) {
+    if (!groupId) throw new BadRequestException("X-Group-Id header is required");
+    if (!subsidiaryId) throw new BadRequestException("X-Subsidiary-Id header is required");
+
+    const createdAt: Prisma.DateTimeFilter = {};
+    if (query.start_date) createdAt.gte = new Date(query.start_date);
+    if (query.end_date) createdAt.lte = new Date(query.end_date);
+
+    const where: Prisma.StockAdjustmentWhereInput = {
+      groupId,
+      subsidiaryId,
+      ...(query.location_id ? { locationId: query.location_id } : {}),
+      ...(query.product_id ? { productId: query.product_id } : {}),
+      ...(query.variant_id ? { variantId: query.variant_id } : {}),
+      ...(Object.keys(createdAt).length ? { createdAt } : {}),
+    };
+
+    const [total, adjustments] = await this.prisma.$transaction([
+      this.prisma.stockAdjustment.count({ where }),
+      this.prisma.stockAdjustment.findMany({
+        where,
+        orderBy: { createdAt: "desc" },
+        skip: query.offset ?? 0,
+        take: query.limit ?? 50,
+        include: { product: true, variant: true, location: true, createdBy: true },
+      }),
+    ]);
+
+    return {
+      data: adjustments.map((adjustment: any) => ({
+        id: adjustment.id,
+        product_id: adjustment.productId,
+        product_name: adjustment.product?.name,
+        product_sku: adjustment.product?.sku,
+        variant_id: adjustment.variantId ?? undefined,
+        variant_label: adjustment.variant
+          ? `${adjustment.variant.size ?? ""}${adjustment.variant.unit ? ` ${adjustment.variant.unit}` : ""}${
+              adjustment.variant.barcode ? ` - ${adjustment.variant.barcode}` : ""
+            }`.trim()
+          : undefined,
+        location_id: adjustment.locationId,
+        location_name: adjustment.location?.name,
+        quantity: adjustment.quantity,
+        reason: adjustment.reason,
+        created_by_id: adjustment.createdById ?? undefined,
+        created_by_name: adjustment.createdBy?.name ?? undefined,
+        created_by_email: adjustment.createdBy?.email ?? undefined,
+        created_at: adjustment.createdAt.toISOString(),
       })),
       meta: this.buildMeta(query, total),
     };
@@ -198,6 +252,85 @@ export class InventoryService {
     };
   }
 
+  async approveStockTransfer(groupId: string, subsidiaryId: string, transferId: string) {
+    if (!groupId) throw new BadRequestException("X-Group-Id header is required");
+    if (!subsidiaryId) throw new BadRequestException("X-Subsidiary-Id header is required");
+
+    const transfer = await this.prisma.stockTransfer.findFirst({
+      where: { id: transferId, groupId, subsidiaryId },
+    });
+
+    if (!transfer) {
+      throw new NotFoundException("Transfer not found");
+    }
+
+    if (transfer.status === "approved") {
+      return {
+        id: transfer.id,
+        product_id: transfer.productId,
+        variant_id: transfer.variantId ?? undefined,
+        from_location_id: transfer.fromLocationId,
+        to_location_id: transfer.toLocationId,
+        quantity: transfer.quantity,
+        status: transfer.status,
+        created_at: transfer.createdAt.toISOString(),
+        updated_at: transfer.updatedAt.toISOString(),
+      };
+    }
+
+    if (transfer.status === "completed") {
+      throw new BadRequestException("Completed transfers cannot be approved");
+    }
+
+    const updated = await this.prisma.stockTransfer.update({
+      where: { id: transfer.id },
+      data: { status: "approved" },
+    });
+
+    return {
+      id: updated.id,
+      product_id: updated.productId,
+      variant_id: updated.variantId ?? undefined,
+      from_location_id: updated.fromLocationId,
+      to_location_id: updated.toLocationId,
+      quantity: updated.quantity,
+      status: updated.status,
+      created_at: updated.createdAt.toISOString(),
+      updated_at: updated.updatedAt.toISOString(),
+    };
+  }
+
+  async listStockReservations(groupId: string, subsidiaryId: string, query: ListStockReservationsDto) {
+    if (!groupId) throw new BadRequestException("X-Group-Id header is required");
+    if (!subsidiaryId) throw new BadRequestException("X-Subsidiary-Id header is required");
+
+    const where: Prisma.StockReservationWhereInput = {
+      groupId,
+      subsidiaryId,
+      ...(query.status ? { status: query.status } : {}),
+      ...(query.location_id ? { locationId: query.location_id } : {}),
+      ...(query.product_id ? { productId: query.product_id } : {}),
+      ...(query.variant_id ? { variantId: query.variant_id } : {}),
+      ...(query.order_id ? { orderId: query.order_id } : {}),
+    };
+
+    const [total, reservations] = await this.prisma.$transaction([
+      this.prisma.stockReservation.count({ where }),
+      this.prisma.stockReservation.findMany({
+        where,
+        orderBy: { createdAt: "desc" },
+        skip: query.offset ?? 0,
+        take: query.limit ?? 50,
+        include: { product: true, variant: true, location: true },
+      }),
+    ]);
+
+    return {
+      data: reservations.map((reservation: any) => this.mapReservation(reservation)),
+      meta: this.buildMeta(query, total),
+    };
+  }
+
   async completeStockTransfer(groupId: string, subsidiaryId: string, transferId: string) {
     if (!groupId) throw new BadRequestException("X-Group-Id header is required");
     if (!subsidiaryId) throw new BadRequestException("X-Subsidiary-Id header is required");
@@ -221,6 +354,9 @@ export class InventoryService {
         created_at: transfer.createdAt.toISOString(),
         updated_at: transfer.updatedAt.toISOString(),
       };
+    }
+    if (transfer.status !== "approved") {
+      throw new BadRequestException("Transfer must be approved before completion");
     }
 
     const result = await this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
@@ -362,6 +498,34 @@ export class InventoryService {
     };
   }
 
+  async releaseStockReservation(groupId: string, subsidiaryId: string, reservationId: string) {
+    if (!groupId) throw new BadRequestException("X-Group-Id header is required");
+    if (!subsidiaryId) throw new BadRequestException("X-Subsidiary-Id header is required");
+
+    const reservation = await this.prisma.stockReservation.findFirst({
+      where: { id: reservationId, groupId, subsidiaryId },
+    });
+
+    if (!reservation) {
+      throw new NotFoundException("Reservation not found");
+    }
+
+    if (reservation.status === "active") {
+      await this.releaseStockReservations(groupId, subsidiaryId, [reservationId]);
+    }
+
+    const updated = await this.prisma.stockReservation.findFirst({
+      where: { id: reservationId, groupId, subsidiaryId },
+      include: { product: true, variant: true, location: true },
+    });
+
+    if (!updated) {
+      throw new NotFoundException("Reservation not found");
+    }
+
+    return this.mapReservation(updated);
+  }
+
   async releaseStockReservations(groupId: string, subsidiaryId: string, reservationIds: string[]) {
     if (!groupId) throw new BadRequestException("X-Group-Id header is required");
     if (!subsidiaryId) throw new BadRequestException("X-Subsidiary-Id header is required");
@@ -402,11 +566,52 @@ export class InventoryService {
     });
   }
 
+  async releaseStockReservationsForOrder(groupId: string, subsidiaryId: string, orderId: string) {
+    if (!groupId) throw new BadRequestException("X-Group-Id header is required");
+    if (!subsidiaryId) throw new BadRequestException("X-Subsidiary-Id header is required");
+    if (!orderId) throw new BadRequestException("order_id is required");
+
+    const reservations = await this.prisma.stockReservation.findMany({
+      where: { groupId, subsidiaryId, orderId, status: "active" },
+      select: { id: true },
+    });
+
+    if (!reservations.length) {
+      return { order_id: orderId, released: 0, reservation_ids: [] as string[] };
+    }
+
+    const reservationIds = reservations.map((reservation) => reservation.id);
+    await this.releaseStockReservations(groupId, subsidiaryId, reservationIds);
+
+    return { order_id: orderId, released: reservationIds.length, reservation_ids: reservationIds };
+  }
+
   private buildMeta(query: ListQueryDto, total: number) {
     return {
       limit: query.limit ?? 50,
       offset: query.offset ?? 0,
       total,
+    };
+  }
+
+  private mapReservation(reservation: any) {
+    return {
+      id: reservation.id,
+      order_id: reservation.orderId ?? undefined,
+      product_id: reservation.productId,
+      product_name: reservation.product?.name,
+      product_sku: reservation.product?.sku,
+      variant_id: reservation.variantId ?? undefined,
+      variant_label: reservation.variant
+        ? `${reservation.variant.size ?? ""}${reservation.variant.unit ? ` ${reservation.variant.unit}` : ""}${
+            reservation.variant.barcode ? ` - ${reservation.variant.barcode}` : ""
+          }`.trim()
+        : undefined,
+      location_id: reservation.locationId,
+      location_name: reservation.location?.name,
+      quantity: reservation.quantity,
+      status: reservation.status,
+      created_at: reservation.createdAt.toISOString(),
     };
   }
 }

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import {
   ArrayInput,
+  ArrayField,
   Create,
   Datagrid,
   DateField,
@@ -13,6 +14,7 @@ import {
   Show,
   SimpleForm,
   SimpleFormIterator,
+  SimpleShowLayout,
   TextField,
   TextInput,
   useNotify,
@@ -289,7 +291,7 @@ function FinalizeShipmentPanel() {
 export function ImportShipmentList() {
   return (
     <List filters={shipmentFilters} perPage={50}>
-      <Datagrid rowClick={false}>
+      <Datagrid rowClick="show">
         <TextField source="reference" />
         <TextField source="status" />
         <TextField source="supplier_id" />
@@ -328,11 +330,38 @@ export function ImportShipmentCreate() {
 export function ImportShipmentShow() {
   return (
     <Show>
-      <SimpleForm>
+      <SimpleShowLayout>
+        <TextField source="reference" />
+        <TextField source="status" />
+        <TextField source="supplier_id" />
+        <TextField source="currency" />
+        <NumberField source="fx_rate" />
+        <DateField source="arrival_date" />
+        <DateField source="cleared_date" />
+        <NumberField source="total_base_amount" />
+        <NumberField source="total_landed_cost" />
+        <ArrayField source="lines">
+          <Datagrid>
+            <TextField source="product_id" />
+            <TextField source="variant_id" />
+            <NumberField source="quantity" />
+            <NumberField source="unit_cost" />
+            <NumberField source="base_amount" />
+            <NumberField source="landed_unit_cost" />
+            <NumberField source="landed_amount" />
+          </Datagrid>
+        </ArrayField>
+        <ArrayField source="costs">
+          <Datagrid>
+            <TextField source="category" />
+            <NumberField source="amount" />
+            <TextField source="notes" />
+          </Datagrid>
+        </ArrayField>
         <AddCostsPanel />
         <ReceiveShipmentPanel />
         <FinalizeShipmentPanel />
-      </SimpleForm>
+      </SimpleShowLayout>
     </Show>
   );
 }

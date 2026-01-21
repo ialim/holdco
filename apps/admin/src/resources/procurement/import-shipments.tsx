@@ -18,11 +18,12 @@ import {
   TextField,
   TextInput,
   useNotify,
+  usePermissions,
   useRecordContext,
   useRefresh,
   required
 } from "react-admin";
-import { Box, Button, Stack, TextField as MuiTextField, Typography } from "@mui/material";
+import { Autocomplete, Box, Button, Stack, TextField as MuiTextField, Typography } from "@mui/material";
 import { apiFetch } from "../../lib/api";
 import { newIdempotencyKey } from "../../lib/idempotency";
 
@@ -135,19 +136,90 @@ function ReceiveShipmentPanel() {
   const notify = useNotify();
   const refresh = useRefresh();
   const [locationId, setLocationId] = useState("");
+  const [locationOptions, setLocationOptions] = useState<Array<{ id: string; label: string }>>([]);
   const [receivedAt, setReceivedAt] = useState("");
   const [notes, setNotes] = useState("");
   const [lines, setLines] = useState([
     { product_id: "", variant_id: "", quantity_received: "", quantity_rejected: "" }
   ]);
+  const [productOptions, setProductOptions] = useState<Array<{ id: string; label: string }>>([]);
+  const [variantOptionsByProduct, setVariantOptionsByProduct] = useState<Record<string, Array<{ id: string; label: string }>>>(
+    {}
+  );
 
   const updateLine = (index: number, key: string, value: string) => {
-    setLines((prev) => prev.map((line, idx) => (idx === index ? { ...line, [key]: value } : line)));
+    setLines((prev) =>
+      prev.map((line, idx) =>
+        idx === index
+          ? {
+              ...line,
+              [key]: value,
+              ...(key === "product_id" ? { variant_id: "" } : {})
+            }
+          : line
+      )
+    );
   };
 
   const addLine = () =>
     setLines((prev) => [...prev, { product_id: "", variant_id: "", quantity_received: "", quantity_rejected: "" }]);
   const removeLine = (index: number) => setLines((prev) => prev.filter((_, idx) => idx !== index));
+
+  const loadLocations = async (query: string) => {
+    const params = new URLSearchParams({ limit: "20" });
+    if (query) params.set("q", query);
+    const response = await apiFetch(`/locations?${params.toString()}`);
+    if (!response.ok) {
+      notify(`Location lookup failed (${response.status})`, { type: "error" });
+      return;
+    }
+    const items = (response.data as any)?.data ?? [];
+    const options = Array.isArray(items)
+      ? items.map((item: any) => ({
+          id: item.id,
+          label: item.name ? `${item.name} (${item.id})` : item.id
+        }))
+      : [];
+    setLocationOptions(options);
+  };
+
+  const loadProducts = async (query: string) => {
+    const params = new URLSearchParams({ limit: "20" });
+    if (query) params.set("q", query);
+    const response = await apiFetch(`/products?${params.toString()}`);
+    if (!response.ok) {
+      notify(`Product lookup failed (${response.status})`, { type: "error" });
+      return;
+    }
+    const items = (response.data as any)?.data ?? [];
+    const options = Array.isArray(items)
+      ? items.map((item: any) => ({
+          id: item.id,
+          label: item.name ? `${item.name} (${item.sku ?? item.id})` : item.id
+        }))
+      : [];
+    setProductOptions(options);
+  };
+
+  const loadVariants = async (productId: string) => {
+    if (!productId) return;
+    const params = new URLSearchParams({ limit: "50", product_id: productId });
+    const response = await apiFetch(`/variants?${params.toString()}`);
+    if (!response.ok) {
+      notify(`Variant lookup failed (${response.status})`, { type: "error" });
+      return;
+    }
+    const items = (response.data as any)?.data ?? [];
+    const options = Array.isArray(items)
+      ? items.map((item: any) => ({
+          id: item.id,
+          label: item.size || item.unit || item.barcode
+            ? `${item.size ?? ""}${item.unit ? ` ${item.unit}` : ""}${item.barcode ? ` - ${item.barcode}` : ""}`.trim()
+            : item.id
+        }))
+      : [];
+    setVariantOptionsByProduct((prev) => ({ ...prev, [productId]: options }));
+  };
 
   const submitReceive = async () => {
     if (!record?.id) return;
@@ -194,11 +266,15 @@ function ReceiveShipmentPanel() {
     <ActionSection title="Receive shipment">
       <Stack spacing={2}>
         <Stack spacing={2} direction={{ xs: "column", md: "row" }}>
-          <MuiTextField
-            label="Location ID"
-            value={locationId}
-            onChange={(event) => setLocationId(event.target.value)}
-            fullWidth
+          <Autocomplete
+            options={locationOptions}
+            value={locationOptions.find((option) => option.id === locationId) ?? null}
+            onChange={(_, option) => setLocationId(option?.id ?? "")}
+            onInputChange={(_, value) => {
+              loadLocations(value);
+            }}
+            isOptionEqualToValue={(option, value) => option.id === value.id}
+            renderInput={(params) => <MuiTextField {...params} label="Location" fullWidth />}
           />
           <MuiTextField
             label="Received at (YYYY-MM-DD)"
@@ -215,17 +291,38 @@ function ReceiveShipmentPanel() {
         </Stack>
         {lines.map((line, index) => (
           <Stack key={`${line.product_id}-${index}`} spacing={1} direction={{ xs: "column", md: "row" }}>
-            <MuiTextField
-              label="Product ID"
-              value={line.product_id}
-              onChange={(event) => updateLine(index, "product_id", event.target.value)}
-              fullWidth
+            <Autocomplete
+              options={productOptions}
+              value={productOptions.find((option) => option.id === line.product_id) ?? null}
+              onChange={(_, option) => {
+                updateLine(index, "product_id", option?.id ?? "");
+                if (option?.id) {
+                  loadVariants(option.id);
+                }
+              }}
+              onInputChange={(_, value) => {
+                loadProducts(value);
+              }}
+              isOptionEqualToValue={(option, value) => option.id === value.id}
+              renderInput={(params) => <MuiTextField {...params} label="Product" fullWidth />}
             />
-            <MuiTextField
-              label="Variant ID"
-              value={line.variant_id}
-              onChange={(event) => updateLine(index, "variant_id", event.target.value)}
-              fullWidth
+            <Autocomplete
+              options={line.product_id ? variantOptionsByProduct[line.product_id] ?? [] : []}
+              value={
+                line.product_id
+                  ? (variantOptionsByProduct[line.product_id] ?? []).find((option) => option.id === line.variant_id) ?? null
+                  : null
+              }
+              onChange={(_, option) => updateLine(index, "variant_id", option?.id ?? "")}
+              onOpen={() => {
+                if (line.product_id) {
+                  loadVariants(line.product_id);
+                }
+              }}
+              isOptionEqualToValue={(option, value) => option.id === value.id}
+              renderInput={(params) => (
+                <MuiTextField {...params} label="Variant" fullWidth disabled={!line.product_id} />
+              )}
             />
             <MuiTextField
               label="Qty received"
@@ -328,6 +425,11 @@ export function ImportShipmentCreate() {
 }
 
 export function ImportShipmentShow() {
+  const { permissions } = usePermissions();
+  const permissionList = Array.isArray(permissions) ? permissions.map(String) : [];
+  const canManageImports =
+    permissionList.includes("*") || permissionList.includes("procurement.imports.manage");
+
   return (
     <Show>
       <SimpleShowLayout>
@@ -358,9 +460,17 @@ export function ImportShipmentShow() {
             <TextField source="notes" />
           </Datagrid>
         </ArrayField>
-        <AddCostsPanel />
-        <ReceiveShipmentPanel />
-        <FinalizeShipmentPanel />
+        {canManageImports ? (
+          <>
+            <AddCostsPanel />
+            <ReceiveShipmentPanel />
+            <FinalizeShipmentPanel />
+          </>
+        ) : (
+          <Typography variant="body2" color="text.secondary">
+            You do not have permission to manage import shipments.
+          </Typography>
+        )}
       </SimpleShowLayout>
     </Show>
   );

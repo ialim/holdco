@@ -114,7 +114,7 @@ export function StockReservationList() {
     <List perPage={50} filters={reservationFilters} actions={<StockReservationActions />}>
       <Datagrid rowClick={false}>
         <TextField source="status" />
-        <TextField source="order_id" />
+        <TextField source="order_no" />
         <TextField source="product_name" />
         <TextField source="product_sku" />
         <TextField source="variant_label" />

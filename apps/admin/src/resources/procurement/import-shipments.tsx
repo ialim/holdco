@@ -10,6 +10,7 @@ import {
   DateField,
   DateInput,
   FormDataConsumer,
+  FunctionField,
   List,
   NumberField,
   NumberInput,
@@ -489,7 +490,10 @@ export function ImportShipmentShow() {
       <SimpleShowLayout>
         <TextField source="reference" />
         <TextField source="status" />
-        <TextField source="supplier_id" />
+        <FunctionField
+          label="Supplier"
+          render={(record: any) => record?.supplier_name || record?.supplier_id || "-"}
+        />
         <TextField source="currency" />
         <NumberField source="fx_rate" />
         <DateField source="arrival_date" />
@@ -498,8 +502,16 @@ export function ImportShipmentShow() {
         <NumberField source="total_landed_cost" />
         <ArrayField source="lines">
           <Datagrid>
-            <TextField source="product_id" />
-            <TextField source="variant_id" />
+            <FunctionField
+              label="Product"
+              render={(line: any) =>
+                line?.product_name ? `${line.product_name} (${line.product_sku ?? line.product_id})` : line?.product_id || "-"
+              }
+            />
+            <FunctionField
+              label="Variant"
+              render={(line: any) => line?.variant_label || line?.variant_id || "-"}
+            />
             <NumberField source="quantity" />
             <NumberField source="unit_cost" />
             <NumberField source="base_amount" />

@@ -6,13 +6,16 @@ import {
   Create,
   Datagrid,
   DateField,
+  FunctionField,
   List,
   NumberField,
   NumberInput,
+  ReferenceInput,
   SelectInput,
   SimpleForm,
   TextField,
   TextInput,
+  AutocompleteInput,
   required,
   useNotify,
   useRecordContext,
@@ -135,7 +138,10 @@ export function CreditAccountList() {
   return (
     <List filters={accountFilters} perPage={50} filterDefaultValues={defaultFilters}>
       <Datagrid rowClick={false}>
-        <TextField source="reseller_id" label="Reseller ID" />
+        <FunctionField
+          label="Reseller"
+          render={(record: any) => record?.reseller_name || record?.reseller_id || "-"}
+        />
         <NumberField source="limit_amount" />
         <NumberField source="used_amount" />
         <NumberField source="available_amount" />
@@ -151,7 +157,14 @@ export function CreditAccountCreate() {
   return (
     <Create>
       <SimpleForm>
-        <TextInput source="reseller_id" label="Reseller ID" validate={[required()]} fullWidth />
+        <ReferenceInput source="reseller_id" reference="resellers">
+          <AutocompleteInput
+            optionText={(record) => (record?.name ? `${record.name} (${record.id})` : record?.id)}
+            filterToQuery={(search) => ({ q: search })}
+            validate={[required()]}
+            fullWidth
+          />
+        </ReferenceInput>
         <NumberInput source="limit_amount" label="Limit amount" validate={[required()]} fullWidth />
       </SimpleForm>
     </Create>

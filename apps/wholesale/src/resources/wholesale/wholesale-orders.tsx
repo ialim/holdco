@@ -9,6 +9,7 @@ import {
   Datagrid,
   DateInput,
   FormDataConsumer,
+  FunctionField,
   List,
   NumberField,
   NumberInput,
@@ -105,7 +106,10 @@ export function WholesaleOrderList() {
     <List filters={orderFilters} perPage={50} filterDefaultValues={defaultFilters}>
       <Datagrid rowClick="show">
         <TextField source="order_no" label="Order No" />
-        <TextField source="reseller_id" />
+        <FunctionField
+          label="Reseller"
+          render={(record: any) => record?.reseller_name || record?.reseller_id || "-"}
+        />
         <TextField source="status" />
         <TextField source="payment_status" />
         <NumberField source="total_amount" />

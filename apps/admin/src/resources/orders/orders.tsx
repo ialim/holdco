@@ -5,6 +5,7 @@ import {
   ArrayField,
   Datagrid,
   DateInput,
+  FunctionField,
   List,
   NumberField,
   SelectInput,
@@ -428,11 +429,22 @@ export function OrderShow() {
         <NumberField source="balance_due" />
         <TextField source="currency" />
         <TextField source="customer_id" />
-        <TextField source="reseller_id" />
+        <FunctionField
+          label="Reseller"
+          render={(record: any) => record?.reseller_name || record?.reseller_id || "-"}
+        />
         <ArrayField source="items">
           <Datagrid>
-            <TextField source="product_id" />
-            <TextField source="variant_id" />
+            <FunctionField
+              label="Product"
+              render={(line: any) =>
+                line?.product_name ? `${line.product_name} (${line.product_sku ?? line.product_id})` : line?.product_id || "-"
+              }
+            />
+            <FunctionField
+              label="Variant"
+              render={(line: any) => line?.variant_label || line?.variant_id || "-"}
+            />
             <NumberField source="quantity" />
             <NumberField source="unit_price" />
             <NumberField source="total_price" />

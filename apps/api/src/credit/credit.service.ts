@@ -93,13 +93,20 @@ export class CreditService {
 
     const [total, accounts] = await this.prisma.$transaction([
       this.prisma.creditAccount.count({ where }),
-      this.prisma.creditAccount.findMany({ where, orderBy: { createdAt: "desc" }, skip: query.offset ?? 0, take: query.limit ?? 50 }),
+      this.prisma.creditAccount.findMany({
+        where,
+        orderBy: { createdAt: "desc" },
+        skip: query.offset ?? 0,
+        take: query.limit ?? 50,
+        include: { reseller: true },
+      }),
     ]);
 
     return {
       data: accounts.map((account: any) => ({
         id: account.id,
         reseller_id: account.resellerId,
+        reseller_name: account.reseller?.name ?? undefined,
         limit_amount: Number(account.limitAmount),
         used_amount: Number(account.usedAmount),
         available_amount: Math.max(0, Number(account.limitAmount) - Number(account.usedAmount)),

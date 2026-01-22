@@ -40,12 +40,12 @@ export class OrdersService {
         orderBy: { createdAt: "desc" },
         skip: query.offset ?? 0,
         take: query.limit ?? 50,
-        include: { items: true },
+        include: { items: { include: { product: true, variant: true } }, reseller: true },
       }),
     ]);
 
     return {
-      data: orders.map(this.mapOrder),
+      data: orders.map((order) => this.mapOrder(order)),
       meta: this.buildMeta(query, total),
     };
   }
@@ -105,7 +105,7 @@ export class OrdersService {
         currency,
         items: { create: items },
       },
-      include: { items: true },
+      include: { items: { include: { product: true, variant: true } } },
     });
 
     return this.mapOrder(order);
@@ -117,7 +117,7 @@ export class OrdersService {
 
     const order = await this.prisma.order.findFirst({
       where: { id: orderId, groupId, subsidiaryId },
-      include: { items: true },
+      include: { items: { include: { product: true, variant: true } }, reseller: true },
     });
 
     if (!order) throw new NotFoundException("Order not found");
@@ -139,7 +139,7 @@ export class OrdersService {
     const order = await this.prisma.order.update({
       where: { id: existing.id },
       data: { status: "cancelled" },
-      include: { items: true },
+      include: { items: { include: { product: true, variant: true } } },
     });
 
     return this.mapOrder(order);
@@ -157,7 +157,7 @@ export class OrdersService {
     const order = await this.prisma.order.update({
       where: { id: existing.id },
       data: { status: "fulfilled" },
-      include: { items: true },
+      include: { items: { include: { product: true, variant: true } } },
     });
 
     return this.mapOrder(order);
@@ -229,7 +229,7 @@ export class OrdersService {
     const updated = await this.prisma.order.update({
       where: { id: order.id },
       data: { paidAmount, paymentStatus },
-      include: { items: true },
+      include: { items: { include: { product: true, variant: true } } },
     });
 
     return this.mapOrder(updated);
@@ -241,6 +241,7 @@ export class OrdersService {
     status: string;
     customerId: string | null;
     resellerId: string | null;
+    reseller?: { name: string | null } | null;
     totalAmount: any;
     discountAmount?: any;
     taxAmount?: any;
@@ -251,6 +252,8 @@ export class OrdersService {
     items: Array<{
       productId: string;
       variantId: string | null;
+      product?: { name?: string | null; sku?: string | null } | null;
+      variant?: { size?: string | null; unit?: string | null; barcode?: string | null } | null;
       quantity: number;
       unitPrice: any;
       totalPrice: any;
@@ -262,6 +265,7 @@ export class OrdersService {
       status: order.status,
       customer_id: order.customerId ?? undefined,
       reseller_id: order.resellerId ?? undefined,
+      reseller_name: order.reseller?.name ?? undefined,
       total_amount: Number(order.totalAmount),
       discount_amount: Number(order.discountAmount ?? 0),
       tax_amount: Number(order.taxAmount ?? 0),
@@ -272,12 +276,26 @@ export class OrdersService {
       currency: order.currency,
       items: order.items.map((item) => ({
         product_id: item.productId,
+        product_name: item.product?.name ?? undefined,
+        product_sku: item.product?.sku ?? undefined,
         variant_id: item.variantId ?? undefined,
+        variant_label: this.formatVariantLabel(item.variant),
         quantity: item.quantity,
         unit_price: Number(item.unitPrice),
         total_price: Number(item.totalPrice),
       })),
     };
+  }
+
+  private formatVariantLabel(
+    variant: { size?: string | null; unit?: string | null; barcode?: string | null } | null | undefined,
+  ) {
+    if (!variant) return undefined;
+    const size = variant.size ?? "";
+    const unit = variant.unit ? ` ${variant.unit}` : "";
+    const barcode = variant.barcode ? ` - ${variant.barcode}` : "";
+    const label = `${size}${unit}${barcode}`.trim();
+    return label || undefined;
   }
 
   private buildMeta(query: ListQueryDto, total: number) {

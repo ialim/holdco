@@ -149,16 +149,35 @@ function renderReceipt(printer, receipt, config) {
   if (shipping > 0) printer.text(formatRow("Shipping", shipping.toFixed(2), width));
   printer.text(formatRow("Total", total.toFixed(2), width));
 
-  if (receipt.payment) {
+  const payments = Array.isArray(receipt.payments)
+    ? receipt.payments
+    : receipt.payment
+      ? [receipt.payment]
+      : [];
+  if (payments.length) {
     printer.text(divider);
-    const paymentLines = [];
-    paymentLines.push(`Payment: ${receipt.payment.method}`);
-    if (receipt.payment.provider) paymentLines.push(`Provider: ${receipt.payment.provider}`);
-    if (receipt.payment.reference) paymentLines.push(`Ref: ${receipt.payment.reference}`);
-    if (receipt.payment.status) paymentLines.push(`Status: ${receipt.payment.status}`);
-    const paid = Number(receipt.payment.amount) || 0;
-    paymentLines.push(`Paid: ${paid.toFixed(2)}`);
-    printLines(printer, paymentLines);
+    printer.align("lt");
+    if (receipt.meta?.paymentPlan) {
+      printer.text(`Payment plan: ${receipt.meta.paymentPlan}`);
+    }
+    payments.forEach((payment) => {
+      const methodLabel = payment.type ? `${payment.method} (${payment.type})` : payment.method;
+      const amountValue = Number(payment.amount);
+      const amountLabel = Number.isFinite(amountValue) && amountValue > 0 ? amountValue.toFixed(2) : "";
+      if (amountLabel) {
+        printer.text(formatRow(methodLabel || "Payment", amountLabel, width));
+      } else {
+        printer.text(`Payment: ${methodLabel || "manual"}`);
+      }
+      if (payment.provider) printer.text(`  Provider: ${payment.provider}`);
+      if (payment.reference) printer.text(`  Ref: ${payment.reference}`);
+      if (payment.status) printer.text(`  Status: ${payment.status}`);
+      if (payment.points) printer.text(`  Points: ${payment.points}`);
+    });
+    const paidTotal = Number(receipt.paid_total) || 0;
+    if (paidTotal) {
+      printer.text(formatRow("Paid total", paidTotal.toFixed(2), width));
+    }
   }
 
   if (receipt.footer?.length || config.footerLines.length) {

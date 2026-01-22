@@ -7,6 +7,7 @@ import {
   Datagrid,
   DateField,
   DateInput,
+  FunctionField,
   List,
   NumberField,
   NumberInput,
@@ -31,7 +32,12 @@ export function PurchaseRequestList() {
     <List filters={requestFilters} perPage={50}>
       <Datagrid rowClick={false}>
         <TextField source="status" />
-        <TextField source="requester_id" />
+        <FunctionField
+          label="Requester"
+          render={(record: any) =>
+            record?.requester_name || record?.requester_email || record?.requester_id || "-"
+          }
+        />
         <DateField source="needed_by" />
         <NumberField source="items_count" />
         <DateField source="created_at" showTime />

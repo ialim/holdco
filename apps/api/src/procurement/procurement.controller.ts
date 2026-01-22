@@ -68,6 +68,16 @@ export class ProcurementController {
   }
 
   @Permissions("procurement.imports.manage")
+  @Get("procurement/import-shipments/:id")
+  getImportShipment(
+    @Headers("x-group-id") groupId: string,
+    @Headers("x-subsidiary-id") subsidiaryId: string,
+    @Param("id") id: string,
+  ) {
+    return this.procurementService.getImportShipment(groupId, subsidiaryId, id);
+  }
+
+  @Permissions("procurement.imports.manage")
   @Post("procurement/import-shipments")
   createImportShipment(
     @Headers("x-group-id") groupId: string,

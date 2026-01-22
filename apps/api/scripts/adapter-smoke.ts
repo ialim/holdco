@@ -63,10 +63,12 @@ async function cleanup(prisma: PrismaClient, created: CreatedIds) {
     await prisma.stockReservation.deleteMany({ where: { productId: created.productId } });
   }
   if (created.paymentIntents.length) {
+    await prisma.orderPayment.deleteMany({ where: { paymentIntentId: { in: created.paymentIntents } } });
     await prisma.refund.deleteMany({ where: { paymentIntentId: { in: created.paymentIntents } } });
     await prisma.paymentIntent.deleteMany({ where: { id: { in: created.paymentIntents } } });
   }
   if (created.orders.length) {
+    await prisma.orderPayment.deleteMany({ where: { orderId: { in: created.orders } } });
     await prisma.order.deleteMany({ where: { id: { in: created.orders } } });
   }
   if (created.productId && created.locationId) {

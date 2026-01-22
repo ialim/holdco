@@ -39,7 +39,7 @@ export class ProcurementService {
         orderBy: { createdAt: "desc" },
         skip: query.offset ?? 0,
         take: query.limit ?? 50,
-        include: { items: true },
+        include: { items: true, requester: true },
       }),
     ]);
 
@@ -47,9 +47,13 @@ export class ProcurementService {
       data: requests.map((request: any) => ({
         id: request.id,
         requester_id: request.requesterId ?? undefined,
+        requester_name: request.requester?.name ?? undefined,
+        requester_email: request.requester?.email ?? undefined,
         status: request.status,
         needed_by: this.formatDate(request.neededBy),
         notes: request.notes ?? undefined,
+        items_count: Array.isArray(request.items) ? request.items.length : 0,
+        created_at: request.createdAt.toISOString(),
         items: request.items.map((item: any) => ({
           description: item.description,
           quantity: item.quantity,
@@ -90,15 +94,19 @@ export class ProcurementService {
           })),
         },
       },
-      include: { items: true },
+      include: { items: true, requester: true },
     });
 
     return {
       id: request.id,
       requester_id: request.requesterId ?? undefined,
+      requester_name: request.requester?.name ?? undefined,
+      requester_email: request.requester?.email ?? undefined,
       status: request.status,
       needed_by: this.formatDate(request.neededBy),
       notes: request.notes ?? undefined,
+      items_count: Array.isArray(request.items) ? request.items.length : 0,
+      created_at: request.createdAt.toISOString(),
       items: request.items.map((item: any) => ({
         description: item.description,
         quantity: item.quantity,
@@ -127,32 +135,35 @@ export class ProcurementService {
       ...(query.status ? { status: query.status } : {}),
     };
 
-    const [total, orders] = await this.prisma.$transaction([
-      this.prisma.purchaseOrder.count({ where }),
-      this.prisma.purchaseOrder.findMany({
-        where,
-        orderBy: { createdAt: "desc" },
-        skip: query.offset ?? 0,
-        take: query.limit ?? 50,
-        include: { items: true },
-      }),
-    ]);
+      const [total, orders] = await this.prisma.$transaction([
+        this.prisma.purchaseOrder.count({ where }),
+        this.prisma.purchaseOrder.findMany({
+          where,
+          orderBy: { createdAt: "desc" },
+          skip: query.offset ?? 0,
+          take: query.limit ?? 50,
+          include: { items: true, vendor: true },
+        }),
+      ]);
 
-    return {
-      data: orders.map((order: any) => ({
-        id: order.id,
-        vendor_id: order.vendorId ?? undefined,
-        status: order.status,
-        ordered_at: order.orderedAt ? order.orderedAt.toISOString() : undefined,
-        expected_at: this.formatDate(order.expectedAt),
-        total_amount:
-          order.totalAmount !== null ? Number(order.totalAmount) : undefined,
-        currency: order.currency ?? undefined,
-        items: order.items.map((item: any) => ({
-          description: item.description,
-          quantity: item.quantity,
-          unit_price: Number(item.unitPrice),
-          total_price: Number(item.totalPrice),
+      return {
+        data: orders.map((order: any) => ({
+          id: order.id,
+          vendor_id: order.vendorId ?? undefined,
+          vendor_name: order.vendor?.name ?? undefined,
+          status: order.status,
+          ordered_at: order.orderedAt ? order.orderedAt.toISOString() : undefined,
+          expected_at: this.formatDate(order.expectedAt),
+          total_amount:
+            order.totalAmount !== null ? Number(order.totalAmount) : undefined,
+          currency: order.currency ?? undefined,
+          items_count: Array.isArray(order.items) ? order.items.length : 0,
+          created_at: order.createdAt.toISOString(),
+          items: order.items.map((item: any) => ({
+            description: item.description,
+            quantity: item.quantity,
+            unit_price: Number(item.unitPrice),
+            total_price: Number(item.totalPrice),
         })),
       })),
       meta: this.buildMeta(query, total),
@@ -212,6 +223,7 @@ export class ProcurementService {
       total_amount:
         order.totalAmount !== null ? Number(order.totalAmount) : undefined,
       currency: order.currency ?? undefined,
+      created_at: order.createdAt.toISOString(),
       items: order.items.map((item: any) => ({
         description: item.description,
         quantity: item.quantity,
@@ -240,42 +252,38 @@ export class ProcurementService {
         orderBy: { createdAt: "desc" },
         skip: query.offset ?? 0,
         take: query.limit ?? 50,
-        include: { lines: true, costLines: true, supplier: true },
+        include: {
+          lines: { include: { product: true, variant: true } },
+          costLines: true,
+          supplier: true,
+        },
       }),
     ]);
 
     return {
-      data: shipments.map((shipment: any) => ({
-        id: shipment.id,
-        reference: shipment.reference,
-        supplier_id: shipment.supplierId ?? undefined,
-        supplier_name: shipment.supplier?.name ?? undefined,
-        currency: shipment.currency,
-        fx_rate: Number(shipment.fxRate),
-        status: shipment.status,
-        arrival_date: this.formatDate(shipment.arrivalDate),
-        cleared_date: this.formatDate(shipment.clearedDate),
-        total_base_amount: Number(shipment.totalBaseAmount),
-        total_landed_cost: Number(shipment.totalLandedCost),
-        lines: shipment.lines.map((line: any) => ({
-          id: line.id,
-          product_id: line.productId,
-          variant_id: line.variantId ?? undefined,
-          quantity: line.quantity,
-          unit_cost: Number(line.unitCost),
-          base_amount: Number(line.baseAmount),
-          landed_unit_cost: line.landedUnitCost !== null ? Number(line.landedUnitCost) : undefined,
-          landed_amount: line.landedAmount !== null ? Number(line.landedAmount) : undefined,
-        })),
-        costs: shipment.costLines.map((cost: any) => ({
-          id: cost.id,
-          category: cost.category,
-          amount: Number(cost.amount),
-          notes: cost.notes ?? undefined,
-        })),
-      })),
+      data: shipments.map((shipment: any) => this.mapImportShipment(shipment)),
       meta: this.buildMeta(query, total),
     };
+  }
+
+  async getImportShipment(groupId: string, subsidiaryId: string, shipmentId: string) {
+    if (!groupId) throw new BadRequestException("X-Group-Id header is required");
+    if (!subsidiaryId) throw new BadRequestException("X-Subsidiary-Id header is required");
+    if (!shipmentId) throw new BadRequestException("Shipment id is required");
+    await this.assertTradingSubsidiary(groupId, subsidiaryId);
+
+    const shipment = await this.prisma.importShipment.findFirst({
+      where: { id: shipmentId, groupId, subsidiaryId },
+      include: {
+        lines: { include: { product: true, variant: true } },
+        costLines: true,
+        supplier: true,
+      },
+    });
+
+    if (!shipment) throw new NotFoundException("Import shipment not found");
+
+    return this.mapImportShipment(shipment);
   }
 
   async createImportShipment(groupId: string, subsidiaryId: string, body: CreateImportShipmentDto) {
@@ -953,6 +961,43 @@ export class ProcurementService {
     };
   }
 
+  private mapImportShipment(shipment: any) {
+    return {
+      id: shipment.id,
+      reference: shipment.reference,
+      supplier_id: shipment.supplierId ?? undefined,
+      supplier_name: shipment.supplier?.name ?? undefined,
+      currency: shipment.currency,
+      fx_rate: Number(shipment.fxRate),
+      status: shipment.status,
+      arrival_date: this.formatDate(shipment.arrivalDate),
+      cleared_date: this.formatDate(shipment.clearedDate),
+      total_base_amount: Number(shipment.totalBaseAmount),
+      total_landed_cost: Number(shipment.totalLandedCost),
+      created_at: shipment.createdAt.toISOString(),
+      lines_count: Array.isArray(shipment.lines) ? shipment.lines.length : 0,
+      lines: (shipment.lines ?? []).map((line: any) => ({
+        id: line.id,
+        product_id: line.productId,
+        product_name: line.product?.name ?? undefined,
+        product_sku: line.product?.sku ?? undefined,
+        variant_id: line.variantId ?? undefined,
+        variant_label: this.formatVariantLabel(line.variant),
+        quantity: line.quantity,
+        unit_cost: Number(line.unitCost),
+        base_amount: Number(line.baseAmount),
+        landed_unit_cost: line.landedUnitCost !== null ? Number(line.landedUnitCost) : undefined,
+        landed_amount: line.landedAmount !== null ? Number(line.landedAmount) : undefined,
+      })),
+      costs: (shipment.costLines ?? []).map((cost: any) => ({
+        id: cost.id,
+        category: cost.category,
+        amount: Number(cost.amount),
+        notes: cost.notes ?? undefined,
+      })),
+    };
+  }
+
   private async assertTradingSubsidiary(groupId: string, subsidiaryId: string) {
     const subsidiary = await this.prisma.subsidiary.findFirst({
       where: { id: subsidiaryId, groupId },
@@ -1080,5 +1125,14 @@ export class ProcurementService {
 
   private formatDate(value: Date | null) {
     return value ? value.toISOString().slice(0, 10) : undefined;
+  }
+
+  private formatVariantLabel(variant: { size?: string | null; unit?: string | null; barcode?: string | null } | null | undefined) {
+    if (!variant) return undefined;
+    const size = variant.size ?? "";
+    const unit = variant.unit ? ` ${variant.unit}` : "";
+    const barcode = variant.barcode ? ` - ${variant.barcode}` : "";
+    const label = `${size}${unit}${barcode}`.trim();
+    return label || undefined;
   }
 }

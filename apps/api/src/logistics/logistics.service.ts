@@ -28,6 +28,19 @@ export class LogisticsService {
         orderBy: { createdAt: "desc" },
         skip: query.offset ?? 0,
         take: query.limit ?? 50,
+        include: {
+          order: {
+            select: {
+              orderNo: true,
+              channel: true,
+              customerId: true,
+              resellerId: true,
+              locationId: true,
+              reseller: { select: { name: true } },
+              location: { select: { name: true } },
+            },
+          },
+        },
       }),
     ]);
 
@@ -35,9 +48,17 @@ export class LogisticsService {
       data: shipments.map((shipment: any) => ({
         id: shipment.id,
         order_id: shipment.orderId,
+        order_no: shipment.order?.orderNo ?? undefined,
+        channel: shipment.order?.channel ?? undefined,
+        customer_id: shipment.order?.customerId ?? undefined,
+        reseller_id: shipment.order?.resellerId ?? undefined,
+        reseller_name: shipment.order?.reseller?.name ?? undefined,
+        location_id: shipment.order?.locationId ?? undefined,
+        location_name: shipment.order?.location?.name ?? undefined,
         carrier: shipment.carrier,
         status: shipment.status,
         tracking_no: shipment.trackingNo ?? undefined,
+        created_at: shipment.createdAt.toISOString(),
       })),
       meta: this.buildMeta(query, total),
     };
@@ -62,14 +83,35 @@ export class LogisticsService {
         trackingNo: gatewayResult.tracking_no,
         status: gatewayResult.status ?? "created",
       },
+      include: {
+        order: {
+          select: {
+            orderNo: true,
+            channel: true,
+            customerId: true,
+            resellerId: true,
+            locationId: true,
+            reseller: { select: { name: true } },
+            location: { select: { name: true } },
+          },
+        },
+      },
     });
 
     return {
       id: shipment.id,
       order_id: shipment.orderId,
+      order_no: shipment.order?.orderNo ?? undefined,
+      channel: shipment.order?.channel ?? undefined,
+      customer_id: shipment.order?.customerId ?? undefined,
+      reseller_id: shipment.order?.resellerId ?? undefined,
+      reseller_name: shipment.order?.reseller?.name ?? undefined,
+      location_id: shipment.order?.locationId ?? undefined,
+      location_name: shipment.order?.location?.name ?? undefined,
       carrier: shipment.carrier,
       status: shipment.status,
       tracking_no: shipment.trackingNo ?? undefined,
+      created_at: shipment.createdAt.toISOString(),
     };
   }
 
@@ -79,6 +121,19 @@ export class LogisticsService {
 
     const shipment = await this.prisma.shipment.findFirst({
       where: { id: shipmentId, groupId, subsidiaryId },
+      include: {
+        order: {
+          select: {
+            orderNo: true,
+            channel: true,
+            customerId: true,
+            resellerId: true,
+            locationId: true,
+            reseller: { select: { name: true } },
+            location: { select: { name: true } },
+          },
+        },
+      },
     });
 
     if (!shipment) throw new NotFoundException("Shipment not found");
@@ -86,9 +141,17 @@ export class LogisticsService {
     return {
       id: shipment.id,
       order_id: shipment.orderId,
+      order_no: shipment.order?.orderNo ?? undefined,
+      channel: shipment.order?.channel ?? undefined,
+      customer_id: shipment.order?.customerId ?? undefined,
+      reseller_id: shipment.order?.resellerId ?? undefined,
+      reseller_name: shipment.order?.reseller?.name ?? undefined,
+      location_id: shipment.order?.locationId ?? undefined,
+      location_name: shipment.order?.location?.name ?? undefined,
       carrier: shipment.carrier,
       status: shipment.status,
       tracking_no: shipment.trackingNo ?? undefined,
+      created_at: shipment.createdAt.toISOString(),
     };
   }
 

@@ -31,6 +31,7 @@ export class InventoryService {
         orderBy: { updatedAt: "desc" },
         skip: query.offset ?? 0,
         take: query.limit ?? 50,
+        include: { product: true, variant: true, location: true },
       }),
     ]);
 
@@ -38,8 +39,16 @@ export class InventoryService {
       data: levels.map((level: any) => ({
         id: level.id,
         product_id: level.productId,
+        product_name: level.product?.name,
+        product_sku: level.product?.sku,
         variant_id: level.variantId ?? undefined,
+        variant_label: level.variant
+          ? `${level.variant.size ?? ""}${level.variant.unit ? ` ${level.variant.unit}` : ""}${
+              level.variant.barcode ? ` - ${level.variant.barcode}` : ""
+            }`.trim()
+          : undefined,
         location_id: level.locationId,
+        location_name: level.location?.name,
         on_hand: level.onHand,
         reserved: level.reserved,
         available: level.onHand - level.reserved,
@@ -314,22 +323,37 @@ export class InventoryService {
       ...(query.order_id ? { orderId: query.order_id } : {}),
     };
 
-    const [total, reservations] = await this.prisma.$transaction([
-      this.prisma.stockReservation.count({ where }),
-      this.prisma.stockReservation.findMany({
-        where,
-        orderBy: { createdAt: "desc" },
-        skip: query.offset ?? 0,
-        take: query.limit ?? 50,
-        include: { product: true, variant: true, location: true },
-      }),
-    ]);
+      const [total, reservations] = await this.prisma.$transaction([
+        this.prisma.stockReservation.count({ where }),
+        this.prisma.stockReservation.findMany({
+          where,
+          orderBy: { createdAt: "desc" },
+          skip: query.offset ?? 0,
+          take: query.limit ?? 50,
+          include: { product: true, variant: true, location: true },
+        }),
+      ]);
 
-    return {
-      data: reservations.map((reservation: any) => this.mapReservation(reservation)),
-      meta: this.buildMeta(query, total),
-    };
-  }
+      const orderIds = reservations
+        .map((reservation: any) => reservation.orderId)
+        .filter((orderId: string | null | undefined): orderId is string => Boolean(orderId));
+      const orderNoById = new Map<string, string>();
+
+      if (orderIds.length) {
+        const orders = await this.prisma.order.findMany({
+          where: { id: { in: orderIds }, groupId, subsidiaryId },
+          select: { id: true, orderNo: true },
+        });
+        orders.forEach((order) => orderNoById.set(order.id, order.orderNo));
+      }
+
+      return {
+        data: reservations.map((reservation: any) =>
+          this.mapReservation(reservation, reservation.orderId ? orderNoById.get(reservation.orderId) : undefined),
+        ),
+        meta: this.buildMeta(query, total),
+      };
+    }
 
   async completeStockTransfer(groupId: string, subsidiaryId: string, transferId: string) {
     if (!groupId) throw new BadRequestException("X-Group-Id header is required");
@@ -514,17 +538,26 @@ export class InventoryService {
       await this.releaseStockReservations(groupId, subsidiaryId, [reservationId]);
     }
 
-    const updated = await this.prisma.stockReservation.findFirst({
-      where: { id: reservationId, groupId, subsidiaryId },
-      include: { product: true, variant: true, location: true },
-    });
+      const updated = await this.prisma.stockReservation.findFirst({
+        where: { id: reservationId, groupId, subsidiaryId },
+        include: { product: true, variant: true, location: true },
+      });
 
     if (!updated) {
       throw new NotFoundException("Reservation not found");
     }
 
-    return this.mapReservation(updated);
-  }
+      const orderNo = updated.orderId
+        ? (
+            await this.prisma.order.findFirst({
+              where: { id: updated.orderId, groupId, subsidiaryId },
+              select: { orderNo: true },
+            })
+          )?.orderNo
+        : undefined;
+
+      return this.mapReservation(updated, orderNo);
+    }
 
   async releaseStockReservations(groupId: string, subsidiaryId: string, reservationIds: string[]) {
     if (!groupId) throw new BadRequestException("X-Group-Id header is required");
@@ -594,13 +627,14 @@ export class InventoryService {
     };
   }
 
-  private mapReservation(reservation: any) {
-    return {
-      id: reservation.id,
-      order_id: reservation.orderId ?? undefined,
-      product_id: reservation.productId,
-      product_name: reservation.product?.name,
-      product_sku: reservation.product?.sku,
+    private mapReservation(reservation: any, orderNo?: string) {
+      return {
+        id: reservation.id,
+        order_id: reservation.orderId ?? undefined,
+        order_no: orderNo,
+        product_id: reservation.productId,
+        product_name: reservation.product?.name,
+        product_sku: reservation.product?.sku,
       variant_id: reservation.variantId ?? undefined,
       variant_label: reservation.variant
         ? `${reservation.variant.size ?? ""}${reservation.variant.unit ? ` ${reservation.variant.unit}` : ""}${

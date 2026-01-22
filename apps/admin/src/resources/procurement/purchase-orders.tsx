@@ -32,7 +32,7 @@ export function PurchaseOrderList() {
     <List filters={orderFilters} perPage={50}>
       <Datagrid rowClick={false}>
         <TextField source="status" />
-        <TextField source="vendor_id" />
+        <TextField source="vendor_name" label="Vendor" />
         <DateField source="ordered_at" />
         <DateField source="expected_at" />
         <TextField source="currency" />

@@ -11,9 +11,10 @@ export function StockLevelList() {
   return (
     <List filters={stockLevelFilters} perPage={50}>
       <Datagrid rowClick={false}>
-        <TextField source="product_id" />
-        <TextField source="variant_id" />
-        <TextField source="location_id" />
+        <TextField source="product_name" />
+        <TextField source="product_sku" />
+        <TextField source="variant_label" />
+        <TextField source="location_name" />
         <NumberField source="on_hand" />
         <NumberField source="reserved" />
         <NumberField source="available" />

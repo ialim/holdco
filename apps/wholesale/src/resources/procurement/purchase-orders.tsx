@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import {
   ArrayInput,
   Create,
@@ -13,8 +14,11 @@ import {
   SimpleFormIterator,
   TextField,
   TextInput,
+  useInput,
   required
 } from "react-admin";
+import { Autocomplete, TextField as MuiTextField } from "@mui/material";
+import { apiFetch } from "../../lib/api";
 
 const orderFilters = [
   <TextInput key="status" source="status" label="Status" />,
@@ -27,7 +31,7 @@ export function PurchaseOrderList() {
     <List filters={orderFilters} perPage={50}>
       <Datagrid rowClick={false}>
         <TextField source="status" />
-        <TextField source="vendor_id" />
+        <TextField source="vendor_name" label="Vendor" />
         <DateField source="ordered_at" />
         <DateField source="expected_at" />
         <TextField source="currency" />
@@ -39,10 +43,47 @@ export function PurchaseOrderList() {
 }
 
 export function PurchaseOrderCreate() {
+  const VendorSelect = () => {
+    const { field } = useInput({ source: "vendor_id", validate: required() });
+    const [options, setOptions] = useState<Array<{ id: string; label: string }>>([]);
+
+    const loadVendors = async (query: string) => {
+      const params = new URLSearchParams({ limit: "20", type: "vendor" });
+      if (query) params.set("q", query);
+      const response = await apiFetch(`/third-parties?${params.toString()}`);
+      if (!response.ok) return;
+      const items = (response.data as any)?.data ?? [];
+      const nextOptions = Array.isArray(items)
+        ? items.map((item: any) => ({
+            id: item.id,
+            label: item.name ? `${item.name} (${item.id})` : item.id
+          }))
+        : [];
+      setOptions(nextOptions);
+    };
+
+    useEffect(() => {
+      loadVendors("");
+    }, []);
+
+    return (
+      <Autocomplete
+        options={options}
+        value={options.find((option) => option.id === field.value) ?? null}
+        onChange={(_, option) => field.onChange(option?.id ?? "")}
+        onInputChange={(_, value) => {
+          loadVendors(value);
+        }}
+        isOptionEqualToValue={(option, value) => option.id === value.id}
+        renderInput={(params) => <MuiTextField {...params} label="Vendor" required fullWidth />}
+      />
+    );
+  };
+
   return (
     <Create>
       <SimpleForm>
-        <TextInput source="vendor_id" label="Vendor ID" validate={[required()]} fullWidth />
+        <VendorSelect />
         <DateInput source="ordered_at" />
         <DateInput source="expected_at" />
         <TextInput source="currency" />

@@ -113,6 +113,11 @@ export function AppMenu() {
     permissionList.includes("orders.read") ||
     permissionList.includes("orders.write") ||
     permissionList.includes("orders.fulfill");
+  const canViewLogistics =
+    canManageRbac ||
+    permissionList.includes("*") ||
+    permissionList.includes("logistics.shipment.read") ||
+    permissionList.includes("logistics.shipment.write");
   const canViewWholesaleSection =
     canViewResellers ||
     canViewCreditAccounts ||
@@ -218,6 +223,12 @@ export function AppMenu() {
           <MenuItemLink to="/third-parties" primaryText="Vendors" leftIcon={<HandshakeOutlined />} />
           <MenuItemLink to="/procurement/supplier-invoices" primaryText="Supplier Invoices" leftIcon={<ReceiptOutlined />} />
           <MenuItemLink to="/procurement/supplier-payments" primaryText="Supplier Payments" leftIcon={<PaymentsOutlined />} />
+        </CollapsibleSection>
+      )}
+
+      {canViewLogistics && (
+        <CollapsibleSection title="Logistics" defaultOpen={false}>
+          <MenuItemLink to="/logistics/shipments" primaryText="Shipments" leftIcon={<LocalShippingOutlined />} />
         </CollapsibleSection>
       )}
 

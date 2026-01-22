@@ -2,13 +2,16 @@
 
 import {
   ArrayInput,
+  AutocompleteInput,
   Create,
   Datagrid,
   DateField,
   DateInput,
+  FunctionField,
   List,
   NumberField,
   NumberInput,
+  ReferenceInput,
   SimpleForm,
   SimpleFormIterator,
   TextField,
@@ -27,7 +30,12 @@ export function PurchaseRequestList() {
     <List filters={requestFilters} perPage={50}>
       <Datagrid rowClick={false}>
         <TextField source="status" />
-        <TextField source="requester_id" />
+        <FunctionField
+          label="Requester"
+          render={(record: any) =>
+            record?.requester_name || record?.requester_email || record?.requester_id || "-"
+          }
+        />
         <DateField source="needed_by" />
         <NumberField source="items_count" />
         <DateField source="created_at" showTime />
@@ -40,7 +48,15 @@ export function PurchaseRequestCreate() {
   return (
     <Create>
       <SimpleForm>
-        <TextInput source="requester_id" label="Requester ID" />
+        <ReferenceInput source="requester_id" reference="app-users" allowEmpty>
+          <AutocompleteInput
+            optionText={(record) =>
+              record?.name ? `${record.name} (${record.email ?? record.id})` : record?.email ?? record?.id
+            }
+            filterToQuery={(search) => ({ q: search })}
+            fullWidth
+          />
+        </ReferenceInput>
         <DateInput source="needed_by" />
         <TextInput source="notes" multiline minRows={3} fullWidth />
         <ArrayInput source="items">

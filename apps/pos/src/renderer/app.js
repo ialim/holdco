@@ -571,6 +571,7 @@ function loadConfig() {
   state.lastReceipt = null;
   hydrateFiltersFromCache();
   hydrateStockFromCache();
+  hydrateReceiptFromCache();
   renderCashier();
   updateReceiptActions();
   updatePrinterActions();
@@ -646,6 +647,12 @@ function hydrateStockFromCache() {
   }
 }
 
+function hydrateReceiptFromCache() {
+  const cached = readCache(RECEIPT_CACHE_KEY, null);
+  if (!cached) return;
+  state.lastReceipt = cached;
+}
+
 const VIEWS = {
   loading: viewLoading,
   configMissing: viewConfigMissing,
@@ -663,6 +670,7 @@ const PRODUCT_CACHE_TTL_MS = 60 * 60 * 1000;
 const STOCK_CACHE_TTL_MS = 5 * 60 * 1000;
 const PROMOTION_CACHE_TTL_MS = 30 * 60 * 1000;
 const CACHE_REFRESH_MS = 10 * 60 * 1000;
+const RECEIPT_CACHE_KEY = "receipts:last";
 const QUEUE_SYNC_MS = 60 * 1000;
 
 function readCache(key, maxAgeMs = CACHE_TTL_MS) {
@@ -2666,6 +2674,14 @@ function updateReceiptActions() {
   updatePrinterActions();
 }
 
+function setLastReceipt(receipt) {
+  state.lastReceipt = receipt;
+  if (receipt) {
+    writeCache(RECEIPT_CACHE_KEY, receipt);
+  }
+  updateReceiptActions();
+}
+
 function updatePrinterActions() {
   if (!testPrinterButton) return;
   testPrinterButton.disabled = !getPrinterConfig();
@@ -2725,7 +2741,51 @@ async function authenticateManager(employeeNo, pin) {
   return { ok: true, token, user: response.data?.user };
 }
 
-function buildReceiptSnapshot({ order, paymentIntent, paymentMethod, paymentProvider, offline }) {
+function normalizeReceiptPayments({ orderPayments, payments, paymentMethod, paymentProvider, paymentIntent }) {
+  const normalized = [];
+  if (Array.isArray(orderPayments) && orderPayments.length) {
+    orderPayments.forEach((payment) => {
+      normalized.push({
+        method: payment.method ?? payment.payment_method ?? payment.paymentMethod ?? "cash",
+        provider: payment.provider ?? payment.payment_provider ?? paymentProvider ?? "manual",
+        amount: Number(payment.amount ?? 0),
+        status: payment.status ?? undefined,
+        reference: payment.reference ?? payment.payment_intent_id ?? undefined,
+        type: payment.payment_type ?? payment.paymentType ?? undefined,
+        points: payment.points_redeemed ?? payment.pointsRedeemed ?? undefined,
+        currency: payment.currency ?? undefined
+      });
+    });
+    return normalized;
+  }
+  if (Array.isArray(payments) && payments.length) {
+    payments.forEach((payment) => {
+      normalized.push({
+        method: payment.method ?? "cash",
+        provider: payment.provider ?? payment.payment_provider ?? paymentProvider ?? "manual",
+        amount: Number(payment.amount ?? 0),
+        status: payment.status ?? undefined,
+        reference: payment.reference ?? undefined,
+        type: payment.payment_type ?? payment.paymentType ?? undefined,
+        points: payment.points ?? undefined,
+        currency: payment.currency ?? undefined
+      });
+    });
+    return normalized;
+  }
+  if (paymentMethod) {
+    normalized.push({
+      method: paymentMethod,
+      provider: paymentProvider || "manual",
+      amount: undefined,
+      status: paymentIntent?.status ?? undefined,
+      reference: paymentIntent?.id ?? undefined
+    });
+  }
+  return normalized;
+}
+
+function buildReceiptSnapshot({ order, paymentIntent, paymentMethod, paymentProvider, payments, orderPayments, paymentPlan, offline }) {
   const currency = order?.currency || orderCurrencyInput?.value?.trim().toUpperCase() || "NGN";
   const items = state.cart.map((item) => ({
     name: item.name,
@@ -2743,6 +2803,14 @@ function buildReceiptSnapshot({ order, paymentIntent, paymentMethod, paymentProv
     total: Number(state.orderTotals.grandTotal) || 0
   };
   const orderNo = order?.order_no || order?.orderNo || order?.id || "PENDING";
+  const receiptPayments = normalizeReceiptPayments({
+    orderPayments,
+    payments,
+    paymentMethod,
+    paymentProvider,
+    paymentIntent
+  });
+  const paidTotal = receiptPayments.reduce((sum, payment) => sum + (Number(payment.amount) || 0), 0);
 
   return {
     header: [],
@@ -2753,19 +2821,14 @@ function buildReceiptSnapshot({ order, paymentIntent, paymentMethod, paymentProv
       cashier: state.cashier?.name || state.cashier?.email || undefined,
       customer: state.customer?.name || undefined,
       status: order?.status || (offline ? "pending" : undefined),
-      offline: Boolean(offline)
+      offline: Boolean(offline),
+      paymentPlan: paymentPlan || undefined
     },
     items,
     totals,
-    payment: paymentMethod
-      ? {
-          method: paymentMethod,
-          provider: paymentProvider || "manual",
-          amount: totals.total,
-          reference: paymentIntent?.id || undefined,
-          status: paymentIntent?.status || undefined
-        }
-      : null,
+    payment: receiptPayments.length === 1 ? receiptPayments[0] : null,
+    payments: receiptPayments.length > 1 ? receiptPayments : undefined,
+    paid_total: paidTotal > 0 ? paidTotal : undefined,
     footer: []
   };
 }
@@ -3479,20 +3542,33 @@ async function submitOrder(options = {}) {
   const noteSuffix = options.noteSuffix?.trim();
   const notes = [baseNotes, adjustmentNote, noteSuffix].filter(Boolean).join(" | ") || undefined;
   const { discount, tax, shipping } = state.orderTotals;
-  const loyaltyPoints = calculateLoyaltyPoints();
-  const items = state.cart.map((item) => ({
-    product_id: item.productId,
-    variant_id: item.variantId || undefined,
-    quantity: item.quantity,
-    unit_price: item.unitPrice
-  }));
-  const paymentMethod = options.paymentMethod ?? options.payment?.payment_method;
-  const paymentProvider = options.paymentProvider ?? options.payment?.provider;
-  const payload = {
-    order: {
-      currency,
-      customer_id: state.customer?.id || undefined,
-      discount_amount: discount || 0,
+    const loyaltyPoints = calculateLoyaltyPoints();
+    const items = state.cart.map((item) => ({
+      product_id: item.productId,
+      variant_id: item.variantId || undefined,
+      quantity: item.quantity,
+      unit_price: item.unitPrice
+    }));
+    const paymentMethod = options.paymentMethod ?? options.payment?.payment_method;
+    const paymentProvider = options.paymentProvider ?? options.payment?.provider;
+    const receiptPayments = options.payments?.length
+      ? options.payments
+      : options.payment
+        ? [
+            {
+              method: options.payment.payment_method ?? options.payment.method ?? paymentMethod,
+              amount: options.payment.amount,
+              currency: options.payment.currency,
+              provider: options.payment.provider,
+              payment_type: options.payment.payment_type ?? options.payment.paymentType
+            }
+          ]
+        : undefined;
+    const payload = {
+      order: {
+        currency,
+        customer_id: state.customer?.id || undefined,
+        discount_amount: discount || 0,
       tax_amount: tax || 0,
       shipping_amount: shipping || 0,
       items,
@@ -3531,19 +3607,20 @@ async function submitOrder(options = {}) {
     scope: `orders.create:${Date.now()}`
   });
 
-  if (result.queued) {
-    orderStatus.textContent = "Order queued (offline).";
-    const receipt = buildReceiptSnapshot({
-      order: null,
-      paymentIntent: null,
-      paymentMethod,
-      paymentProvider,
-      offline: true
-    });
-    state.lastReceipt = receipt;
-    updateReceiptActions();
-    if (shouldAutoPrintReceipt(receipt)) {
-      await printReceiptNow(receipt);
+    if (result.queued) {
+      orderStatus.textContent = "Order queued (offline).";
+      const receipt = buildReceiptSnapshot({
+        order: null,
+        paymentIntent: null,
+        paymentMethod,
+        paymentProvider,
+        payments: receiptPayments,
+        paymentPlan: options.paymentPlan,
+        offline: true
+      });
+      setLastReceipt(receipt);
+      if (shouldAutoPrintReceipt(receipt)) {
+        await printReceiptNow(receipt);
     }
     return result;
   }
@@ -3554,17 +3631,18 @@ async function submitOrder(options = {}) {
     return result;
   }
 
-  const responseData = result.response.data;
-  const order = responseData?.order ?? responseData;
-  const paymentIntent = responseData?.payment_intent ?? responseData?.payment_intents?.[0];
-  const capturedPayment = responseData?.captured_payment ?? responseData?.captured_payments?.[0];
-  const paymentIntents = responseData?.payment_intents ?? (paymentIntent ? [paymentIntent] : []);
-  const capturedPayments = responseData?.captured_payments ?? (capturedPayment ? [capturedPayment] : []);
-  const loyaltyRedemption = responseData?.loyalty_redemption;
-  const loyalty = responseData?.loyalty;
-  if (order) {
-    orderStatus.textContent = `Order created: ${order.order_no} (${order.total_amount} ${order.currency})`;
-  } else {
+    const responseData = result.response.data;
+    const order = responseData?.order ?? responseData;
+    const paymentIntent = responseData?.payment_intent ?? responseData?.payment_intents?.[0];
+    const capturedPayment = responseData?.captured_payment ?? responseData?.captured_payments?.[0];
+    const paymentIntents = responseData?.payment_intents ?? (paymentIntent ? [paymentIntent] : []);
+    const capturedPayments = responseData?.captured_payments ?? (capturedPayment ? [capturedPayment] : []);
+    const orderPayments = responseData?.order_payments ?? responseData?.orderPayments ?? [];
+    const loyaltyRedemption = responseData?.loyalty_redemption;
+    const loyalty = responseData?.loyalty;
+    if (order) {
+      orderStatus.textContent = `Order created: ${order.order_no} (${order.total_amount} ${order.currency})`;
+    } else {
     orderStatus.textContent = "Order created.";
   }
   if (paymentIntents.length) {
@@ -3590,18 +3668,20 @@ async function submitOrder(options = {}) {
     const pointsLabel = loyaltyPoints > 0 ? `+${loyaltyPoints}` : "issued";
     const balanceLabel = Number.isFinite(Number(balance)) ? ` (Balance ${balance})` : "";
     orderStatus.textContent += ` | Points ${pointsLabel}${balanceLabel}`;
-  }
-  const receipt = buildReceiptSnapshot({
-    order,
-    paymentIntent,
-    paymentMethod,
-    paymentProvider,
-    offline: false
-  });
+    }
+    const receipt = buildReceiptSnapshot({
+      order,
+      paymentIntent,
+      paymentMethod,
+      paymentProvider,
+      payments: receiptPayments,
+      orderPayments,
+      paymentPlan: options.paymentPlan,
+      offline: false
+    });
   state.lastOrder = order || null;
   state.lastPaymentIntent = paymentIntent || null;
-  state.lastReceipt = receipt;
-  updateReceiptActions();
+  setLastReceipt(receipt);
   if (shouldAutoPrintReceipt(receipt)) {
     await printReceiptNow(receipt);
   }

@@ -71,6 +71,7 @@ import {
   StockTransferCreate,
   StockTransferList
 } from "../resources/inventory";
+import { ShipmentCreate, ShipmentList, ShipmentShow } from "../resources/logistics";
 import {
   CreditAccountCreate,
   CreditAccountList,
@@ -155,6 +156,13 @@ export default function AdminApp() {
           create={VendorCreate}
           edit={VendorEdit}
           options={{ label: "Vendors" }}
+        />
+        <Resource
+          name="logistics/shipments"
+          list={ShipmentList}
+          show={ShipmentShow}
+          create={ShipmentCreate}
+          options={{ label: "Shipments" }}
         />
         <Resource name="stock-levels" list={StockLevelList} options={{ label: "Stock Levels" }} />
         <Resource

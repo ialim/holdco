@@ -2,6 +2,7 @@
 
 import {
   ArrayInput,
+  AutocompleteInput,
   Create,
   Datagrid,
   DateField,
@@ -9,12 +10,15 @@ import {
   List,
   NumberField,
   NumberInput,
+  ReferenceInput,
   SimpleForm,
   SimpleFormIterator,
   TextField,
   TextInput,
+  usePermissions,
   required
 } from "react-admin";
+import { Box, Typography } from "@mui/material";
 
 const requestFilters = [
   <TextInput key="status" source="status" label="Status" />,
@@ -37,21 +41,44 @@ export function PurchaseRequestList() {
 }
 
 export function PurchaseRequestCreate() {
+  const { permissions } = usePermissions();
+  const permissionList = Array.isArray(permissions) ? permissions.map(String) : [];
+  const canManage =
+    permissionList.includes("*") || permissionList.includes("procurement.request.manage");
+
   return (
     <Create>
-      <SimpleForm>
-        <TextInput source="requester_id" label="Requester ID" />
-        <DateInput source="needed_by" />
-        <TextInput source="notes" multiline minRows={3} fullWidth />
-        <ArrayInput source="items">
-          <SimpleFormIterator inline>
-            <TextInput source="description" validate={[required()]} />
-            <NumberInput source="quantity" validate={[required()]} />
-            <TextInput source="unit" />
-            <NumberInput source="estimated_unit_cost" />
-          </SimpleFormIterator>
-        </ArrayInput>
-      </SimpleForm>
+      {canManage ? (
+        <SimpleForm>
+          <ReferenceInput source="requester_id" reference="app-users" allowEmpty>
+            <AutocompleteInput
+              optionText={(record) =>
+                record?.name ? `${record.name} (${record.email ?? record.id})` : record?.email ?? record?.id
+              }
+              filterToQuery={(search) => ({ q: search })}
+              fullWidth
+            />
+          </ReferenceInput>
+          <DateInput source="needed_by" />
+          <TextInput source="notes" multiline minRows={3} fullWidth />
+          <ArrayInput source="items">
+            <SimpleFormIterator inline>
+              <TextInput source="description" validate={[required()]} />
+              <NumberInput source="quantity" validate={[required()]} />
+              <TextInput source="unit" />
+              <NumberInput source="estimated_unit_cost" />
+            </SimpleFormIterator>
+          </ArrayInput>
+        </SimpleForm>
+      ) : (
+        <SimpleForm toolbar={false}>
+          <Box sx={{ paddingY: 2 }}>
+            <Typography variant="body2" color="text.secondary">
+              You do not have permission to create purchase requests.
+            </Typography>
+          </Box>
+        </SimpleForm>
+      )}
     </Create>
   );
 }

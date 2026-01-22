@@ -119,6 +119,12 @@ export function AppMenu() {
     canManageRepayments ||
     canViewCreditReport ||
     canViewWholesaleOrders;
+  const canManageProcurement =
+    canManageRbac ||
+    permissionList.includes("*") ||
+    permissionList.includes("procurement.request.manage") ||
+    permissionList.includes("procurement.order.manage") ||
+    permissionList.includes("procurement.imports.manage");
 
   return (
     <Box sx={{ paddingTop: 1 }}>
@@ -201,11 +207,13 @@ export function AppMenu() {
         <MenuItemLink to="/pos/shifts" primaryText="Shifts" leftIcon={<ScheduleOutlined />} />
       </CollapsibleSection>
 
-      <CollapsibleSection title="Procurement" defaultOpen={false}>
-        <MenuItemLink to="/procurement/purchase-requests" primaryText="Purchase Requests" leftIcon={<ReceiptOutlined />} />
-        <MenuItemLink to="/procurement/purchase-orders" primaryText="Purchase Orders" leftIcon={<LocalMallOutlined />} />
-        <MenuItemLink to="/procurement/import-shipments" primaryText="Import Shipments" leftIcon={<LocalShippingOutlined />} />
-      </CollapsibleSection>
+      {canManageProcurement && (
+        <CollapsibleSection title="Procurement" defaultOpen={false}>
+          <MenuItemLink to="/procurement/purchase-requests" primaryText="Purchase Requests" leftIcon={<ReceiptOutlined />} />
+          <MenuItemLink to="/procurement/purchase-orders" primaryText="Purchase Orders" leftIcon={<LocalMallOutlined />} />
+          <MenuItemLink to="/procurement/import-shipments" primaryText="Import Shipments" leftIcon={<LocalShippingOutlined />} />
+        </CollapsibleSection>
+      )}
 
       <CollapsibleSection title="Warehouse" defaultOpen={false}>
         <MenuItemLink to="/stock-levels" primaryText="Stock Levels" leftIcon={<WarehouseOutlined />} />

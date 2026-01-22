@@ -1,16 +1,19 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   ArrayInput,
   ArrayField,
+  AutocompleteInput,
   Create,
   Datagrid,
   DateField,
   DateInput,
+  FormDataConsumer,
   List,
   NumberField,
   NumberInput,
+  ReferenceInput,
   Show,
   SimpleForm,
   SimpleFormIterator,
@@ -221,6 +224,11 @@ function ReceiveShipmentPanel() {
     setVariantOptionsByProduct((prev) => ({ ...prev, [productId]: options }));
   };
 
+  useEffect(() => {
+    loadLocations("");
+    loadProducts("");
+  }, []);
+
   const submitReceive = async () => {
     if (!record?.id) return;
     if (!locationId) {
@@ -403,23 +411,69 @@ export function ImportShipmentList() {
 }
 
 export function ImportShipmentCreate() {
+  const { permissions } = usePermissions();
+  const permissionList = Array.isArray(permissions) ? permissions.map(String) : [];
+  const canManageImports =
+    permissionList.includes("*") || permissionList.includes("procurement.imports.manage");
+
   return (
     <Create>
-      <SimpleForm>
-        <TextInput source="reference" validate={[required()]} fullWidth />
-        <TextInput source="supplier_id" label="Supplier ID" fullWidth />
-        <TextInput source="currency" validate={[required()]} />
-        <NumberInput source="fx_rate" validate={[required()]} />
-        <DateInput source="arrival_date" />
-        <ArrayInput source="lines">
-          <SimpleFormIterator inline>
-            <TextInput source="product_id" validate={[required()]} />
-            <TextInput source="variant_id" />
-            <NumberInput source="quantity" validate={[required()]} />
-            <NumberInput source="unit_cost" validate={[required()]} />
-          </SimpleFormIterator>
-        </ArrayInput>
-      </SimpleForm>
+      {canManageImports ? (
+        <SimpleForm>
+          <TextInput source="reference" validate={[required()]} fullWidth />
+          <ReferenceInput source="supplier_id" reference="suppliers" allowEmpty>
+            <AutocompleteInput
+              optionText={(record) => (record?.name ? `${record.name} (${record.id})` : record?.id)}
+              filterToQuery={(search) => ({ q: search })}
+              fullWidth
+            />
+          </ReferenceInput>
+          <TextInput source="currency" validate={[required()]} />
+          <NumberInput source="fx_rate" validate={[required()]} />
+          <DateInput source="arrival_date" />
+          <ArrayInput source="lines">
+            <SimpleFormIterator inline>
+              <FormDataConsumer>
+                {({ scopedFormData, getSource }) => (
+                  <>
+                    <ReferenceInput source={getSource("product_id")} reference="products">
+                      <AutocompleteInput
+                        optionText={(record) => (record?.name ? `${record.name} (${record.sku ?? record.id})` : record?.id)}
+                        filterToQuery={(search) => ({ q: search })}
+                        validate={[required()]}
+                      />
+                    </ReferenceInput>
+                    <ReferenceInput
+                      source={getSource("variant_id")}
+                      reference="variants"
+                      allowEmpty
+                      filter={{ product_id: scopedFormData?.product_id }}
+                    >
+                      <AutocompleteInput
+                        optionText={(record) =>
+                          record?.size || record?.unit || record?.barcode
+                            ? `${record?.size ?? ""}${record?.unit ? ` ${record.unit}` : ""}${record?.barcode ? ` - ${record.barcode}` : ""}`.trim()
+                            : record?.id
+                        }
+                      />
+                    </ReferenceInput>
+                    <NumberInput source={getSource("quantity")} validate={[required()]} />
+                    <NumberInput source={getSource("unit_cost")} validate={[required()]} />
+                  </>
+                )}
+              </FormDataConsumer>
+            </SimpleFormIterator>
+          </ArrayInput>
+        </SimpleForm>
+      ) : (
+        <SimpleForm toolbar={false}>
+          <Box sx={{ paddingY: 2 }}>
+            <Typography variant="body2" color="text.secondary">
+              You do not have permission to create import shipments.
+            </Typography>
+          </Box>
+        </SimpleForm>
+      )}
     </Create>
   );
 }

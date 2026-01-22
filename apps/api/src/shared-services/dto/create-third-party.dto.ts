@@ -1,5 +1,5 @@
 import { Type } from "class-transformer";
-import { IsDateString, IsEmail, IsEnum, IsInt, IsNotEmpty, IsNumber, IsOptional, IsString, Min } from "class-validator";
+import { IsDateString, IsEmail, IsEnum, IsIn, IsInt, IsNotEmpty, IsNumber, IsOptional, IsString, Min } from "class-validator";
 import { ThirdPartyType } from "../enums/shared-services.enums";
 
 export class CreateThirdPartyDto {
@@ -17,6 +17,10 @@ export class CreateThirdPartyDto {
   @IsOptional()
   @IsString()
   phone?: string;
+
+  @IsOptional()
+  @IsIn(["domestic", "foreign"])
+  origin?: string;
 
   @IsOptional()
   @Type(() => Number)

@@ -48,6 +48,10 @@ export class ListQueryDto {
   facets?: string;
 
   @IsOptional()
+  @IsString()
+  origin?: string;
+
+  @IsOptional()
   @IsUUID()
   product_id?: string;
 

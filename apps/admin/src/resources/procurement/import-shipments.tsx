@@ -396,12 +396,12 @@ function FinalizeShipmentPanel() {
 export function ImportShipmentList() {
   return (
     <List filters={shipmentFilters} perPage={50}>
-      <Datagrid rowClick="show">
-        <TextField source="reference" />
-        <TextField source="status" />
-        <TextField source="supplier_id" />
-        <TextField source="currency" />
-        <NumberField source="fx_rate" />
+        <Datagrid rowClick="show">
+          <TextField source="reference" />
+          <TextField source="status" />
+          <TextField source="supplier_name" label="Supplier" />
+          <TextField source="currency" />
+          <NumberField source="fx_rate" />
         <DateField source="arrival_date" />
         <NumberField source="lines_count" />
         <DateField source="created_at" showTime />

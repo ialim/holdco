@@ -65,6 +65,7 @@ export class CatalogService {
             },
           }
         : {}),
+      ...(query.origin ? { origin: query.origin } : {}),
     };
 
     const [total, brands] = await this.prisma.$transaction([
@@ -126,6 +127,7 @@ export class CatalogService {
         name: body.name,
         contactName: body.contact_name,
         contactPhone: body.contact_phone,
+        origin: body.origin ?? "domestic",
       },
     });
 
@@ -1412,12 +1414,20 @@ export class CatalogService {
     };
   }
 
-  private mapSupplier(supplier: { id: string; name: string; contactName: string | null; contactPhone: string | null; createdAt: Date }) {
+  private mapSupplier(supplier: {
+    id: string;
+    name: string;
+    contactName: string | null;
+    contactPhone: string | null;
+    origin: string;
+    createdAt: Date;
+  }) {
     return {
       id: supplier.id,
       name: supplier.name,
       contact_name: supplier.contactName ?? undefined,
       contact_phone: supplier.contactPhone ?? undefined,
+      origin: supplier.origin,
       created_at: supplier.createdAt.toISOString(),
     };
   }

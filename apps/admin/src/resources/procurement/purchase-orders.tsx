@@ -54,7 +54,7 @@ export function PurchaseOrderCreate() {
     const [options, setOptions] = useState<Array<{ id: string; label: string }>>([]);
 
     const loadVendors = async (query: string) => {
-      const params = new URLSearchParams({ limit: "20" });
+      const params = new URLSearchParams({ limit: "20", type: "vendor" });
       if (query) params.set("q", query);
       const response = await apiFetch(`/third-parties?${params.toString()}`);
       if (!response.ok) return;

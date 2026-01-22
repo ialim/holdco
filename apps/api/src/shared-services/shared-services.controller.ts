@@ -28,6 +28,15 @@ export class SharedServicesController {
     return this.sharedServicesService.createThirdParty(groupId, body);
   }
 
+  @Permissions("shared_services.third_party.read")
+  @Get("third-parties/:third_party_id")
+  getThirdParty(
+    @Headers("x-group-id") groupId: string,
+    @Param("third_party_id", new ParseUUIDPipe()) thirdPartyId: string,
+  ) {
+    return this.sharedServicesService.getThirdParty(groupId, thirdPartyId);
+  }
+
   @Permissions("shared_services.third_party.write")
   @Patch("third-parties/:third_party_id")
   updateThirdParty(

@@ -25,7 +25,19 @@ export class SharedServicesService {
   async listThirdParties(groupId: string, query: ListQueryDto) {
     if (!groupId) throw new BadRequestException("X-Group-Id header is required");
 
-    const where = { groupId };
+    const where: Prisma.ExternalClientWhereInput = {
+      groupId,
+      ...(query.origin ? { origin: query.origin } : {}),
+      ...(query.type ? { type: query.type } : {}),
+      ...(query.q
+        ? {
+            name: {
+              contains: query.q,
+              mode: "insensitive",
+            },
+          }
+        : {}),
+    };
 
     const [total, thirdParties] = await this.prisma.$transaction([
       this.prisma.externalClient.count({ where }),
@@ -56,6 +68,7 @@ export class SharedServicesService {
         type: body.type,
         email: body.email,
         phone: body.phone,
+        origin: body.origin ?? "domestic",
         creditLimit: body.credit_limit,
         creditCurrency: body.credit_currency,
         paymentTermDays: body.payment_term_days,
@@ -69,6 +82,17 @@ export class SharedServicesService {
     return this.mapThirdParty(thirdParty);
   }
 
+  async getThirdParty(groupId: string, thirdPartyId: string) {
+    if (!groupId) throw new BadRequestException("X-Group-Id header is required");
+
+    const thirdParty = await this.prisma.externalClient.findFirst({
+      where: { id: thirdPartyId, groupId },
+    });
+    if (!thirdParty) throw new NotFoundException("Third-party not found");
+
+    return this.mapThirdParty(thirdParty);
+  }
+
   async updateThirdParty(groupId: string, thirdPartyId: string, body: UpdateThirdPartyDto) {
     if (!groupId) throw new BadRequestException("X-Group-Id header is required");
     const hasUpdates = [
@@ -76,6 +100,7 @@ export class SharedServicesService {
       body.type,
       body.email,
       body.phone,
+      body.origin,
       body.credit_limit,
       body.credit_currency,
       body.payment_term_days,
@@ -99,6 +124,7 @@ export class SharedServicesService {
     if (body.type !== undefined) data.type = body.type;
     if (body.email !== undefined) data.email = body.email;
     if (body.phone !== undefined) data.phone = body.phone;
+    if (body.origin !== undefined) data.origin = body.origin;
     if (body.credit_limit !== undefined) data.creditLimit = body.credit_limit;
     if (body.credit_currency !== undefined) data.creditCurrency = body.credit_currency;
     if (body.payment_term_days !== undefined) data.paymentTermDays = body.payment_term_days;
@@ -467,6 +493,7 @@ export class SharedServicesService {
     type: string;
     email: string | null;
     phone: string | null;
+    origin: string;
     status: string;
     creditLimit: Prisma.Decimal | null;
     creditCurrency: string | null;
@@ -481,6 +508,7 @@ export class SharedServicesService {
       type: party.type,
       email: party.email ?? undefined,
       phone: party.phone ?? undefined,
+      origin: party.origin,
       credit_limit: party.creditLimit !== null ? Number(party.creditLimit) : undefined,
       credit_currency: party.creditCurrency ?? undefined,
       payment_term_days: party.paymentTermDays ?? undefined,

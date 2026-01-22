@@ -124,7 +124,10 @@ export function AppMenu() {
     permissionList.includes("*") ||
     permissionList.includes("procurement.request.manage") ||
     permissionList.includes("procurement.order.manage") ||
-    permissionList.includes("procurement.imports.manage");
+    permissionList.includes("procurement.imports.manage") ||
+    permissionList.includes("procurement.payments.manage") ||
+    permissionList.includes("shared_services.third_party.read") ||
+    permissionList.includes("shared_services.third_party.write");
 
   return (
     <Box sx={{ paddingTop: 1 }}>
@@ -212,6 +215,9 @@ export function AppMenu() {
           <MenuItemLink to="/procurement/purchase-requests" primaryText="Purchase Requests" leftIcon={<ReceiptOutlined />} />
           <MenuItemLink to="/procurement/purchase-orders" primaryText="Purchase Orders" leftIcon={<LocalMallOutlined />} />
           <MenuItemLink to="/procurement/import-shipments" primaryText="Import Shipments" leftIcon={<LocalShippingOutlined />} />
+          <MenuItemLink to="/third-parties" primaryText="Vendors" leftIcon={<HandshakeOutlined />} />
+          <MenuItemLink to="/procurement/supplier-invoices" primaryText="Supplier Invoices" leftIcon={<ReceiptOutlined />} />
+          <MenuItemLink to="/procurement/supplier-payments" primaryText="Supplier Payments" leftIcon={<PaymentsOutlined />} />
         </CollapsibleSection>
       )}
 

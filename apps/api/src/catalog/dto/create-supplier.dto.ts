@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsOptional, IsString, MinLength } from "class-validator";
+import { IsIn, IsNotEmpty, IsOptional, IsString, MinLength } from "class-validator";
 
 export class CreateSupplierDto {
   @IsString()
@@ -13,4 +13,8 @@ export class CreateSupplierDto {
   @IsOptional()
   @IsString()
   contact_phone?: string;
+
+  @IsOptional()
+  @IsIn(["domestic", "foreign"])
+  origin?: string;
 }

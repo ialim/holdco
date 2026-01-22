@@ -35,7 +35,15 @@ import {
   PurchaseOrderCreate,
   PurchaseOrderList,
   PurchaseRequestCreate,
-  PurchaseRequestList
+  PurchaseRequestList,
+  SupplierInvoiceCreate,
+  SupplierInvoiceList,
+  SupplierInvoiceShow,
+  SupplierPaymentCreate,
+  SupplierPaymentList,
+  VendorCreate,
+  VendorEdit,
+  VendorList
 } from "../resources/procurement";
 import { SubsidiaryCreate, SubsidiaryList, TenantGroupList } from "../resources/tenancy";
 import { RolesList, UsersList } from "../resources/rbac";
@@ -127,6 +135,26 @@ export default function AdminApp() {
           show={ImportShipmentShow}
           create={ImportShipmentCreate}
           options={{ label: "Import Shipments" }}
+        />
+        <Resource
+          name="procurement/supplier-invoices"
+          list={SupplierInvoiceList}
+          show={SupplierInvoiceShow}
+          create={SupplierInvoiceCreate}
+          options={{ label: "Supplier Invoices" }}
+        />
+        <Resource
+          name="procurement/supplier-payments"
+          list={SupplierPaymentList}
+          create={SupplierPaymentCreate}
+          options={{ label: "Supplier Payments" }}
+        />
+        <Resource
+          name="third-parties"
+          list={VendorList}
+          create={VendorCreate}
+          edit={VendorEdit}
+          options={{ label: "Vendors" }}
         />
         <Resource name="stock-levels" list={StockLevelList} options={{ label: "Stock Levels" }} />
         <Resource

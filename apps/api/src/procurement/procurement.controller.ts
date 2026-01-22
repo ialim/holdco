@@ -8,6 +8,8 @@ import { CreateImportShipmentDto } from "./dto/create-import-shipment.dto";
 import { CreatePurchaseRequestDto } from "./dto/create-purchase-request.dto";
 import { CreatePurchaseOrderDto } from "./dto/create-purchase-order.dto";
 import { ReceiveImportShipmentDto } from "./dto/receive-import-shipment.dto";
+import { CreateSupplierInvoiceDto } from "./dto/create-supplier-invoice.dto";
+import { CreateSupplierPaymentDto } from "./dto/create-supplier-payment.dto";
 
 @Controller("v1")
 @UseGuards(PermissionsGuard)
@@ -105,5 +107,55 @@ export class ProcurementController {
     @Body() body: ReceiveImportShipmentDto,
   ) {
     return this.procurementService.receiveImportShipment(groupId, subsidiaryId, id, body);
+  }
+
+  @Permissions("procurement.payments.manage")
+  @Get("procurement/supplier-invoices")
+  listSupplierInvoices(
+    @Headers("x-group-id") groupId: string,
+    @Headers("x-subsidiary-id") subsidiaryId: string,
+    @Query() query: ListQueryDto,
+  ) {
+    return this.procurementService.listSupplierInvoices(groupId, subsidiaryId, query);
+  }
+
+  @Permissions("procurement.payments.manage")
+  @Post("procurement/supplier-invoices")
+  createSupplierInvoice(
+    @Headers("x-group-id") groupId: string,
+    @Headers("x-subsidiary-id") subsidiaryId: string,
+    @Body() body: CreateSupplierInvoiceDto,
+  ) {
+    return this.procurementService.createSupplierInvoice(groupId, subsidiaryId, body);
+  }
+
+  @Permissions("procurement.payments.manage")
+  @Get("procurement/supplier-invoices/:id")
+  getSupplierInvoice(
+    @Headers("x-group-id") groupId: string,
+    @Headers("x-subsidiary-id") subsidiaryId: string,
+    @Param("id") id: string,
+  ) {
+    return this.procurementService.getSupplierInvoice(groupId, subsidiaryId, id);
+  }
+
+  @Permissions("procurement.payments.manage")
+  @Get("procurement/supplier-payments")
+  listSupplierPayments(
+    @Headers("x-group-id") groupId: string,
+    @Headers("x-subsidiary-id") subsidiaryId: string,
+    @Query() query: ListQueryDto,
+  ) {
+    return this.procurementService.listSupplierPayments(groupId, subsidiaryId, query);
+  }
+
+  @Permissions("procurement.payments.manage")
+  @Post("procurement/supplier-payments")
+  createSupplierPayment(
+    @Headers("x-group-id") groupId: string,
+    @Headers("x-subsidiary-id") subsidiaryId: string,
+    @Body() body: CreateSupplierPaymentDto,
+  ) {
+    return this.procurementService.createSupplierPayment(groupId, subsidiaryId, body);
   }
 }

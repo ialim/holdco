@@ -8,6 +8,9 @@ import { CreateImportShipmentDto } from "./dto/create-import-shipment.dto";
 import { CreatePurchaseRequestDto } from "./dto/create-purchase-request.dto";
 import { CreatePurchaseOrderDto } from "./dto/create-purchase-order.dto";
 import { ReceiveImportShipmentDto } from "./dto/receive-import-shipment.dto";
+import { CreateSupplierInvoiceDto } from "./dto/create-supplier-invoice.dto";
+import { CreateSupplierPaymentDto } from "./dto/create-supplier-payment.dto";
+import { assertPostingCodeAllowed } from "../finance/ledger-code-rules";
 
 @Injectable()
 export class ProcurementService {
@@ -237,7 +240,7 @@ export class ProcurementService {
         orderBy: { createdAt: "desc" },
         skip: query.offset ?? 0,
         take: query.limit ?? 50,
-        include: { lines: true, costLines: true },
+        include: { lines: true, costLines: true, supplier: true },
       }),
     ]);
 
@@ -246,6 +249,7 @@ export class ProcurementService {
         id: shipment.id,
         reference: shipment.reference,
         supplier_id: shipment.supplierId ?? undefined,
+        supplier_name: shipment.supplier?.name ?? undefined,
         currency: shipment.currency,
         fx_rate: Number(shipment.fxRate),
         status: shipment.status,
@@ -657,6 +661,290 @@ export class ProcurementService {
     };
   }
 
+  async listSupplierInvoices(groupId: string, subsidiaryId: string, query: ListQueryDto) {
+    if (!groupId) throw new BadRequestException("X-Group-Id header is required");
+    if (!subsidiaryId) throw new BadRequestException("X-Subsidiary-Id header is required");
+    await this.assertTradingSubsidiary(groupId, subsidiaryId);
+
+    const where = {
+      groupId,
+      subsidiaryId,
+      ...(query.status ? { status: query.status } : {}),
+      ...(query.q ? { reference: { contains: query.q, mode: Prisma.QueryMode.insensitive } } : {}),
+    };
+
+    const [total, invoices] = await this.prisma.$transaction([
+      this.prisma.supplierInvoice.count({ where }),
+      this.prisma.supplierInvoice.findMany({
+        where,
+        orderBy: { createdAt: "desc" },
+        skip: query.offset ?? 0,
+        take: query.limit ?? 50,
+        include: { supplier: true, vendor: true, payments: true },
+      }),
+    ]);
+
+    return {
+      data: invoices.map((invoice) => {
+        const paid = invoice.payments.reduce((sum, payment) => sum.plus(payment.amount), new Decimal(0));
+        const totalAmount = new Decimal(invoice.totalAmount);
+        return {
+          id: invoice.id,
+          reference: invoice.reference,
+          status: invoice.status,
+          supplier_id: invoice.supplierId ?? undefined,
+          supplier_name: invoice.supplier?.name ?? undefined,
+          vendor_id: invoice.vendorId ?? undefined,
+          vendor_name: invoice.vendor?.name ?? undefined,
+          currency: invoice.currency,
+          fx_rate: Number(invoice.fxRate),
+          subtotal_amount: Number(invoice.subtotalAmount),
+          tax_amount: Number(invoice.taxAmount),
+          total_amount: Number(invoice.totalAmount),
+          paid_amount: Number(paid),
+          balance_amount: Number(totalAmount.minus(paid)),
+          issue_date: invoice.issueDate.toISOString().slice(0, 10),
+          due_date: this.formatDate(invoice.dueDate),
+          notes: invoice.notes ?? undefined,
+        };
+      }),
+      meta: this.buildMeta(query, total),
+    };
+  }
+
+  async getSupplierInvoice(groupId: string, subsidiaryId: string, id: string) {
+    if (!groupId) throw new BadRequestException("X-Group-Id header is required");
+    if (!subsidiaryId) throw new BadRequestException("X-Subsidiary-Id header is required");
+    await this.assertTradingSubsidiary(groupId, subsidiaryId);
+
+    const invoice = await this.prisma.supplierInvoice.findFirst({
+      where: { id, groupId, subsidiaryId },
+      include: { supplier: true, vendor: true, payments: true },
+    });
+    if (!invoice) throw new NotFoundException("Supplier invoice not found");
+
+    const paid = invoice.payments.reduce((sum, payment) => sum.plus(payment.amount), new Decimal(0));
+    const totalAmount = new Decimal(invoice.totalAmount);
+
+    return {
+      id: invoice.id,
+      reference: invoice.reference,
+      status: invoice.status,
+      supplier_id: invoice.supplierId ?? undefined,
+      supplier_name: invoice.supplier?.name ?? undefined,
+      vendor_id: invoice.vendorId ?? undefined,
+      vendor_name: invoice.vendor?.name ?? undefined,
+      currency: invoice.currency,
+      fx_rate: Number(invoice.fxRate),
+      subtotal_amount: Number(invoice.subtotalAmount),
+      tax_amount: Number(invoice.taxAmount),
+      total_amount: Number(invoice.totalAmount),
+      paid_amount: Number(paid),
+      balance_amount: Number(totalAmount.minus(paid)),
+      issue_date: invoice.issueDate.toISOString().slice(0, 10),
+      due_date: this.formatDate(invoice.dueDate),
+      notes: invoice.notes ?? undefined,
+      payments: invoice.payments.map((payment) => ({
+        id: payment.id,
+        amount: Number(payment.amount),
+        currency: payment.currency,
+        paid_at: payment.paidAt.toISOString(),
+        method: payment.method ?? undefined,
+        reference: payment.reference ?? undefined,
+        notes: payment.notes ?? undefined,
+      })),
+    };
+  }
+
+  async createSupplierInvoice(groupId: string, subsidiaryId: string, body: CreateSupplierInvoiceDto) {
+    if (!groupId) throw new BadRequestException("X-Group-Id header is required");
+    if (!subsidiaryId) throw new BadRequestException("X-Subsidiary-Id header is required");
+    await this.assertTradingSubsidiary(groupId, subsidiaryId);
+
+    if (!body.supplier_id && !body.vendor_id) {
+      throw new BadRequestException("Supplier or vendor is required");
+    }
+
+    const supplier = body.supplier_id
+      ? await this.prisma.supplier.findFirst({ where: { id: body.supplier_id, groupId } })
+      : null;
+    if (body.supplier_id && !supplier) throw new NotFoundException("Supplier not found");
+
+    const vendor = body.vendor_id
+      ? await this.prisma.externalClient.findFirst({ where: { id: body.vendor_id, groupId } })
+      : null;
+    if (body.vendor_id && !vendor) throw new NotFoundException("Vendor not found");
+
+    const purchaseOrder = body.purchase_order_id
+      ? await this.prisma.purchaseOrder.findFirst({ where: { id: body.purchase_order_id, groupId, subsidiaryId } })
+      : null;
+    if (body.purchase_order_id && !purchaseOrder) throw new NotFoundException("Purchase order not found");
+
+    const importShipment = body.import_shipment_id
+      ? await this.prisma.importShipment.findFirst({ where: { id: body.import_shipment_id, groupId, subsidiaryId } })
+      : null;
+    if (body.import_shipment_id && !importShipment) throw new NotFoundException("Import shipment not found");
+
+    const currency = body.currency ?? "NGN";
+    const fxRate = new Decimal(body.fx_rate ?? 1);
+    if (fxRate.lte(0)) throw new BadRequestException("FX rate must be greater than 0");
+
+    const subtotal = new Decimal(body.subtotal_amount);
+    const taxAmount = new Decimal(body.tax_amount ?? 0);
+    const totalAmount = body.total_amount !== undefined ? new Decimal(body.total_amount) : subtotal.plus(taxAmount);
+
+    const issueDate = body.issue_date ? new Date(body.issue_date) : new Date();
+    const dueDate = body.due_date ? new Date(body.due_date) : undefined;
+
+    const expenseCode = body.expense_account_code ?? "1200";
+    const payableCode = body.payable_account_code ?? "2000";
+
+    const vendorId = body.vendor_id ?? supplier?.externalClientId ?? undefined;
+
+    const invoice = await this.prisma.$transaction(async (tx) => {
+      const created = await tx.supplierInvoice.create({
+        data: {
+          groupId,
+          subsidiaryId,
+          supplierId: body.supplier_id,
+          vendorId,
+          purchaseOrderId: body.purchase_order_id,
+          importShipmentId: body.import_shipment_id,
+          reference: body.reference,
+          status: "open",
+          currency,
+          fxRate,
+          expenseAccountCode: expenseCode,
+          payableAccountCode: payableCode,
+          subtotalAmount: subtotal,
+          taxAmount,
+          totalAmount,
+          issueDate,
+          dueDate,
+          notes: body.notes,
+        },
+        include: { supplier: true, vendor: true },
+      });
+
+      await this.postSupplierInvoiceToLedger(tx, created, expenseCode, payableCode, issueDate);
+      return created;
+    });
+
+    return {
+      id: invoice.id,
+      reference: invoice.reference,
+      status: invoice.status,
+      supplier_id: invoice.supplierId ?? undefined,
+      supplier_name: invoice.supplier?.name ?? undefined,
+      vendor_id: invoice.vendorId ?? undefined,
+      vendor_name: invoice.vendor?.name ?? undefined,
+      currency: invoice.currency,
+      fx_rate: Number(invoice.fxRate),
+      subtotal_amount: Number(invoice.subtotalAmount),
+      tax_amount: Number(invoice.taxAmount),
+      total_amount: Number(invoice.totalAmount),
+      issue_date: invoice.issueDate.toISOString().slice(0, 10),
+      due_date: this.formatDate(invoice.dueDate),
+      notes: invoice.notes ?? undefined,
+    };
+  }
+
+  async listSupplierPayments(groupId: string, subsidiaryId: string, query: ListQueryDto) {
+    if (!groupId) throw new BadRequestException("X-Group-Id header is required");
+    if (!subsidiaryId) throw new BadRequestException("X-Subsidiary-Id header is required");
+    await this.assertTradingSubsidiary(groupId, subsidiaryId);
+
+    const where = { groupId, subsidiaryId };
+
+    const [total, payments] = await this.prisma.$transaction([
+      this.prisma.supplierPayment.count({ where }),
+      this.prisma.supplierPayment.findMany({
+        where,
+        orderBy: { createdAt: "desc" },
+        skip: query.offset ?? 0,
+        take: query.limit ?? 50,
+        include: { invoice: { include: { supplier: true, vendor: true } } },
+      }),
+    ]);
+
+    return {
+      data: payments.map((payment) => ({
+        id: payment.id,
+        supplier_invoice_id: payment.supplierInvoiceId,
+        reference: payment.reference ?? undefined,
+        amount: Number(payment.amount),
+        currency: payment.currency,
+        paid_at: payment.paidAt.toISOString(),
+        method: payment.method ?? undefined,
+        notes: payment.notes ?? undefined,
+        invoice_reference: payment.invoice.reference,
+        supplier_name: payment.invoice.supplier?.name ?? undefined,
+        vendor_name: payment.invoice.vendor?.name ?? undefined,
+      })),
+      meta: this.buildMeta(query, total),
+    };
+  }
+
+  async createSupplierPayment(groupId: string, subsidiaryId: string, body: CreateSupplierPaymentDto) {
+    if (!groupId) throw new BadRequestException("X-Group-Id header is required");
+    if (!subsidiaryId) throw new BadRequestException("X-Subsidiary-Id header is required");
+    await this.assertTradingSubsidiary(groupId, subsidiaryId);
+
+    const invoice = await this.prisma.supplierInvoice.findFirst({
+      where: { id: body.supplier_invoice_id, groupId, subsidiaryId },
+      include: { payments: true },
+    });
+    if (!invoice) throw new NotFoundException("Supplier invoice not found");
+    if (invoice.status === "paid") throw new BadRequestException("Invoice already paid");
+
+    const amount = new Decimal(body.amount);
+    const currency = body.currency ?? invoice.currency;
+    const paidAt = body.paid_at ? new Date(body.paid_at) : new Date();
+    const paymentAccountCode = body.payment_account_code ?? "1000";
+
+    const payment = await this.prisma.$transaction(async (tx) => {
+      const created = await tx.supplierPayment.create({
+        data: {
+          groupId,
+          subsidiaryId,
+          supplierInvoiceId: invoice.id,
+          amount,
+          currency,
+          paymentAccountCode,
+          paidAt,
+          method: body.method,
+          reference: body.reference,
+          notes: body.notes,
+        },
+      });
+
+      await this.postSupplierPaymentToLedger(tx, invoice, created, paymentAccountCode, paidAt);
+
+      const totalPaid = invoice.payments.reduce((sum, payment) => sum.plus(payment.amount), new Decimal(0)).plus(amount);
+      const newStatus = totalPaid.greaterThanOrEqualTo(invoice.totalAmount)
+        ? "paid"
+        : "partial";
+
+      await tx.supplierInvoice.update({
+        where: { id: invoice.id },
+        data: { status: newStatus },
+      });
+
+      return created;
+    });
+
+    return {
+      id: payment.id,
+      supplier_invoice_id: payment.supplierInvoiceId,
+      amount: Number(payment.amount),
+      currency: payment.currency,
+      paid_at: payment.paidAt.toISOString(),
+      method: payment.method ?? undefined,
+      reference: payment.reference ?? undefined,
+      notes: payment.notes ?? undefined,
+    };
+  }
+
   private buildMeta(query: ListQueryDto, total: number) {
     return {
       limit: query.limit ?? 50,
@@ -675,6 +963,119 @@ export class ProcurementService {
       throw new BadRequestException("Only the procurement/trading subsidiary can perform this action");
     }
     return subsidiary;
+  }
+
+  private async postSupplierInvoiceToLedger(
+    tx: Prisma.TransactionClient,
+    invoice: {
+      id: string;
+      subsidiaryId: string;
+      totalAmount: Prisma.Decimal;
+      payableAccountCode: string;
+    },
+    expenseCode: string,
+    payableCode: string,
+    issueDate: Date
+  ) {
+    assertPostingCodeAllowed(expenseCode);
+    assertPostingCodeAllowed(payableCode);
+
+    const [expenseAccountId, payableAccountId] = await Promise.all([
+      this.getLedgerAccountId(tx, invoice.subsidiaryId, expenseCode),
+      this.getLedgerAccountId(tx, invoice.subsidiaryId, payableCode),
+    ]);
+
+    const period = this.toPeriod(issueDate);
+
+    await tx.ledgerEntry.deleteMany({ where: { sourceType: "SUPPLIER_INVOICE", sourceRef: invoice.id } });
+    await tx.ledgerEntry.create({
+      data: {
+        companyId: invoice.subsidiaryId,
+        period,
+        entryDate: issueDate,
+        accountId: expenseAccountId,
+        debit: invoice.totalAmount,
+        credit: new Decimal(0),
+        memo: `Supplier invoice (${period})`,
+        sourceType: "SUPPLIER_INVOICE",
+        sourceRef: invoice.id,
+      },
+    });
+    await tx.ledgerEntry.create({
+      data: {
+        companyId: invoice.subsidiaryId,
+        period,
+        entryDate: issueDate,
+        accountId: payableAccountId,
+        debit: new Decimal(0),
+        credit: invoice.totalAmount,
+        memo: `Supplier invoice (${period})`,
+        sourceType: "SUPPLIER_INVOICE",
+        sourceRef: invoice.id,
+      },
+    });
+  }
+
+  private async postSupplierPaymentToLedger(
+    tx: Prisma.TransactionClient,
+    invoice: {
+      id: string;
+      subsidiaryId: string;
+      payableAccountCode: string;
+    },
+    payment: {
+      id: string;
+      amount: Prisma.Decimal;
+    },
+    paymentAccountCode: string,
+    paidAt: Date
+  ) {
+    assertPostingCodeAllowed(paymentAccountCode);
+    assertPostingCodeAllowed(invoice.payableAccountCode);
+
+    const [paymentAccountId, payableAccountId] = await Promise.all([
+      this.getLedgerAccountId(tx, invoice.subsidiaryId, paymentAccountCode),
+      this.getLedgerAccountId(tx, invoice.subsidiaryId, invoice.payableAccountCode),
+    ]);
+
+    const period = this.toPeriod(paidAt);
+
+    await tx.ledgerEntry.create({
+      data: {
+        companyId: invoice.subsidiaryId,
+        period,
+        entryDate: paidAt,
+        accountId: payableAccountId,
+        debit: payment.amount,
+        credit: new Decimal(0),
+        memo: `Supplier payment (${period})`,
+        sourceType: "SUPPLIER_PAYMENT",
+        sourceRef: payment.id,
+      },
+    });
+    await tx.ledgerEntry.create({
+      data: {
+        companyId: invoice.subsidiaryId,
+        period,
+        entryDate: paidAt,
+        accountId: paymentAccountId,
+        debit: new Decimal(0),
+        credit: payment.amount,
+        memo: `Supplier payment (${period})`,
+        sourceType: "SUPPLIER_PAYMENT",
+        sourceRef: payment.id,
+      },
+    });
+  }
+
+  private async getLedgerAccountId(db: Prisma.TransactionClient, companyId: string, code: string) {
+    const account = await db.ledgerAccount.findUnique({ where: { companyId_code: { companyId, code } } });
+    if (!account) throw new BadRequestException(`Ledger account ${code} missing for company ${companyId}`);
+    return account.id;
+  }
+
+  private toPeriod(value: Date) {
+    return value.toISOString().slice(0, 7);
   }
 
   private formatDate(value: Date | null) {

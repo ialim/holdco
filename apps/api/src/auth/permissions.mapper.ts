@@ -34,6 +34,9 @@ const PROCUREMENT_ALL = [
   "procurement.request.manage",
   "procurement.order.manage",
   "procurement.imports.manage",
+  "procurement.payments.manage",
+  "shared_services.third_party.read",
+  "shared_services.third_party.write",
   TENANCY_LOCATIONS_READ,
 ];
 

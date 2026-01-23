@@ -987,9 +987,13 @@ function renderQueue() {
   const queue = window.pos.readQueue();
   const meta = window.pos.getQueueMeta ? window.pos.getQueueMeta() : null;
   const reconcile = readCache("pos.reconcile", null);
+  const failed = Array.isArray(queue) ? queue.filter((item) => item.status === "failed").length : 0;
   const summaryParts = [
     `${queue.length} queued operation${queue.length === 1 ? "" : "s"}.`
   ];
+  if (failed > 0) {
+    summaryParts.push(`${failed} failed.`);
+  }
   if (meta?.at) {
     summaryParts.push(`Last sync: ${formatDate(new Date(meta.at))}.`);
   }

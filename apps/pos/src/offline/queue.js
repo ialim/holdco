@@ -2,6 +2,8 @@ const crypto = require("node:crypto");
 const { request } = require("../api/client");
 const { getDb, setMeta, getMeta } = require("./db");
 
+const MAX_QUEUE_ATTEMPTS = 5;
+
 function serialize(value) {
   return value === undefined ? null : JSON.stringify(value);
 }
@@ -80,7 +82,7 @@ async function flushQueue() {
   const database = getDb();
   const rows = database
     .prepare(
-      `SELECT id, method, path, body, idempotency_key, extra_headers, attempts
+      `SELECT id, method, path, body, idempotency_key, extra_headers, attempts, last_error
        FROM offline_queue
        ORDER BY created_at ASC`,
     )
@@ -90,6 +92,13 @@ async function flushQueue() {
   let remaining = 0;
 
   for (const row of rows) {
+    if (row.attempts >= MAX_QUEUE_ATTEMPTS) {
+      remaining += 1;
+      database
+        .prepare("UPDATE offline_queue SET status = ?, last_error = ? WHERE id = ?")
+        .run("failed", row.last_error || "Max attempts reached", row.id);
+      continue;
+    }
     try {
       const response = await request({
         method: row.method,
@@ -104,16 +113,20 @@ async function flushQueue() {
         processed += 1;
       } else {
         remaining += 1;
+        const nextAttempts = row.attempts + 1;
+        const status = nextAttempts >= MAX_QUEUE_ATTEMPTS ? "failed" : "pending";
         database
           .prepare("UPDATE offline_queue SET attempts = ?, last_error = ?, status = ? WHERE id = ?")
-          .run(row.attempts + 1, `HTTP ${response.status}`, "pending", row.id);
+          .run(nextAttempts, `HTTP ${response.status}`, status, row.id);
       }
     } catch (error) {
       remaining += 1;
       const message = error?.message || String(error);
+      const nextAttempts = row.attempts + 1;
+      const status = nextAttempts >= MAX_QUEUE_ATTEMPTS ? "failed" : "pending";
       database
         .prepare("UPDATE offline_queue SET attempts = ?, last_error = ?, status = ? WHERE id = ?")
-        .run(row.attempts + 1, message, "pending", row.id);
+        .run(nextAttempts, message, status, row.id);
     }
   }
 
